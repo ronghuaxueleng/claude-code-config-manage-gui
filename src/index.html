@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claude Code配置管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="main.js?v=16" defer></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-cog me-2"></i>Claude Code配置管理
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- 全局消息提示区域 -->
+        <div id="globalMessageContainer">
+            <!-- 消息将通过JavaScript动态添加 -->
+        </div>
+
+        <!-- 标签导航 -->
+        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts-pane" 
+                        type="button" role="tab" aria-controls="accounts-pane" aria-selected="true">
+                    <i class="fas fa-user"></i> 账号管理
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="directories-tab" data-bs-toggle="tab" data-bs-target="#directories-pane" 
+                        type="button" role="tab" aria-controls="directories-pane" aria-selected="false">
+                    <i class="fas fa-folder"></i> 目录管理
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="association-tab" data-bs-toggle="tab" data-bs-target="#association-pane" 
+                        type="button" role="tab" aria-controls="association-pane" aria-selected="false">
+                    <i class="fas fa-link"></i> 账号关联
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="urls-tab" data-bs-toggle="tab" data-bs-target="#urls-pane" 
+                        type="button" role="tab" aria-controls="urls-pane" aria-selected="false">
+                    <i class="fas fa-globe"></i> URL管理
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="database-tab" data-bs-toggle="tab" data-bs-target="#database-pane" 
+                        type="button" role="tab" aria-controls="database-pane" aria-selected="false">
+                    <i class="fas fa-database"></i> 数据库管理
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="claude-settings-tab" data-bs-toggle="tab" data-bs-target="#claude-settings-pane" 
+                        type="button" role="tab" aria-controls="claude-settings-pane" aria-selected="false">
+                    <i class="fas fa-sliders-h"></i> Claude配置
+                </button>
+            </li>
+        </ul>
+
+        <!-- 标签内容 -->
+        <div class="tab-content mt-0" id="mainTabsContent">
+            <!-- 账号管理标签页 -->
+            <div class="tab-pane fade show active" id="accounts-pane" role="tabpanel" aria-labelledby="accounts-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">账号列表</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#accountModal">
+                        <i class="fas fa-plus"></i> 添加账号
+                    </button>
+                </div>
+                
+                <!-- 筛选和搜索区域 -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="accountSearch" class="form-label">搜索</label>
+                        <input type="text" class="form-control" id="accountSearch" placeholder="搜索账号名称或Token...">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="baseUrlFilter" class="form-label">筛选URL</label>
+                        <select class="form-select" id="baseUrlFilter">
+                            <option value="">所有URL</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="perPageSelect" class="form-label">每页显示</label>
+                        <select class="form-select" id="perPageSelect">
+                            <option value="5" selected>5条</option>
+                            <option value="10">10条</option>
+                            <option value="20">20条</option>
+                            <option value="50">50条</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 账号列表 -->
+                <div id="accountsList" class="list-group mb-3">
+                    <!-- 账号列表将通过JavaScript动态加载 -->
+                </div>
+                
+                <!-- 分页组件 -->
+                <nav aria-label="账号分页">
+                    <ul class="pagination justify-content-center" id="accountsPagination">
+                        <!-- 分页按钮将通过JavaScript动态生成 -->
+                    </ul>
+                </nav>
+            </div>
+
+            <!-- 目录管理标签页 -->
+            <div class="tab-pane fade" id="directories-pane" role="tabpanel" aria-labelledby="directories-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">目录管理</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#directoryModal">
+                        <i class="fas fa-plus"></i> 添加目录
+                    </button>
+                </div>
+                <div id="directoriesList" class="list-group">
+                    <!-- 目录列表将通过JavaScript动态加载 -->
+                </div>
+            </div>
+
+            <!-- 账号关联标签页 -->
+            <div class="tab-pane fade" id="association-pane" role="tabpanel" aria-labelledby="association-tab">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-folder me-2"></i>目录选择
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="directorySelect" class="form-label">选择目录</label>
+                                    <select class="form-select" id="directorySelect">
+                                        <option value="">请选择目录</option>
+                                    </select>
+                                </div>
+                                <div id="selectedDirectoryInfo" class="alert alert-info d-none">
+                                    <!-- 选中目录信息将通过JavaScript动态填充 -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cog me-2"></i>当前配置状态
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="associationConfigStatus">
+                                    <div class="text-muted">请先选择目录</div>
+                                </div>
+                                
+                                <!-- Claude配置状态 -->
+                                <div id="claudeConfigStatus" class="mt-3" style="display: none;">
+                                    <hr>
+                                    <h6 class="text-primary">
+                                        <i class="fas fa-sliders-h me-2"></i>Claude配置状态
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <strong>权限模式：</strong>
+                                                <span id="claudePermissionMode" class="badge bg-secondary">未配置</span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <strong>沙盒模式：</strong>
+                                                <span id="claudeSandboxMode" class="badge bg-secondary">未配置</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-2">
+                                                <strong>自动更新：</strong>
+                                                <span id="claudeAutoUpdater" class="badge bg-secondary">未配置</span>
+                                            </div>
+                                            <div class="mb-2">
+                                                <strong>允许工具：</strong>
+                                                <span id="claudeAllowedTools" class="badge bg-secondary">未配置</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            切换账号时将自动应用上述Claude配置
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-sync-alt me-2"></i>账号切换
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="associationAccountSelect" class="form-label">选择账号</label>
+                                    <select class="form-select" id="associationAccountSelect">
+                                        <option value="">请选择账号</option>
+                                    </select>
+                                </div>
+                                
+                                <button class="btn btn-success w-100" id="associationSwitchBtn" onclick="performAccountSwitch()" disabled>
+                                    <i class="fas fa-sync-alt me-2"></i>切换到此账号
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-users me-2"></i>可用账号列表
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="associationAccountsList" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- 账号列表将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- URL管理标签页 -->
+            <div class="tab-pane fade" id="urls-pane" role="tabpanel" aria-labelledby="urls-tab">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">URL管理</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#urlModal">
+                        <i class="fas fa-plus"></i> 添加URL
+                    </button>
+                </div>
+                <div id="urlsList" class="list-group">
+                    <!-- URL列表将通过JavaScript动态加载 -->
+                </div>
+            </div>
+
+            <!-- 数据库管理标签页 -->
+            <div class="tab-pane fade" id="database-pane" role="tabpanel" aria-labelledby="database-tab">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">当前连接信息</h5>
+                                <button class="btn btn-info btn-sm" onclick="loadDatabaseInfo()">
+                                    <i class="fas fa-sync"></i> 刷新
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="currentDbInfo" class="alert alert-info">
+                                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                                    <span class="ms-2">加载中...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">数据库连接管理</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="dbConnectionSelect" class="form-label">选择数据库连接</label>
+                                    <select id="dbConnectionSelect" class="form-select">
+                                        <option value="">选择数据库连接</option>
+                                    </select>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button id="switchDbBtn" class="btn btn-outline-secondary" onclick="switchDatabase()" disabled>
+                                        <i class="fas fa-exchange-alt"></i> 切换连接
+                                    </button>
+                                    <button id="testDbBtn" class="btn btn-success" onclick="testDatabase()">
+                                        <i class="fas fa-check-circle"></i> 测试连接
+                                    </button>
+                                </div>
+                                <div id="dbSwitchStatus" class="mt-3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Claude配置标签页 -->
+            <div class="tab-pane fade" id="claude-settings-pane" role="tabpanel" aria-labelledby="claude-settings-tab">
+                <!-- 消息提示区域 -->
+                <div id="claudeSettingsStatus" class="mb-3"></div>
+                
+                <div class="row">
+                    <!-- 权限配置 -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-shield-alt me-2"></i>权限配置
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">默认权限模式</label>
+                                    <select class="form-select" id="defaultPermissionMode">
+                                        <option value="normal">标准模式 (需要确认)</option>
+                                        <option value="acceptEdits">自动批准编辑</option>
+                                        <option value="bypassPermissions" selected>绕过所有权限 (仅限安全环境)</option>
+                                    </select>
+                                    <div class="form-text">
+                                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                                        bypassPermissions模式会跳过所有安全检查，请谨慎使用
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="allowedTools" class="form-label">允许的工具</label>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="allowAllTools" checked>
+                                        <label class="form-check-label" for="allowAllTools">
+                                            允许所有工具 (*)
+                                        </label>
+                                    </div>
+                                    <div id="toolsList" class="border rounded p-3" style="max-height: 250px; overflow-y: auto;">
+                                        <!-- 工具列表将通过JavaScript动态生成 -->
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="deniedTools" class="form-label">禁用的工具</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="newDeniedTool" placeholder="输入要禁用的工具名称">
+                                        <button class="btn btn-outline-danger" type="button" onclick="addDeniedTool()">
+                                            <i class="fas fa-ban"></i> 禁用
+                                        </button>
+                                    </div>
+                                    <div id="deniedToolsList" class="mt-2">
+                                        <!-- 禁用工具列表将通过JavaScript动态生成 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 环境变量配置 -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cogs me-2"></i>环境变量配置
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">沙盒模式</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="sandboxMode" checked>
+                                        <label class="form-check-label" for="sandboxMode">
+                                            启用沙盒模式 (IS_SANDBOX)
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        启用后限制Claude访问范围，增强安全性
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">自动更新</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="disableAutoUpdater" checked>
+                                        <label class="form-check-label" for="disableAutoUpdater">
+                                            禁用自动更新 (DISABLE_AUTOUPDATER)
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        禁用Claude Code的自动更新功能
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="customEnvVars" class="form-label">自定义环境变量</label>
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" id="newEnvKey" placeholder="变量名">
+                                        <input type="text" class="form-control" id="newEnvValue" placeholder="变量值">
+                                        <button class="btn btn-outline-primary" type="button" onclick="addCustomEnvVar()">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div id="customEnvList">
+                                        <!-- 自定义环境变量列表 -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 配置文件预览和操作 -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-file-code me-2"></i>生成的配置文件内容
+                                </h5>
+                                <div>
+                                    <button class="btn btn-success btn-sm" onclick="saveClaudeConfigToDatabase()">
+                                        <i class="fas fa-save"></i> 保存配置
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="settingsJsonPreview" class="form-label">
+                                        settings.local.json 内容预览
+                                        <span class="badge bg-success ms-2">实时生成</span>
+                                    </label>
+                                    <textarea class="form-control font-monospace" id="settingsJsonPreview" rows="15" 
+                                              readonly placeholder="根据上面的配置自动生成JSON内容..."></textarea>
+                                    <div class="form-text">
+                                        <i class="fas fa-info-circle"></i>
+                                        此内容根据上面的配置选项实时生成，点击"保存配置"保存到数据库
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>使用说明：</strong>
+                                    <ul class="mb-0">
+                                        <li>配置保存到数据库中，下次启动时会自动加载</li>
+                                        <li>在"账号关联"页面切换账号时，会将此配置写入 .claude/settings.local.json</li>
+                                        <li>切换账号时会自动添加对应的账号环境变量（ANTHROPIC_API_KEY等）</li>
+                                        <li>bypassPermissions模式请仅在可信的开发环境中使用</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 账号模态框 -->
+    <div class="modal fade" id="accountModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加账号</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="accountForm">
+                        <div class="mb-3">
+                            <label for="accountName" class="form-label">账号名称</label>
+                            <input type="text" class="form-control" id="accountName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountToken" class="form-label">Token</label>
+                            <input type="text" class="form-control" id="accountToken" required 
+                                   placeholder="sk-ant-api03-...">
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountBaseUrl" class="form-label">Base URL</label>
+                            <div class="input-group">
+                                <select class="form-select" id="accountBaseUrlSelect" style="max-width: 200px;">
+                                    <option value="">选择预设URL</option>
+                                </select>
+                                <input type="url" class="form-control" id="accountBaseUrl" required 
+                                       placeholder="或手动输入URL">
+                            </div>
+                            <div class="form-text">可以从预设URL中选择，或手动输入自定义URL</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveAccount">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 目录模态框 -->
+    <div class="modal fade" id="directoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加目录</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="directoryForm">
+                        <div class="mb-3">
+                            <label for="directoryName" class="form-label">目录名称</label>
+                            <input type="text" class="form-control" id="directoryName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="directoryPath" class="form-label">目录路径</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="directoryPath" required 
+                                       placeholder="例如: /home/user/project">
+                                <button class="btn btn-outline-secondary" type="button" id="selectDirectoryBtn">
+                                    <i class="fas fa-folder-open"></i> 选择目录
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveDirectory">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- URL模态框 -->
+    <div class="modal fade" id="urlModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加URL</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="urlForm">
+                        <div class="mb-3">
+                            <label for="urlName" class="form-label">URL名称</label>
+                            <input type="text" class="form-control" id="urlName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="urlAddress" class="form-label">URL地址</label>
+                            <input type="url" class="form-control" id="urlAddress" required 
+                                   placeholder="https://api.anthropic.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="urlDescription" class="form-label">描述</label>
+                            <input type="text" class="form-control" id="urlDescription" 
+                                   placeholder="可选的描述信息">
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="urlIsDefault">
+                            <label class="form-check-label" for="urlIsDefault">
+                                设为默认URL
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveUrl">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置查看模态框 -->
+    <div class="modal fade" id="configModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">配置详情</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="configContent">
+                        <!-- 配置内容将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

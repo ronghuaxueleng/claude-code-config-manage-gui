@@ -1,0 +1,34 @@
+{
+  "database": {
+    "default": "sqlite",
+    "connections": {
+      "sqlite": {
+        "url": "sqlite:///claude_config.db",
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_timeout": 30,
+        "pool_recycle": 3600,
+        "echo": false
+      },
+      "mysql": {
+        "url": "mysql+pymysql://user:password@localhost/claude_config",
+        "pool_size": 5,
+        "max_overflow": 10,
+        "pool_timeout": 30,
+        "pool_recycle": 3600,
+        "echo": false
+      }
+    }
+  },
+  "app": {
+    "secret_key": "claude-config-manager-secret-key-2025",
+    "debug": false,
+    "host": "0.0.0.0",
+    "port": 5678,
+    "auto_open_browser": true
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  }
+}

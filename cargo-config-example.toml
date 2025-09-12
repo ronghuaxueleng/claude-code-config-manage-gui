@@ -1,0 +1,30 @@
+# Cargo国内镜像配置
+# 将此内容添加到 ~/.cargo/config.toml 文件中
+
+[source.crates-io]
+replace-with = 'aliyun' # 指定使用下面哪个源，修改为source.后面的内容即可
+#阿里云
+[source.aliyun]
+registry = "sparse+https://mirrors.aliyun.com/crates.io-index/"
+# 中国科学技术大学
+[source.ustc]
+registry = "https://mirrors.ustc.edu.cn/crates.io-index"
+# 上海交通大学
+[source.sjtu]
+registry = "https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index/"
+# 清华大学
+[source.tuna]
+registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+# rustcc社区
+[source.rustcc]
+registry = "https://code.aliyun.com/rustcc/crates.io-index.git"
+ 
+
+# 网络设置
+[net]
+retry = 2
+git-fetch-with-cli = true
+
+# HTTP设置
+[http]
+timeout = 30

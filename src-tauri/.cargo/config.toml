@@ -1,0 +1,15 @@
+[source.crates-io]
+replace-with = 'ustc'
+
+# 中国科学技术大学
+[source.ustc]
+registry = "https://mirrors.ustc.edu.cn/crates.io-index"
+
+# 网络设置
+[net]
+retry = 3
+git-fetch-with-cli = true
+
+# HTTP设置
+[http]
+timeout = 60

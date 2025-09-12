@@ -1,0 +1,196 @@
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+use anyhow::Result;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DatabaseConfig {
+    pub url: String,
+    pub pool_size: Option<i32>,
+    pub max_overflow: Option<i32>,
+    pub pool_timeout: Option<i32>,
+    pub pool_recycle: Option<i32>,
+    pub echo: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppConfig {
+    pub name: Option<String>,
+    pub version: Option<String>,
+    pub port: Option<u16>,
+    pub debug: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Config {
+    pub connections: HashMap<String, DatabaseConfig>,
+    pub current: String,
+    pub app: Option<AppConfig>,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        let mut connections = HashMap::new();
+        
+        connections.insert("default".to_string(), DatabaseConfig {
+            url: "sqlite:///claude_config.db".to_string(),
+            pool_size: None,
+            max_overflow: None,
+            pool_timeout: None,
+            pool_recycle: None,
+            echo: None,
+        });
+
+        Self {
+            connections,
+            current: "default".to_string(),
+            app: Some(AppConfig {
+                name: Some("Claude Configuration Manager".to_string()),
+                version: Some("1.0.0".to_string()),
+                port: Some(6666),
+                debug: Some(false),
+            }),
+        }
+    }
+}
+
+pub struct ConfigManager {
+    pub config: Config,
+    config_file: Option<PathBuf>,
+}
+
+impl ConfigManager {
+    pub fn new() -> Self {
+        let mut manager = Self {
+            config: Config::default(),
+            config_file: None,
+        };
+        
+        // 尝试从resources目录加载config.json
+        if let Some(resource_config_path) = Self::get_resource_path("config.json") {
+            if let Ok(_) = manager.load_from_file(&resource_config_path) {
+                println!("从resources目录加载配置文件: {}", resource_config_path.display());
+                return manager;
+            }
+        }
+        
+        // 尝试从当前目录加载config.json
+        if let Ok(current_dir) = std::env::current_dir() {
+            let config_path = current_dir.join("config.json");
+            if config_path.exists() {
+                let _ = manager.load_from_file(&config_path);
+                println!("从当前目录加载配置文件: {}", config_path.display());
+            }
+        }
+        
+        manager
+    }
+    
+    /// 获取resources目录中文件的路径
+    pub fn get_resource_path(filename: &str) -> Option<PathBuf> {
+        // 尝试多个可能的resources路径
+        let possible_paths = [
+            // 开发环境：从src-tauri目录运行时
+            PathBuf::from("src-tauri/resources").join(filename),
+            PathBuf::from("resources").join(filename),
+            // 构建后：相对于可执行文件
+            std::env::current_exe()
+                .ok()?
+                .parent()?
+                .join("resources")
+                .join(filename),
+            // Tauri打包后的路径
+            std::env::current_exe()
+                .ok()?
+                .parent()?
+                .parent()?
+                .join("Resources")
+                .join(filename),
+            // Windows应用路径
+            std::env::current_exe()
+                .ok()?
+                .parent()?
+                .join("resources")
+                .join(filename),
+        ];
+        
+        for path in possible_paths {
+            if path.exists() {
+                println!("找到资源文件: {}", path.display());
+                return Some(path);
+            }
+        }
+        
+        println!("未找到资源文件: {}", filename);
+        None
+    }
+    
+    /// 获取resources目录的路径（用于创建新文件）
+    pub fn get_resource_dir() -> Option<PathBuf> {
+        // 直接使用可执行文件同级的 resources 目录
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(exe_dir) = exe_path.parent() {
+                let resources_dir = exe_dir.join("resources");
+                
+                // 确保目录存在
+                if !resources_dir.exists() {
+                    match std::fs::create_dir_all(&resources_dir) {
+                        Ok(_) => {
+                            println!("创建resources目录: {}", resources_dir.display());
+                        }
+                        Err(e) => {
+                            println!("无法创建resources目录: {}", e);
+                            return None;
+                        }
+                    }
+                }
+                
+                println!("使用resources目录: {}", resources_dir.display());
+                return Some(resources_dir);
+            }
+        }
+        
+        println!("无法确定可执行文件路径，resources目录创建失败");
+        None
+    }
+    
+    pub fn load_from_file<P: AsRef<Path>>(&mut self, config_file: P) -> Result<()> {
+        let content = fs::read_to_string(&config_file)?;
+        let file_config: Config = serde_json::from_str(&content)?;
+        
+        // 合并配置（简单替换，可以后续优化为深度合并）
+        self.config = file_config;
+        self.config_file = Some(config_file.as_ref().to_path_buf());
+        
+        Ok(())
+    }
+    
+    pub fn get_database_config(&self, connection_name: Option<&str>) -> Option<&DatabaseConfig> {
+        let conn_name = connection_name.unwrap_or(&self.config.current);
+        self.config.connections.get(conn_name)
+    }
+    
+    pub fn get_default_database_config(&self) -> Option<&DatabaseConfig> {
+        self.get_database_config(None)
+    }
+    
+    pub fn set_default_connection(&mut self, connection_name: &str) -> Result<()> {
+        // 检查连接是否存在
+        if !self.config.connections.contains_key(connection_name) {
+            return Err(anyhow::anyhow!("Database connection '{}' not found", connection_name));
+        }
+        
+        // 更新默认连接
+        self.config.current = connection_name.to_string();
+        
+        // 如果有配置文件路径，保存到文件
+        if let Some(config_file) = &self.config_file {
+            let content = serde_json::to_string_pretty(&self.config)?;
+            std::fs::write(config_file, content)?;
+        }
+        
+        Ok(())
+    }
+    
+}

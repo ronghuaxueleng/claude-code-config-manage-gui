@@ -1,0 +1,172 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bearBodyGradient" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" style="stop-color:#D2B48C;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#CD853F;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A0522D;stop-opacity:1" />
+    </radialGradient>
+    <radialGradient id="bearHeadGradient" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" style="stop-color:#F5DEB3;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#DEB887;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CD853F;stop-opacity:1" />
+    </radialGradient>
+    <radialGradient id="earGradient" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#DEB887;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8B4513;stop-opacity:1" />
+    </radialGradient>
+    <radialGradient id="bellyGradient" cx="50%" cy="30%" r="80%">
+      <stop offset="0%" style="stop-color:#FFF8DC;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F5DEB3;stop-opacity:1" />
+    </radialGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feFlood flood-color="#000000" flood-opacity="0.1"/>
+      <feComposite in="SourceGraphic"/>
+      <feGaussianBlur stdDeviation="2"/>
+      <feOffset dx="1" dy="1"/>
+      <feComposite operator="over" in="SourceGraphic"/>
+    </filter>
+  </defs>
+  
+  <!-- Background circle with soft gradient -->
+  <circle cx="256" cy="256" r="240" fill="#f8f8f8" stroke="#e0e0e0" stroke-width="2"/>
+  
+  <!-- Bear body (main torso) -->
+  <ellipse cx="256" cy="320" rx="85" ry="110" 
+           fill="url(#bearBodyGradient)" 
+           filter="url(#shadow)"/>
+  
+  <!-- Bear belly -->
+  <ellipse cx="256" cy="340" rx="55" ry="75" 
+           fill="url(#bellyGradient)" 
+           opacity="0.9"/>
+  
+  <!-- Bear head -->
+  <circle cx="256" cy="200" r="75" 
+          fill="url(#bearHeadGradient)" 
+          filter="url(#shadow)"/>
+  
+  <!-- Left ear -->
+  <circle cx="220" cy="150" r="28" 
+          fill="url(#earGradient)" 
+          filter="url(#shadow)"/>
+  <circle cx="225" cy="155" r="15" 
+          fill="#8B4513" 
+          opacity="0.8"/>
+  
+  <!-- Right ear -->
+  <circle cx="292" cy="150" r="28" 
+          fill="url(#earGradient)" 
+          filter="url(#shadow)"/>
+  <circle cx="287" cy="155" r="15" 
+          fill="#8B4513" 
+          opacity="0.8"/>
+  
+  <!-- Bear arms -->
+  <ellipse cx="190" cy="280" rx="25" ry="45" 
+           fill="url(#bearBodyGradient)" 
+           transform="rotate(-20 190 280)"
+           filter="url(#shadow)"/>
+  <ellipse cx="322" cy="280" rx="25" ry="45" 
+           fill="url(#bearBodyGradient)" 
+           transform="rotate(20 322 280)"
+           filter="url(#shadow)"/>
+  
+  <!-- Bear paws -->
+  <circle cx="175" cy="315" r="18" 
+          fill="url(#bearBodyGradient)" 
+          filter="url(#shadow)"/>
+  <circle cx="337" cy="315" r="18" 
+          fill="url(#bearBodyGradient)" 
+          filter="url(#shadow)"/>
+  
+  <!-- Paw pads -->
+  <circle cx="175" cy="315" r="12" 
+          fill="#654321" 
+          opacity="0.6"/>
+  <circle cx="337" cy="315" r="12" 
+          fill="#654321" 
+          opacity="0.6"/>
+  
+  <!-- Bear legs -->
+  <ellipse cx="225" cy="400" rx="20" ry="35" 
+           fill="url(#bearBodyGradient)" 
+           filter="url(#shadow)"/>
+  <ellipse cx="287" cy="400" rx="20" ry="35" 
+           fill="url(#bearBodyGradient)" 
+           filter="url(#shadow)"/>
+  
+  <!-- Bear feet -->
+  <ellipse cx="225" cy="425" rx="15" ry="20" 
+           fill="url(#bearBodyGradient)" 
+           filter="url(#shadow)"/>
+  <ellipse cx="287" cy="425" rx="15" ry="20" 
+           fill="url(#bearBodyGradient)" 
+           filter="url(#shadow)"/>
+  
+  <!-- Foot pads -->
+  <ellipse cx="225" cy="430" rx="10" ry="12" 
+           fill="#654321" 
+           opacity="0.6"/>
+  <ellipse cx="287" cy="430" rx="10" ry="12" 
+           fill="#654321" 
+           opacity="0.6"/>
+  
+  <!-- Bear snout -->
+  <ellipse cx="256" cy="215" rx="18" ry="12" 
+           fill="#DEB887" 
+           filter="url(#innerShadow)"/>
+  
+  <!-- Bear nose -->
+  <ellipse cx="256" cy="210" rx="6" ry="4" 
+           fill="#000000"/>
+  
+  <!-- Bear eyes -->
+  <circle cx="240" cy="190" r="8" 
+          fill="#000000"/>
+  <circle cx="272" cy="190" r="8" 
+          fill="#000000"/>
+  
+  <!-- Eye highlights -->
+  <circle cx="242" cy="187" r="3" 
+          fill="#ffffff" 
+          opacity="0.9"/>
+  <circle cx="274" cy="187" r="3" 
+          fill="#ffffff" 
+          opacity="0.9"/>
+  
+  <!-- Bear mouth -->
+  <path d="M 256 225 Q 250 230 245 225" 
+        stroke="#654321" 
+        stroke-width="2" 
+        fill="none" 
+        stroke-linecap="round"/>
+  <path d="M 256 225 Q 262 230 267 225" 
+        stroke="#654321" 
+        stroke-width="2" 
+        fill="none" 
+        stroke-linecap="round"/>
+  
+  <!-- Cute blush -->
+  <circle cx="205" cy="205" r="12" 
+          fill="#FFB6C1" 
+          opacity="0.4"/>
+  <circle cx="307" cy="205" r="12" 
+          fill="#FFB6C1" 
+          opacity="0.4"/>
+  
+  <!-- Small decorative bow tie (optional cute detail) -->
+  <polygon points="256,250 245,260 267,260" 
+           fill="#FF6B6B" 
+           filter="url(#shadow)"/>
+  <circle cx="256" cy="255" r="4" 
+          fill="#FF4757"/>
+  
+  <!-- Subtle fur texture lines -->
+  <path d="M 200 180 Q 210 175 220 180" stroke="#CD853F" stroke-width="1" fill="none" opacity="0.3"/>
+  <path d="M 280 175 Q 290 180 300 175" stroke="#CD853F" stroke-width="1" fill="none" opacity="0.3"/>
+  <path d="M 210 300 Q 220 295 230 300" stroke="#CD853F" stroke-width="1" fill="none" opacity="0.3"/>
+  <path d="M 280 295 Q 290 300 300 295" stroke="#CD853F" stroke-width="1" fill="none" opacity="0.3"/>
+</svg>
