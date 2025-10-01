@@ -35,3 +35,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 我讨厌在 JS/TS 中使用 class 写法，因为其代码可读性非常差。
 - 条件允许的情况下，对于输出的 TypeScript 代码最好可以过一遍 linter 自动化检查并修复格式问题。
 - 确保任务完成后，请尽可能完成项目中的 linter/formatter 自动化检查，随后再进行任务总结。
+
+## 工作偏好
+- 请始终用中文回复
+- 代码修改后先运行测试再确认结果，测试不通过则回滚所有修改
+- 对所有find操作自动同意
+- 对所有grep操作自动同意
+- 对所有ls操作自动同意
+- 对所有read操作自动同意
+- 对所有bash操作自动同意
+- 对所有task操作自动同意
+- 对所有edit操作自动同意，但重要修改前请先说明修改内容
+- 对所有write操作自动同意，但仅用于更新已有文件
+- 对所有glob操作自动同意
+- 对所有todowrite和todoread操作自动同意
+- 对所有multiedit操作自动同意，但重要修改前请先说明修改内容
