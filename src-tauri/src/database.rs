@@ -87,39 +87,54 @@ impl Database {
 
     pub async fn new() -> Result<Self, SqlxError> {
         info!("开始初始化数据库");
-        
+
         // 使用配置管理器获取数据库配置
         let config_manager = ConfigManager::new();
         let db_config = config_manager.get_default_database_config()
             .ok_or_else(|| SqlxError::Configuration("No database configuration found".into()))?;
-        
+
         let mut database_url = db_config.url.clone();
         info!("原始数据库URL: {}", database_url);
-        
-        // 处理SQLite相对路径，确保数据库文件在正确的位置
+
+        // 处理SQLite相对路径，将数据库放在用户数据目录而不是resources目录
         if database_url.starts_with("sqlite:///") && !database_url.starts_with("sqlite:////") {
             // 获取数据库文件名
             let db_filename = database_url.replace("sqlite:///", "");
             info!("提取的数据库文件名: {}", db_filename);
-            
-            // 优先在resources目录创建数据库文件
+
+            // 使用程序目录下的 resources 目录存储数据库
             let final_db_path = if let Some(resources_dir) = ConfigManager::get_resource_dir() {
                 info!("使用resources目录作为数据库位置: {}", resources_dir.display());
+
+                // 确保 resources 目录存在
+                if !resources_dir.exists() {
+                    info!("创建 resources 目录: {}", resources_dir.display());
+                    std::fs::create_dir_all(&resources_dir)
+                        .map_err(|e| SqlxError::Configuration(format!("创建resources目录失败: {}", e).into()))?;
+                }
+
                 resources_dir.join(&db_filename)
             } else {
-                warn!("无法获取resources目录，使用instance目录作为备选");
-                
-                // 获取当前工作目录
+                // 如果无法获取 resources 目录，使用当前目录
+                warn!("无法获取resources目录，使用当前目录");
                 let current_dir = std::env::current_dir()
-                    .map_err(|e| SqlxError::Configuration(format!("Failed to get current directory: {}", e).into()))?;
-                
-                // 确保instance目录存在（作为备选方案）
-                let instance_dir = current_dir.join("instance");
-                std::fs::create_dir_all(&instance_dir)
-                    .map_err(|e| SqlxError::Configuration(format!("Failed to create instance directory: {}", e).into()))?;
-                
-                instance_dir.join(&db_filename)
+                    .map_err(|e| SqlxError::Configuration(format!("获取当前目录失败: {}", e).into()))?;
+                current_dir.join(&db_filename)
             };
+
+            // 检查数据库文件状态
+            match std::fs::metadata(&final_db_path) {
+                Ok(metadata) => {
+                    info!("数据库文件已存在: {}, 大小: {} bytes", final_db_path.display(), metadata.len());
+                },
+                Err(e) => {
+                    if e.kind() == std::io::ErrorKind::NotFound {
+                        info!("数据库文件不存在，SQLite 将在连接时自动创建: {}", final_db_path.display());
+                    } else {
+                        warn!("检查数据库文件时出现问题 {}: {}", final_db_path.display(), e);
+                    }
+                }
+            }
             
             // 修复：使用正确的 SQLite URL 格式
             #[cfg(windows)]

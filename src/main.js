@@ -2011,6 +2011,9 @@ let claudeSettingsData = {
     }
 };
 
+// 标志位，防止重复绑定事件监听器
+let claudeSettingsEventListenersSetup = false;
+
 // Available Claude tools
 const availableClaudeTools = [
     'Read', 'Write', 'Edit', 'MultiEdit', 'Bash', 'Glob', 'Grep', 
@@ -2022,20 +2025,32 @@ const availableClaudeTools = [
 async function loadClaudeSettingsPage() {
     try {
         // 加载现有的配置文件
-        await loadCurrentClaudeSettings();
-        
+        const loadResult = await loadCurrentClaudeSettings();
+
+        // 如果加载失败，显示详细警告信息
+        if (loadResult !== true) {
+            if (loadResult && loadResult.error) {
+                showClaudeSettingsMessage(
+                    '从数据库加载配置失败，正在使用默认配置。错误: ' + loadResult.error,
+                    'warning'
+                );
+            } else {
+                showClaudeSettingsMessage('从数据库加载配置失败，正在使用默认配置', 'warning');
+            }
+        }
+
         // 初始化工具列表
         renderToolsList();
-        
+
         // 初始化环境变量列表
         renderCustomEnvVars();
-        
+
         // 更新预览
         updatePreview();
-        
+
         // 绑定事件监听器
         setupClaudeSettingsEventListeners();
-        
+
     } catch (error) {
         showClaudeSettingsMessage('加载Claude配置失败: ' + getErrorMessage(error), 'error');
     }
@@ -2045,22 +2060,66 @@ async function loadClaudeSettingsPage() {
 async function loadCurrentClaudeSettings() {
     try {
         const settings = await invoke('get_claude_settings_from_db');
+
+        console.log('从数据库加载的Claude配置:', settings);
+
+        // 验证数据结构完整性
+        if (!settings || typeof settings !== 'object') {
+            throw new Error('数据库返回的配置格式无效');
+        }
+
+        // 确保 permissions 对象存在
+        if (!settings.permissions) {
+            settings.permissions = {
+                defaultMode: 'bypassPermissions',
+                allow: ['*'],
+                deny: []
+            };
+        }
+
+        // 确保 permissions.allow 是数组
+        if (!Array.isArray(settings.permissions.allow)) {
+            settings.permissions.allow = ['*'];
+        }
+
+        // 确保 permissions.deny 是数组
+        if (!Array.isArray(settings.permissions.deny)) {
+            settings.permissions.deny = [];
+        }
+
+        // 确保 env 对象存在
+        if (!settings.env) {
+            settings.env = {
+                IS_SANDBOX: '1',
+                DISABLE_AUTOUPDATER: 1
+            };
+        }
+
         claudeSettingsData = settings;
-        
+
+        console.log('验证后的Claude配置:', claudeSettingsData);
+
         // 更新UI
-        document.getElementById('defaultPermissionMode').value = 
+        document.getElementById('defaultPermissionMode').value =
             claudeSettingsData.permissions.defaultMode || 'bypassPermissions';
-        
+
         // 更新工具选择状态
         updateToolsSelection();
-        
+
         // 更新环境变量
-        document.getElementById('sandboxMode').checked = 
+        document.getElementById('sandboxMode').checked =
             claudeSettingsData.env.IS_SANDBOX === '1' || claudeSettingsData.env.IS_SANDBOX === 1;
-        document.getElementById('disableAutoUpdater').checked = 
+        document.getElementById('disableAutoUpdater').checked =
             claudeSettingsData.env.DISABLE_AUTOUPDATER === 1 || claudeSettingsData.env.DISABLE_AUTOUPDATER === '1';
-        
+
+        return true; // 加载成功
+
     } catch (error) {
+        // 显示详细错误信息
+        const errorMsg = getErrorMessage(error);
+        console.error('加载Claude配置失败，使用默认配置:', error);
+        console.error('详细错误:', errorMsg);
+
         // 如果数据库中没有配置，使用默认设置
         claudeSettingsData = {
             permissions: {
@@ -2073,23 +2132,43 @@ async function loadCurrentClaudeSettings() {
                 DISABLE_AUTOUPDATER: 1
             }
         };
+
+        // 更新UI为默认值
+        document.getElementById('defaultPermissionMode').value = 'bypassPermissions';
+        updateToolsSelection();
+        document.getElementById('sandboxMode').checked = true;
+        document.getElementById('disableAutoUpdater').checked = true;
+
+        // 返回错误信息以便显示
+        return { success: false, error: errorMsg };
     }
 }
 
 // 渲染工具列表
 function renderToolsList() {
     const container = document.getElementById('toolsList');
+
+    // 确保数据结构存在
+    if (!claudeSettingsData.permissions || !Array.isArray(claudeSettingsData.permissions.allow)) {
+        console.warn('Claude配置数据不完整，使用默认值');
+        claudeSettingsData.permissions = {
+            defaultMode: 'bypassPermissions',
+            allow: ['*'],
+            deny: []
+        };
+    }
+
     const allowAll = claudeSettingsData.permissions.allow.includes('*');
-    
+
     document.getElementById('allowAllTools').checked = allowAll;
-    
+
     if (allowAll) {
         container.innerHTML = '<div class="text-muted">已允许所有工具 (*)</div>';
     } else {
         container.innerHTML = availableClaudeTools.map(tool => `
             <div class="form-check">
-                <input class="form-check-input tool-checkbox" type="checkbox" 
-                       id="tool-${tool}" value="${tool}" 
+                <input class="form-check-input tool-checkbox" type="checkbox"
+                       id="tool-${tool}" value="${tool}"
                        ${claudeSettingsData.permissions.allow.includes(tool) ? 'checked' : ''}>
                 <label class="form-check-label" for="tool-${tool}">
                     ${tool}
@@ -2097,7 +2176,7 @@ function renderToolsList() {
             </div>
         `).join('');
     }
-    
+
     // 渲染禁用工具列表
     renderDeniedTools();
 }
@@ -2105,14 +2184,28 @@ function renderToolsList() {
 // 渲染禁用工具列表
 function renderDeniedTools() {
     const container = document.getElementById('deniedToolsList');
-    
+
+    // 确保数据结构存在
+    if (!claudeSettingsData.permissions || !Array.isArray(claudeSettingsData.permissions.deny)) {
+        console.warn('Claude配置的deny数据不完整，初始化为空数组');
+        if (!claudeSettingsData.permissions) {
+            claudeSettingsData.permissions = {
+                defaultMode: 'bypassPermissions',
+                allow: ['*'],
+                deny: []
+            };
+        } else {
+            claudeSettingsData.permissions.deny = [];
+        }
+    }
+
     if (claudeSettingsData.permissions.deny.length === 0) {
         container.innerHTML = '<div class="text-muted small">暂无禁用的工具</div>';
     } else {
         container.innerHTML = claudeSettingsData.permissions.deny.map(tool => `
             <span class="badge bg-danger me-2 mb-2">
                 ${tool}
-                <button type="button" class="btn-close btn-close-white ms-1" 
+                <button type="button" class="btn-close btn-close-white ms-1"
                         onclick="removeDeniedTool('${tool}')" style="font-size: 0.7em;"></button>
             </span>
         `).join('');
@@ -2121,6 +2214,16 @@ function renderDeniedTools() {
 
 // 更新工具选择状态
 function updateToolsSelection() {
+    // 确保数据结构存在
+    if (!claudeSettingsData.permissions || !Array.isArray(claudeSettingsData.permissions.allow)) {
+        console.warn('updateToolsSelection: Claude配置数据不完整，使用默认值');
+        claudeSettingsData.permissions = {
+            defaultMode: 'bypassPermissions',
+            allow: ['*'],
+            deny: []
+        };
+    }
+
     const allowAll = claudeSettingsData.permissions.allow.includes('*');
     document.getElementById('allowAllTools').checked = allowAll;
     renderToolsList();
@@ -2129,16 +2232,26 @@ function updateToolsSelection() {
 // 渲染自定义环境变量
 function renderCustomEnvVars() {
     const container = document.getElementById('customEnvList');
+
+    // 确保 env 对象存在
+    if (!claudeSettingsData.env || typeof claudeSettingsData.env !== 'object') {
+        console.warn('Claude配置的env数据不完整，初始化为默认值');
+        claudeSettingsData.env = {
+            IS_SANDBOX: '1',
+            DISABLE_AUTOUPDATER: 1
+        };
+    }
+
     const customEnvVars = Object.entries(claudeSettingsData.env)
         .filter(([key]) => !['IS_SANDBOX', 'DISABLE_AUTOUPDATER'].includes(key));
-    
+
     if (customEnvVars.length === 0) {
         container.innerHTML = '<div class="text-muted small">暂无自定义环境变量</div>';
     } else {
         container.innerHTML = customEnvVars.map(([key, value]) => `
             <div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
                 <code class="flex-grow-1">${key} = ${value}</code>
-                <button class="btn btn-sm btn-outline-danger ms-2" 
+                <button class="btn btn-sm btn-outline-danger ms-2"
                         onclick="removeCustomEnvVar('${key}')">
                     <i class="fas fa-times"></i>
                 </button>
@@ -2149,12 +2262,20 @@ function renderCustomEnvVars() {
 
 // 设置事件监听器
 function setupClaudeSettingsEventListeners() {
+    // 如果已经设置过，则不重复设置
+    if (claudeSettingsEventListenersSetup) {
+        console.log('Claude配置事件监听器已设置，跳过重复绑定');
+        return;
+    }
+
+    console.log('设置Claude配置事件监听器');
+
     // 权限模式变更
     document.getElementById('defaultPermissionMode').addEventListener('change', function() {
         claudeSettingsData.permissions.defaultMode = this.value;
         updatePreview();
     });
-    
+
     // 全选工具变更
     document.getElementById('allowAllTools').addEventListener('change', function() {
         if (this.checked) {
@@ -2165,7 +2286,7 @@ function setupClaudeSettingsEventListeners() {
         updateToolsSelection();
         updatePreview();
     });
-    
+
     // 工具选择变更
     document.addEventListener('change', function(e) {
         if (e.target.classList.contains('tool-checkbox')) {
@@ -2175,24 +2296,27 @@ function setupClaudeSettingsEventListeners() {
                     claudeSettingsData.permissions.allow.push(tool);
                 }
             } else {
-                claudeSettingsData.permissions.allow = 
+                claudeSettingsData.permissions.allow =
                     claudeSettingsData.permissions.allow.filter(t => t !== tool);
             }
             updatePreview();
         }
     });
-    
+
     // 沙盒模式变更
     document.getElementById('sandboxMode').addEventListener('change', function() {
         claudeSettingsData.env.IS_SANDBOX = this.checked ? '1' : '0';
         updatePreview();
     });
-    
+
     // 自动更新变更
     document.getElementById('disableAutoUpdater').addEventListener('change', function() {
         claudeSettingsData.env.DISABLE_AUTOUPDATER = this.checked ? 1 : 0;
         updatePreview();
     });
+
+    // 标记为已设置
+    claudeSettingsEventListenersSetup = true;
 }
 
 // 添加禁用工具
@@ -2294,25 +2418,44 @@ function updatePreview() {
 async function saveClaudeConfigToDatabase() {
     try {
         const jsonContent = document.getElementById('settingsJsonPreview').value;
-        
+
+        console.log('准备保存Claude配置到数据库:', jsonContent);
+
         // 验证JSON格式
+        let parsedJson;
         try {
-            JSON.parse(jsonContent);
+            parsedJson = JSON.parse(jsonContent);
+            console.log('JSON格式验证通过:', parsedJson);
         } catch (error) {
-            showClaudeSettingsMessage('JSON格式错误: ' + error.message, 'error');
+            const errorMsg = 'JSON格式错误: ' + error.message;
+            console.error(errorMsg);
+            showClaudeSettingsMessage(errorMsg, 'error');
             return;
         }
-        
-        await invoke('save_claude_settings_to_db', { settingsJson: jsonContent });
-        showClaudeSettingsMessage('Claude配置保存成功！配置已保存到数据库', 'success');
-        
-        // 如果账号关联页面是活动的，更新配置状态显示
-        if (getActiveTab() === 'association-pane') {
-            await loadClaudeConfigStatusInAssociation();
+
+        try {
+            await invoke('save_claude_settings_to_db', { settingsJson: jsonContent });
+            console.log('Claude配置已成功保存到数据库');
+            showClaudeSettingsMessage('Claude配置保存成功！配置已保存到数据库', 'success');
+
+            // 如果账号关联页面是活动的，更新配置状态显示
+            if (getActiveTab() === 'association-pane') {
+                await loadClaudeConfigStatusInAssociation();
+            }
+        } catch (invokeError) {
+            const errorMsg = getErrorMessage(invokeError);
+            console.error('调用后端保存接口失败:', errorMsg);
+            throw new Error('后端保存失败: ' + errorMsg);
         }
-        
+
     } catch (error) {
-        showClaudeSettingsMessage('保存Claude配置失败: ' + getErrorMessage(error), 'error');
+        console.error('保存Claude配置失败:', error);
+        const detailedError = getErrorMessage(error);
+        showClaudeSettingsMessage(
+            '保存Claude配置失败: ' + detailedError +
+            '\n\n请检查:\n1. 数据库连接是否正常\n2. 数据库表结构是否完整\n3. 查看浏览器控制台获取详细错误信息',
+            'error'
+        );
     }
 }
 
@@ -2340,10 +2483,10 @@ async function getClaudeSettingsForSwitch() {
 // Claude设置消息显示
 function showClaudeSettingsMessage(message, type = 'info') {
     const container = document.getElementById('claudeSettingsStatus');
-    
+
     let alertClass = 'alert-info';
     let icon = 'fas fa-info-circle';
-    
+
     if (type === 'success') {
         alertClass = 'alert-success';
         icon = 'fas fa-check-circle';
@@ -2354,14 +2497,19 @@ function showClaudeSettingsMessage(message, type = 'info') {
         alertClass = 'alert-warning';
         icon = 'fas fa-exclamation-triangle';
     }
-    
+
+    // 将消息中的换行符转换为HTML换行
+    const formattedMessage = message.replace(/\n/g, '<br>');
+
     container.innerHTML = `
         <div class="${alertClass} alert alert-dismissible fade show">
-            <i class="${icon} me-2"></i>${message}
+            <i class="${icon} me-2"></i>
+            <span style="white-space: pre-wrap;">${formattedMessage}</span>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     `;
-    
+
+    // 成功消息自动消失，错误和警告消息需要手动关闭
     if (type === 'success') {
         setTimeout(() => {
             container.innerHTML = '';

@@ -2,6 +2,9 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
+REM Enable ANSI color support
+reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
+
 REM Environment variables will be automatically cleaned up when script exits
 
 echo =============================================
@@ -12,8 +15,8 @@ echo.
 REM Check if running as administrator
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo Warning: Not running as administrator. This may cause permission issues.
-    echo If build fails, try running as administrator.
+    powershell -Command "Write-Host 'Warning: Not running as administrator. This may cause permission issues.' -ForegroundColor Red"
+    powershell -Command "Write-Host 'If build fails, try running as administrator.' -ForegroundColor Red"
     echo.
 )
 
@@ -219,7 +222,7 @@ if %errorlevel% equ 0 (
     echo ==========================================
     echo.
     echo Troubleshooting suggestions:
-    echo 1. Run this script as administrator
+    powershell -Command "Write-Host '1. Run this script as administrator' -ForegroundColor Red"
     echo 2. Check network connection
     echo 3. Close any running instances of the application
     echo 4. Clear cache: rmdir /s /q node_modules ^&^& npm install

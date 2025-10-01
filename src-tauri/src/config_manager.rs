@@ -126,32 +126,39 @@ impl ConfigManager {
         None
     }
     
-    /// 获取resources目录的路径（用于创建新文件）
+    /// 获取应用数据目录（用于存储用户数据，如数据库文件）
+    /// Windows: %APPDATA%\claude-code-config-manager
+    /// Linux/Mac: ~/.claude-code-config-manager
+    #[allow(dead_code)]
+    pub fn get_app_data_dir() -> Option<PathBuf> {
+        let home_dir = std::env::var("APPDATA")
+            .or_else(|_| std::env::var("HOME"))
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .ok()?;
+
+        let app_data_dir = PathBuf::from(home_dir).join(".claude-code-config-manager");
+
+        println!("应用数据目录: {}", app_data_dir.display());
+        Some(app_data_dir)
+    }
+
+    /// 获取resources目录的路径（用于存储数据库等数据文件）
     pub fn get_resource_dir() -> Option<PathBuf> {
-        // 直接使用可执行文件同级的 resources 目录
+        // 使用可执行文件同级的 resources 目录
         if let Ok(exe_path) = std::env::current_exe() {
             if let Some(exe_dir) = exe_path.parent() {
                 let resources_dir = exe_dir.join("resources");
-                
-                // 确保目录存在
-                if !resources_dir.exists() {
-                    match std::fs::create_dir_all(&resources_dir) {
-                        Ok(_) => {
-                            println!("创建resources目录: {}", resources_dir.display());
-                        }
-                        Err(e) => {
-                            println!("无法创建resources目录: {}", e);
-                            return None;
-                        }
-                    }
-                }
-                
-                println!("使用resources目录: {}", resources_dir.display());
+
+                println!("resources目录路径: {}", resources_dir.display());
+                println!("resources目录是否存在: {}", resources_dir.exists());
+
+                // 返回 resources 目录路径（无论是否存在）
+                // 调用者会负责创建目录
                 return Some(resources_dir);
             }
         }
-        
-        println!("无法确定可执行文件路径，resources目录创建失败");
+
+        println!("无法确定可执行文件路径");
         None
     }
     

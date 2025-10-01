@@ -320,17 +320,52 @@ async fn switch_account(
     })?;
     
     drop(db_lock); // Release the lock before doing file operations
-    
+
     // Update Claude configuration file
-    let config_manager = ClaudeConfigManager::new(directory.path);
+    let config_manager = ClaudeConfigManager::new(directory.path.clone());
     config_manager
         .update_env_config_with_options(
-            account.token, 
+            account.token,
             account.base_url,
             isSandbox.unwrap_or(true)
         )
         .map_err(|e| e.to_string())?;
-    
+
+    // Copy remove-root-check.sh to .claude directory
+    let claude_dir = std::path::Path::new(&directory.path).join(".claude");
+
+    // Ensure .claude directory exists
+    if let Err(e) = std::fs::create_dir_all(&claude_dir) {
+        tracing::warn!("创建.claude目录失败: {}，跳过复制脚本", e);
+    } else {
+        let script_content = include_str!("../resources/config/remove-root-check.sh");
+        let script_file = claude_dir.join("remove-root-check.sh");
+
+        match std::fs::write(&script_file, script_content) {
+            Ok(_) => {
+                tracing::info!("remove-root-check.sh 已复制到: {}", script_file.display());
+
+                // Set executable permissions on Unix systems
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    if let Ok(metadata) = std::fs::metadata(&script_file) {
+                        let mut perms = metadata.permissions();
+                        perms.set_mode(0o755);
+                        if let Err(e) = std::fs::set_permissions(&script_file, perms) {
+                            tracing::warn!("设置脚本执行权限失败: {}", e);
+                        } else {
+                            tracing::info!("已设置 remove-root-check.sh 为可执行");
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::warn!("复制 remove-root-check.sh 失败: {}，但不影响主要功能", e);
+            }
+        }
+    }
+
     Ok(message)
 }
 
@@ -763,10 +798,36 @@ async fn switch_account_with_claude_settings(
     
     std::fs::write(&settings_file, settings_json)
         .map_err(|e| format!("写入Claude设置文件失败: {}", e))?;
-    
+
     tracing::info!("Claude设置已写入: {}", settings_file.display());
     tracing::info!("账号环境变量已合并: ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL");
-    
+
+    // Copy remove-root-check.sh to .claude directory
+    let script_content = include_str!("../resources/config/remove-root-check.sh");
+    let script_file = claude_dir.join("remove-root-check.sh");
+
+    match std::fs::write(&script_file, script_content) {
+        Ok(_) => {
+            tracing::info!("remove-root-check.sh 已复制到: {}", script_file.display());
+
+            // Set executable permissions on Unix systems
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+                let mut perms = std::fs::metadata(&script_file)
+                    .map_err(|e| format!("获取脚本文件权限失败: {}", e))?
+                    .permissions();
+                perms.set_mode(0o755);
+                std::fs::set_permissions(&script_file, perms)
+                    .map_err(|e| format!("设置脚本执行权限失败: {}", e))?;
+                tracing::info!("已设置 remove-root-check.sh 为可执行");
+            }
+        }
+        Err(e) => {
+            tracing::warn!("复制 remove-root-check.sh 失败: {}，但不影响主要功能", e);
+        }
+    }
+
     let final_message = format!("{} Claude配置和账号环境变量已写入 .claude/settings.local.json", message);
     Ok(final_message)
 }
