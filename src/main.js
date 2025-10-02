@@ -2383,7 +2383,7 @@ function removeCustomEnvVar(key) {
 // 更新预览
 function updatePreview() {
     const preview = document.getElementById('settingsJsonPreview');
-    
+
     // 清理数据，移除空值
     const cleanData = {
         permissions: {
@@ -2393,24 +2393,28 @@ function updatePreview() {
         },
         env: {}
     };
-    
+
     // 只添加非默认的环境变量
     Object.entries(claudeSettingsData.env).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
+            // 对于开关类型的环境变量，如果值为 '0' 或 0，则不添加到配置中
+            if ((key === 'IS_SANDBOX' || key === 'DISABLE_AUTOUPDATER') && (value === '0' || value === 0)) {
+                return;
+            }
             cleanData.env[key] = value;
         }
     });
-    
+
     // 如果env为空，移除它
     if (Object.keys(cleanData.env).length === 0) {
         delete cleanData.env;
     }
-    
+
     // 如果deny为空数组，移除它
     if (cleanData.permissions.deny.length === 0) {
         delete cleanData.permissions.deny;
     }
-    
+
     preview.value = JSON.stringify(cleanData, null, 2);
 }
 
