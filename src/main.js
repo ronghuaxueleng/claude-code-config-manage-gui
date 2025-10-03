@@ -2106,11 +2106,24 @@ async function loadCurrentClaudeSettings() {
         // 更新工具选择状态
         updateToolsSelection();
 
-        // 更新环境变量
+        // 更新环境变量开关
         document.getElementById('sandboxMode').checked =
             claudeSettingsData.env.IS_SANDBOX === '1' || claudeSettingsData.env.IS_SANDBOX === 1;
         document.getElementById('disableAutoUpdater').checked =
             claudeSettingsData.env.DISABLE_AUTOUPDATER === 1 || claudeSettingsData.env.DISABLE_AUTOUPDATER === '1';
+        document.getElementById('disablePromptCaching').checked =
+            claudeSettingsData.env.DISABLE_PROMPT_CACHING === 1 || claudeSettingsData.env.DISABLE_PROMPT_CACHING === '1';
+
+        // 更新文本型环境变量
+        document.getElementById('anthropicModel').value = claudeSettingsData.env.ANTHROPIC_MODEL || '';
+        document.getElementById('smallFastModel').value = claudeSettingsData.env.ANTHROPIC_SMALL_FAST_MODEL || '';
+
+        // 更新数值型环境变量
+        document.getElementById('maxOutputTokens').value = claudeSettingsData.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '';
+        document.getElementById('maxThinkingTokens').value = claudeSettingsData.env.MAX_THINKING_TOKENS || '';
+        document.getElementById('maxMcpOutputTokens').value = claudeSettingsData.env.MAX_MCP_OUTPUT_TOKENS || '';
+        document.getElementById('bashTimeout').value = claudeSettingsData.env.BASH_DEFAULT_TIMEOUT_MS || '';
+        document.getElementById('mcpTimeout').value = claudeSettingsData.env.MCP_TIMEOUT || '';
 
         return true; // 加载成功
 
@@ -2242,8 +2255,22 @@ function renderCustomEnvVars() {
         };
     }
 
+    // 过滤掉系统管理的环境变量
+    const systemManagedEnvVars = [
+        'IS_SANDBOX',
+        'DISABLE_AUTOUPDATER',
+        'DISABLE_PROMPT_CACHING',
+        'ANTHROPIC_MODEL',
+        'ANTHROPIC_SMALL_FAST_MODEL',
+        'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
+        'MAX_THINKING_TOKENS',
+        'MAX_MCP_OUTPUT_TOKENS',
+        'BASH_DEFAULT_TIMEOUT_MS',
+        'MCP_TIMEOUT'
+    ];
+
     const customEnvVars = Object.entries(claudeSettingsData.env)
-        .filter(([key]) => !['IS_SANDBOX', 'DISABLE_AUTOUPDATER'].includes(key));
+        .filter(([key]) => !systemManagedEnvVars.includes(key));
 
     if (customEnvVars.length === 0) {
         container.innerHTML = '<div class="text-muted small">暂无自定义环境变量</div>';
@@ -2315,6 +2342,89 @@ function setupClaudeSettingsEventListeners() {
         updatePreview();
     });
 
+    // 禁用提示缓存变更
+    document.getElementById('disablePromptCaching').addEventListener('change', function() {
+        claudeSettingsData.env.DISABLE_PROMPT_CACHING = this.checked ? 1 : 0;
+        updatePreview();
+    });
+
+    // 指定模型变更
+    document.getElementById('anthropicModel').addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value) {
+            claudeSettingsData.env.ANTHROPIC_MODEL = value;
+        } else {
+            delete claudeSettingsData.env.ANTHROPIC_MODEL;
+        }
+        updatePreview();
+    });
+
+    // 快速模型变更
+    document.getElementById('smallFastModel').addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value) {
+            claudeSettingsData.env.ANTHROPIC_SMALL_FAST_MODEL = value;
+        } else {
+            delete claudeSettingsData.env.ANTHROPIC_SMALL_FAST_MODEL;
+        }
+        updatePreview();
+    });
+
+    // 最大输出Token数变更
+    document.getElementById('maxOutputTokens').addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value) {
+            claudeSettingsData.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS = parseInt(value);
+        } else {
+            delete claudeSettingsData.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS;
+        }
+        updatePreview();
+    });
+
+    // 最大思考Token数变更
+    document.getElementById('maxThinkingTokens').addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value) {
+            claudeSettingsData.env.MAX_THINKING_TOKENS = parseInt(value);
+        } else {
+            delete claudeSettingsData.env.MAX_THINKING_TOKENS;
+        }
+        updatePreview();
+    });
+
+    // MCP输出Token限制变更
+    document.getElementById('maxMcpOutputTokens').addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value) {
+            claudeSettingsData.env.MAX_MCP_OUTPUT_TOKENS = parseInt(value);
+        } else {
+            delete claudeSettingsData.env.MAX_MCP_OUTPUT_TOKENS;
+        }
+        updatePreview();
+    });
+
+    // Bash超时时间变更
+    document.getElementById('bashTimeout').addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value) {
+            claudeSettingsData.env.BASH_DEFAULT_TIMEOUT_MS = parseInt(value);
+        } else {
+            delete claudeSettingsData.env.BASH_DEFAULT_TIMEOUT_MS;
+        }
+        updatePreview();
+    });
+
+    // MCP超时时间变更
+    document.getElementById('mcpTimeout').addEventListener('input', function() {
+        const value = this.value.trim();
+        if (value) {
+            claudeSettingsData.env.MCP_TIMEOUT = parseInt(value);
+        } else {
+            delete claudeSettingsData.env.MCP_TIMEOUT;
+        }
+        updatePreview();
+    });
+
     // 标记为已设置
     claudeSettingsEventListenersSetup = true;
 }
@@ -2361,8 +2471,22 @@ function addCustomEnvVar() {
         return;
     }
     
-    if (['IS_SANDBOX', 'DISABLE_AUTOUPDATER'].includes(key)) {
-        showClaudeSettingsMessage('该环境变量由系统管理，请使用上面的开关', 'warning');
+    // 检查是否是系统管理的环境变量
+    const systemManagedEnvVars = [
+        'IS_SANDBOX',
+        'DISABLE_AUTOUPDATER',
+        'DISABLE_PROMPT_CACHING',
+        'ANTHROPIC_MODEL',
+        'ANTHROPIC_SMALL_FAST_MODEL',
+        'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
+        'MAX_THINKING_TOKENS',
+        'MAX_MCP_OUTPUT_TOKENS',
+        'BASH_DEFAULT_TIMEOUT_MS',
+        'MCP_TIMEOUT'
+    ];
+
+    if (systemManagedEnvVars.includes(key)) {
+        showClaudeSettingsMessage('该环境变量由系统管理，请使用上面的配置选项', 'warning');
         return;
     }
     
@@ -2398,7 +2522,8 @@ function updatePreview() {
     Object.entries(claudeSettingsData.env).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
             // 对于开关类型的环境变量，如果值为 '0' 或 0，则不添加到配置中
-            if ((key === 'IS_SANDBOX' || key === 'DISABLE_AUTOUPDATER') && (value === '0' || value === 0)) {
+            const switchEnvVars = ['IS_SANDBOX', 'DISABLE_AUTOUPDATER', 'DISABLE_PROMPT_CACHING'];
+            if (switchEnvVars.includes(key) && (value === '0' || value === 0)) {
                 return;
             }
             cleanData.env[key] = value;

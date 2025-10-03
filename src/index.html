@@ -319,7 +319,7 @@
                                     <div class="form-text">
                                         <i class="fas fa-exclamation-triangle text-warning"></i>
                                         bypassPermissions模式会跳过所有安全检查，请谨慎使用<br>
-                                        <small>如果提示 <code>--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons</code>，请执行 <code>cd .claude && sh remove-root-check.sh</code></small>
+                                        <small>如果提示 <code>--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons</code>，请执行 <code>sh .claude/remove-root-check.sh</code></small>
                                     </div>
                                 </div>
 
@@ -384,6 +384,75 @@
                                     </div>
                                     <div class="form-text">
                                         禁用Claude Code的自动更新功能
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">提示缓存</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="disablePromptCaching">
+                                        <label class="form-check-label" for="disablePromptCaching">
+                                            禁用提示缓存 (DISABLE_PROMPT_CACHING)
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        禁用提示缓存可能增加成本但确保每次都是新鲜响应
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">指定模型</label>
+                                    <input type="text" class="form-control" id="anthropicModel" placeholder="例如: claude-sonnet-4-20250514">
+                                    <div class="form-text">
+                                        指定使用的Claude模型 (ANTHROPIC_MODEL)
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">快速模型</label>
+                                    <input type="text" class="form-control" id="smallFastModel" placeholder="例如: claude-3-5-haiku-20241022">
+                                    <div class="form-text">
+                                        指定小型快速模型，用于简单任务 (ANTHROPIC_SMALL_FAST_MODEL)
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">最大输出Token数</label>
+                                    <input type="number" class="form-control" id="maxOutputTokens" placeholder="例如: 64000">
+                                    <div class="form-text">
+                                        设置Claude响应的最大输出token数 (CLAUDE_CODE_MAX_OUTPUT_TOKENS)，Sonnet支持最高64000
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">最大思考Token数</label>
+                                    <input type="number" class="form-control" id="maxThinkingTokens" placeholder="例如: 10000">
+                                    <div class="form-text">
+                                        设置Claude思考时的最大token数 (MAX_THINKING_TOKENS)
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">MCP输出Token限制</label>
+                                    <input type="number" class="form-control" id="maxMcpOutputTokens" placeholder="例如: 25000">
+                                    <div class="form-text">
+                                        设置MCP工具输出的最大token数 (MAX_MCP_OUTPUT_TOKENS)
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Bash命令超时时间(毫秒)</label>
+                                    <input type="number" class="form-control" id="bashTimeout" placeholder="例如: 120000">
+                                    <div class="form-text">
+                                        设置Bash命令执行超时时间，单位毫秒 (BASH_DEFAULT_TIMEOUT_MS)
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">MCP超时时间(毫秒)</label>
+                                    <input type="number" class="form-control" id="mcpTimeout" placeholder="例如: 60000">
+                                    <div class="form-text">
+                                        设置MCP服务器超时时间，单位毫秒 (MCP_TIMEOUT)
                                     </div>
                                 </div>
 

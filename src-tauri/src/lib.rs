@@ -59,8 +59,13 @@ async fn create_account(
             Ok(account)
         }
         Err(e) => {
-            tracing::error!("创建账号失败: {}", e);
-            Err(format!("创建账号失败: {}", e))
+            let error_msg = e.to_string();
+            tracing::error!("创建账号失败: {}", error_msg);
+            if error_msg.contains("UNIQUE constraint failed: accounts.name") {
+                Err("账号名称已存在".to_string())
+            } else {
+                Err(format!("创建账号失败: {}", error_msg))
+            }
         }
     }
 }
@@ -85,7 +90,14 @@ async fn update_account(
     
     db.update_account(id, request)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            if error_msg.contains("UNIQUE constraint failed: accounts.name") {
+                "账号名称已存在".to_string()
+            } else {
+                error_msg
+            }
+        })
 }
 
 #[tauri::command]
@@ -139,10 +151,17 @@ async fn create_directory(
 ) -> Result<Directory, String> {
     let db = db.lock().await;
     let request = CreateDirectoryRequest { path, name };
-    
+
     db.create_directory(request)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            if error_msg.contains("UNIQUE constraint failed: directories.path") {
+                "目录已存在".to_string()
+            } else {
+                error_msg
+            }
+        })
 }
 
 #[tauri::command]
@@ -154,10 +173,17 @@ async fn update_directory(
 ) -> Result<Directory, String> {
     let db = db.lock().await;
     let request = UpdateDirectoryRequest { path, name };
-    
+
     db.update_directory(id, request)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            if error_msg.contains("UNIQUE constraint failed: directories.path") {
+                "目录已存在".to_string()
+            } else {
+                error_msg
+            }
+        })
 }
 
 #[tauri::command]
@@ -230,7 +256,16 @@ async fn create_base_url(
     
     db.create_base_url(request)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            if error_msg.contains("UNIQUE constraint failed: base_urls.name") {
+                "Base URL 名称已存在".to_string()
+            } else if error_msg.contains("UNIQUE constraint failed: base_urls.url") {
+                "Base URL 地址已存在".to_string()
+            } else {
+                error_msg
+            }
+        })
 }
 
 #[tauri::command]
@@ -252,7 +287,16 @@ async fn update_base_url(
     
     db.update_base_url(id, request)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            if error_msg.contains("UNIQUE constraint failed: base_urls.name") {
+                "Base URL 名称已存在".to_string()
+            } else if error_msg.contains("UNIQUE constraint failed: base_urls.url") {
+                "Base URL 地址已存在".to_string()
+            } else {
+                error_msg
+            }
+        })
 }
 
 #[tauri::command]
