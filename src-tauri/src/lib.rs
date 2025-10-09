@@ -980,19 +980,98 @@ async fn download_config_from_webdav(
         .await
         .map_err(|e| format!("下载配置失败: {}", e))?;
 
-    // TODO: 实现配置导入逻辑
-    // 这里需要将下载的数据导入到数据库中
+    // 导入配置到数据库
+    let db_lock = db.lock().await;
+
+    // 解析账号数据
+    if let Some(accounts_array) = data.get("accounts").and_then(|v| v.as_array()) {
+        for account_data in accounts_array {
+            if let (Some(name), Some(token), Some(base_url)) = (
+                account_data.get("name").and_then(|v| v.as_str()),
+                account_data.get("token").and_then(|v| v.as_str()),
+                account_data.get("base_url").and_then(|v| v.as_str()),
+            ) {
+                let model = account_data.get("model")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("claude-sonnet-4-20250514");
+
+                // 创建账号，如果已存在则忽略错误
+                let request = CreateAccountRequest {
+                    name: name.to_string(),
+                    token: token.to_string(),
+                    base_url: base_url.to_string(),
+                    model: model.to_string(),
+                };
+
+                match db_lock.create_account(request).await {
+                    Ok(_) => tracing::info!("导入账号成功: {}", name),
+                    Err(e) => {
+                        if e.to_string().contains("UNIQUE constraint") {
+                            tracing::debug!("账号已存在，跳过: {}", name);
+                        } else {
+                            tracing::warn!("导入账号失败: {} - {}", name, e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 解析 Base URLs 数据
+    if let Some(base_urls_array) = data.get("base_urls").and_then(|v| v.as_array()) {
+        for base_url_data in base_urls_array {
+            if let (Some(name), Some(url)) = (
+                base_url_data.get("name").and_then(|v| v.as_str()),
+                base_url_data.get("url").and_then(|v| v.as_str()),
+            ) {
+                let description = base_url_data.get("description")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+                let is_default = base_url_data.get("is_default")
+                    .and_then(|v| v.as_bool());
+
+                let request = CreateBaseUrlRequest {
+                    name: name.to_string(),
+                    url: url.to_string(),
+                    description,
+                    is_default,
+                };
+
+                match db_lock.create_base_url(request).await {
+                    Ok(_) => tracing::info!("导入 Base URL 成功: {}", name),
+                    Err(e) => {
+                        if e.to_string().contains("UNIQUE constraint") {
+                            tracing::debug!("Base URL 已存在，跳过: {}", name);
+                        } else {
+                            tracing::warn!("导入 Base URL 失败: {} - {}", name, e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 解析 Claude 设置数据
+    if let Some(claude_settings) = data.get("claude_settings") {
+        let settings_json = serde_json::to_string(claude_settings)
+            .map_err(|e| format!("序列化 Claude 设置失败: {}", e))?;
+
+        match db_lock.save_claude_settings(&settings_json).await {
+            Ok(_) => tracing::info!("导入 Claude 设置成功"),
+            Err(e) => tracing::warn!("导入 Claude 设置失败: {}", e),
+        }
+    }
+
+    let pool = db_lock.get_pool();
 
     // 记录同步日志
-    let db_lock = db.lock().await;
-    let pool = db_lock.get_pool();
     webdav::create_sync_log(
         pool,
         CreateSyncLogRequest {
             webdav_config_id: config_id,
             sync_type: "download".to_string(),
             status: "success".to_string(),
-            message: Some(format!("成功下载配置文件: {}", filename)),
+            message: Some(format!("成功下载并导入配置文件: {}", filename)),
         },
     )
     .await
@@ -1002,7 +1081,9 @@ async fn download_config_from_webdav(
         .await
         .map_err(|e| format!("更新同步时间失败: {}", e))?;
 
-    Ok(format!("配置已成功从WebDAV下载: {}\n数据: {}", filename, serde_json::to_string_pretty(&data).unwrap_or_default()))
+    drop(db_lock);
+
+    Ok(format!("配置已成功从 WebDAV 下载并导入到数据库: {}", filename))
 }
 
 #[tauri::command]

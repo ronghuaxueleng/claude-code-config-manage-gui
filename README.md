@@ -164,14 +164,14 @@ xcode-select --install
 
 ```bash
 # 1. 克隆仓库
-git clone <repository-url>
+git clone https://github.com/ronghuaxueleng/claude-code-config-manage-gui.git
 cd claude-code-config-manage-gui
 
 # 2. 安装前端依赖
 npm install
 
 # 3. 启动开发服务器 (支持热重载)
-npm run tauri dev
+npm run dev
 ```
 
 ### 🏗️ 生产构建
