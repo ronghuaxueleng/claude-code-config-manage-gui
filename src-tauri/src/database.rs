@@ -11,6 +11,10 @@ pub struct Database {
 }
 
 impl Database {
+    /// 获取数据库连接池引用
+    pub fn get_pool(&self) -> &SqlitePool {
+        &self.pool
+    }
     /// 创建带有回退策略的数据库连接
     /// 当正常初始化失败时，尝试在用户主目录创建数据库
     pub async fn create_with_fallback() -> Result<Self, SqlxError> {
@@ -320,17 +324,67 @@ impl Database {
         .execute(&self.pool)
         .await?;
 
+        // Create webdav_configs table for WebDAV synchronization
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS webdav_configs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                url TEXT NOT NULL,
+                username TEXT NOT NULL,
+                password TEXT NOT NULL,
+                remote_path TEXT NOT NULL DEFAULT '/claude-config',
+                auto_sync BOOLEAN NOT NULL DEFAULT FALSE,
+                sync_interval INTEGER NOT NULL DEFAULT 3600,
+                is_active BOOLEAN NOT NULL DEFAULT FALSE,
+                last_sync_at DATETIME,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            "#,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        // Create sync_logs table for tracking synchronization history
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS sync_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                webdav_config_id INTEGER NOT NULL,
+                sync_type TEXT NOT NULL CHECK(sync_type IN ('upload', 'download', 'auto')),
+                status TEXT NOT NULL CHECK(status IN ('success', 'failed', 'pending')),
+                message TEXT,
+                synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (webdav_config_id) REFERENCES webdav_configs (id) ON DELETE CASCADE
+            )
+            "#,
+        )
+        .execute(&self.pool)
+        .await?;
+
         // Initialize only essential default data
         self.initialize_default_base_urls().await?;
         // 不再初始化示例账号和目录数据
-        
+
         // 输出初始化完成信息
         let base_url_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM base_urls")
             .fetch_one(&self.pool).await?;
-        
+
         println!("数据库初始化完成 - 默认 API 端点: {} 个", base_url_count);
         println!("数据库已就绪，请在界面中添加您的账号和项目目录");
 
+        Ok(())
+    }
+
+    /// 迁移数据库，确保所有表都存在
+    pub async fn migrate(&self) -> Result<(), SqlxError> {
+        info!("开始数据库迁移检查");
+
+        // 重新运行所有表创建语句（使用 IF NOT EXISTS，不会影响现有表）
+        self.initialize().await?;
+
+        info!("数据库迁移完成");
         Ok(())
     }
 
@@ -778,17 +832,40 @@ impl Database {
     }
 
     pub async fn delete_base_url(&self, id: i64) -> Result<(), SqlxError> {
-        // Base URL表通常没有外键引用，但仍添加验证
+        // 先获取要删除的 base_url 信息
+        let base_url = self.get_base_url(id).await?;
+
+        // 查找使用这个 base_url 的所有账号
+        let affected_accounts: Vec<(i64, String)> = sqlx::query_as(
+            "SELECT id, name FROM accounts WHERE base_url = ?"
+        )
+        .bind(&base_url.url)
+        .fetch_all(&self.pool)
+        .await?;
+
+        if !affected_accounts.is_empty() {
+            info!("删除 Base URL '{}' 时，同时删除 {} 个关联的账号", base_url.name, affected_accounts.len());
+
+            // 删除所有使用该 base_url 的账号
+            for (account_id, account_name) in affected_accounts {
+                info!("删除账号: {} (ID: {})，因为其使用的 Base URL 被删除", account_name, account_id);
+
+                // 删除账号（会自动级联删除关联记录）
+                self.delete_account(account_id).await?;
+            }
+        }
+
+        // 删除 Base URL 记录
         let result = sqlx::query("DELETE FROM base_urls WHERE id = ?")
             .bind(id)
             .execute(&self.pool)
             .await?;
-            
+
         if result.rows_affected() == 0 {
             return Err(SqlxError::RowNotFound);
         }
-        
-        info!("成功删除Base URL，ID: {}", id);
+
+        info!("成功删除Base URL '{}' (ID: {})", base_url.name, id);
         Ok(())
     }
 

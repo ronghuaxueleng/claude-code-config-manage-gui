@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Claude Code配置管理</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css" />
     <script type="module" src="main.js?v=16" defer></script>
+    <script type="module" src="webdav.js" defer></script>
 </head>
 <body>
     <!-- 导航栏 -->
@@ -51,16 +52,22 @@
                     <i class="fas fa-globe"></i> URL管理
                 </button>
             </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="database-tab" data-bs-toggle="tab" data-bs-target="#database-pane" 
+            <li class="nav-item" role="presentation" style="display: none;">
+                <button class="nav-link" id="database-tab" data-bs-toggle="tab" data-bs-target="#database-pane"
                         type="button" role="tab" aria-controls="database-pane" aria-selected="false">
                     <i class="fas fa-database"></i> 数据库管理
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="claude-settings-tab" data-bs-toggle="tab" data-bs-target="#claude-settings-pane" 
+                <button class="nav-link" id="claude-settings-tab" data-bs-toggle="tab" data-bs-target="#claude-settings-pane"
                         type="button" role="tab" aria-controls="claude-settings-pane" aria-selected="false">
                     <i class="fas fa-sliders-h"></i> Claude配置
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="webdav-tab" data-bs-toggle="tab" data-bs-target="#webdav-pane"
+                        type="button" role="tab" aria-controls="webdav-pane" aria-selected="false">
+                    <i class="fas fa-cloud"></i> WebDAV同步
                 </button>
             </li>
         </ul>
@@ -116,9 +123,14 @@
             <div class="tab-pane fade" id="directories-pane" role="tabpanel" aria-labelledby="directories-tab">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h5 class="mb-0">目录管理</h5>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#directoryModal">
-                        <i class="fas fa-plus"></i> 添加目录
-                    </button>
+                    <div>
+                        <button id="cleanupInvalidDirBtn" class="btn btn-warning btn-sm me-2" onclick="cleanupInvalidDirectories()" style="display: none;">
+                            <i class="fas fa-broom"></i> 清除无效目录
+                        </button>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#directoryModal">
+                            <i class="fas fa-plus"></i> 添加目录
+                        </button>
+                    </div>
                 </div>
                 <div id="directoriesList" class="list-group">
                     <!-- 目录列表将通过JavaScript动态加载 -->
@@ -517,6 +529,66 @@
                     </div>
                 </div>
             </div>
+
+            <!-- WebDAV同步标签页 -->
+            <div class="tab-pane fade" id="webdav-pane" role="tabpanel" aria-labelledby="webdav-tab">
+                <div class="row">
+                    <!-- WebDAV配置列表 -->
+                    <div class="col-md-5">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cloud me-2"></i>WebDAV配置
+                                </h5>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#webdavConfigModal">
+                                    <i class="fas fa-plus"></i> 添加配置
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="webdavConfigsList" class="list-group">
+                                    <!-- WebDAV配置列表将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- WebDAV操作面板 -->
+                    <div class="col-md-7">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-sync-alt me-2"></i>同步操作
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="webdavOperationPanel">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        请先选择或添加 WebDAV 配置
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 同步日志 -->
+                        <div class="card mt-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-history me-2"></i>同步日志
+                                </h5>
+                                <button class="btn btn-secondary btn-sm" onclick="loadSyncLogs()">
+                                    <i class="fas fa-sync"></i> 刷新
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="syncLogsList" style="max-height: 400px; overflow-y: auto;">
+                                    <!-- 同步日志将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -654,6 +726,84 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- WebDAV配置模态框 -->
+    <div class="modal fade" id="webdavConfigModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">WebDAV配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="webdavConfigForm">
+                        <div class="mb-3">
+                            <label for="webdavName" class="form-label">配置名称</label>
+                            <input type="text" class="form-control" id="webdavName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="webdavUrl" class="form-label">WebDAV服务器地址</label>
+                            <input type="url" class="form-control" id="webdavUrl" required
+                                   placeholder="https://dav.example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="webdavUsername" class="form-label">用户名</label>
+                            <input type="text" class="form-control" id="webdavUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="webdavPassword" class="form-label">密码</label>
+                            <input type="password" class="form-control" id="webdavPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="webdavRemotePath" class="form-label">远程路径</label>
+                            <input type="text" class="form-control" id="webdavRemotePath"
+                                   value="/claude-config" placeholder="/claude-config">
+                            <div class="form-text">配置文件在WebDAV服务器上的存储路径</div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="webdavAutoSync">
+                                <label class="form-check-label" for="webdavAutoSync">
+                                    启用自动同步
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="webdavSyncInterval" class="form-label">同步间隔(秒)</label>
+                            <input type="number" class="form-control" id="webdavSyncInterval"
+                                   value="3600" min="60" placeholder="3600">
+                            <div class="form-text">自动同步的时间间隔(秒)</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveWebdavConfig">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义确认对话框 -->
+    <div class="modal fade" id="customConfirmModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customConfirmTitle">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>确认操作
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body" id="customConfirmMessage">
+                    <!-- 确认消息将通过JavaScript动态填充 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="customConfirmCancel">取消</button>
+                    <button type="button" class="btn btn-danger" id="customConfirmOk">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

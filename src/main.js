@@ -1,9 +1,59 @@
 const { invoke } = window.__TAURI__.core;
-const { open, ask } = window.__TAURI__.dialog;
+const { open } = window.__TAURI__.dialog;
 
 // 全局变量跟踪测试状态
 let lastTestedConnection = null;
 let lastTestResult = null;
+
+// 自定义确认对话框函数
+async function customConfirm(message, title = '确认操作') {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('customConfirmModal');
+        const titleElement = document.getElementById('customConfirmTitle');
+        const messageElement = document.getElementById('customConfirmMessage');
+        const okButton = document.getElementById('customConfirmOk');
+        const cancelButton = document.getElementById('customConfirmCancel');
+
+        // 设置标题和消息
+        titleElement.innerHTML = '<i class="fas fa-exclamation-triangle text-warning me-2"></i>' + title;
+        messageElement.textContent = message;
+
+        // 创建Bootstrap模态框实例
+        const bsModal = new bootstrap.Modal(modal, {
+            backdrop: 'static',
+            keyboard: false
+        });
+
+        // 确定按钮点击事件
+        const handleOk = () => {
+            bsModal.hide();
+            resolve(true);
+            cleanup();
+        };
+
+        // 取消按钮点击事件
+        const handleCancel = () => {
+            bsModal.hide();
+            resolve(false);
+            cleanup();
+        };
+
+        // 清理事件监听器
+        const cleanup = () => {
+            okButton.removeEventListener('click', handleOk);
+            cancelButton.removeEventListener('click', handleCancel);
+            modal.removeEventListener('hidden.bs.modal', handleCancel);
+        };
+
+        // 绑定事件监听器
+        okButton.addEventListener('click', handleOk);
+        cancelButton.addEventListener('click', handleCancel);
+        modal.addEventListener('hidden.bs.modal', handleCancel, { once: true });
+
+        // 显示模态框
+        bsModal.show();
+    });
+}
 
 // Global variables
 let accounts = [];
@@ -422,7 +472,16 @@ async function renderDirectories() {
             }
         })
     );
-    
+
+    // 检查是否存在无效目录
+    const hasInvalidDirectories = directoriesWithStatus.some(dir => !dir.exists);
+
+    // 显示或隐藏清除无效目录按钮
+    const cleanupBtn = document.getElementById('cleanupInvalidDirBtn');
+    if (cleanupBtn) {
+        cleanupBtn.style.display = hasInvalidDirectories ? 'inline-block' : 'none';
+    }
+
     container.innerHTML = directoriesWithStatus.map(directory => `
         <div class="list-group-item ${!directory.exists ? 'directory-missing' : ''}">
             <div class="directory-item">
@@ -511,7 +570,10 @@ async function saveDirectory() {
     try {
         const pathExists = await tauriCheckDirectoryExists(path);
         if (!pathExists) {
-            const confirmed = confirm(`路径 "${path}" 在文件系统中不存在。\n\n确定要继续添加吗？\n\n注意：您稍后可以在目录列表中清理不存在的目录记录。`);
+            const confirmed = await customConfirm(
+                `路径 "${path}" 在文件系统中不存在。\n\n确定要继续添加吗？\n\n注意：您稍后可以在目录列表中清理不存在的目录记录。`,
+                '路径不存在'
+            );
             if (!confirmed) {
                 return;
             }
@@ -677,8 +739,11 @@ async function promptDeleteAccount(accountId) {
         // 用户确认后才执行删除
         await executeDeleteAccount(accountId, accountName);
     } catch (error) {
-        // 如果 Tauri 对话框失败，fallback 到浏览器 confirm
-        const userConfirmed = confirm(`确定要删除账号 "${accountName}" 吗？\n\n此操作不可撤销！`);
+        // 如果 Tauri 对话框失败，fallback 到自定义确认对话框
+        const userConfirmed = await customConfirm(
+            `确定要删除账号 "${accountName}" 吗？\n\n此操作不可撤销！`,
+            '确认删除账号'
+        );
         if (userConfirmed) {
             await executeDeleteAccount(accountId, accountName);
         }
@@ -699,10 +764,14 @@ async function executeDeleteAccount(accountId, accountName) {
 
 // Delete account (legacy function for compatibility)
 async function deleteAccount(accountId) {
-    if (!confirm('确定要删除这个账号吗？')) {
+    const confirmed = await customConfirm(
+        '确定要删除这个账号吗？',
+        '确认删除账号'
+    );
+    if (!confirmed) {
         return;
     }
-    
+
     try {
         await tauriDeleteAccount(accountId);
         await loadAccounts(currentAccountPage);
@@ -800,18 +869,97 @@ async function promptDeleteDirectory(directoryId, directoryName) {
         // 用户确认后才执行删除
         await executeDelete(directoryId, directoryName);
     } catch (error) {
-        // 如果 Tauri 对话框失败，fallback 到浏览器 confirm
-        const userConfirmed = confirm(confirmMessage);
+        // 如果 Tauri 对话框失败，fallback 到自定义确认对话框
+        const userConfirmed = await customConfirm(confirmMessage, confirmTitle);
         if (userConfirmed) {
             await executeDelete(directoryId, directoryName);
         }
     }
 }
 
+// 清除所有无效目录
+async function cleanupInvalidDirectories() {
+    // 防止重复操作
+    if (isDeleting) {
+        await ask('删除操作正在进行中，请稍候...', { title: '提示', type: 'info' });
+        return;
+    }
+
+    try {
+        // 检查所有目录的存在性
+        const directoriesWithStatus = await Promise.all(
+            directories.map(async directory => {
+                try {
+                    const exists = await tauriCheckDirectoryExists(directory.path);
+                    return { ...directory, exists };
+                } catch (error) {
+                    console.warn('检查目录存在性失败:', error);
+                    return { ...directory, exists: true }; // 默认认为存在
+                }
+            })
+        );
+
+        // 找出所有不存在的目录
+        const invalidDirectories = directoriesWithStatus.filter(dir => !dir.exists);
+
+        if (invalidDirectories.length === 0) {
+            showSuccess('没有发现无效目录');
+            return;
+        }
+
+        // 显示确认对话框
+        const directoryNames = invalidDirectories.map(d => d.name).join('\n- ');
+        const confirmMessage = `发现 ${invalidDirectories.length} 个无效目录：\n\n- ${directoryNames}\n\n确定要清除这些无效目录的数据库记录吗？`;
+
+        const userConfirmed = await ask(
+            confirmMessage,
+            {
+                title: '确认清除无效目录',
+                type: 'warning'
+            }
+        );
+
+        if (!userConfirmed) {
+            return;
+        }
+
+        // 批量删除无效目录
+        isDeleting = true;
+        let successCount = 0;
+        let failCount = 0;
+        const errors = [];
+
+        for (const directory of invalidDirectories) {
+            try {
+                await tauriDeleteDirectory(directory.id);
+                successCount++;
+            } catch (error) {
+                failCount++;
+                errors.push(`${directory.name}: ${getErrorMessage(error)}`);
+                console.error(`删除目录 ${directory.name} 失败:`, error);
+            }
+        }
+
+        // 重新加载目录列表
+        await loadDirectories();
+
+        // 显示结果
+        if (failCount === 0) {
+            showSuccess(`成功清除 ${successCount} 个无效目录`);
+        } else {
+            showError(`清除完成：成功 ${successCount} 个，失败 ${failCount} 个\n失败详情：\n${errors.join('\n')}`);
+        }
+    } catch (error) {
+        showError('清除无效目录失败: ' + getErrorMessage(error));
+    } finally {
+        isDeleting = false;
+    }
+}
+
 // 执行实际的删除操作
 async function executeDelete(directoryId, directoryName) {
     isDeleting = true;
-    
+
     try {
         await tauriDeleteDirectory(directoryId);
         await loadDirectories();
@@ -1042,25 +1190,35 @@ async function onDirectorySelectionChange(directoryId) {
         // Get config status
         const config = await tauriGetCurrentConfig(directoryId);
         const envConfig = config.env_config;
-        
+
         let statusHtml = '';
         if (Object.keys(envConfig).length > 0) {
             const hasToken = envConfig.ANTHROPIC_API_KEY || envConfig.CLAUDE_API_KEY || envConfig.ANTHROPIC_AUTH_TOKEN;
             const hasBaseUrl = envConfig.ANTHROPIC_BASE_URL || envConfig.CLAUDE_BASE_URL;
-            
+
+            // 尝试根据token匹配找到对应的账号
+            let matchedAccount = null;
+            if (hasToken && associationAccounts.length > 0) {
+                matchedAccount = associationAccounts.find(account => account.token === hasToken);
+            }
+
             statusHtml = `
                 <div class="alert alert-success">
                     <h6 class="alert-heading">
                         <i class="fas fa-check-circle me-2"></i>配置状态
                     </h6>
+                    ${matchedAccount ? `<p class="mb-1">
+                        <strong>当前账号:</strong>
+                        <span class="badge bg-primary">${matchedAccount.name}</span>
+                    </p>` : ''}
                     <p class="mb-1">
-                        <strong>API密钥:</strong> 
+                        <strong>API密钥:</strong>
                         <span class="badge ${hasToken ? 'bg-success' : 'bg-danger'}">
                             ${hasToken ? '已配置' : '未配置'}
                         </span>
                     </p>
                     <p class="mb-0">
-                        <strong>Base URL:</strong> 
+                        <strong>Base URL:</strong>
                         <span class="badge ${hasBaseUrl ? 'bg-success' : 'bg-danger'}">
                             ${hasBaseUrl ? '已配置' : '未配置'}
                         </span>
@@ -1192,7 +1350,10 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
         if (directory) {
             const pathExists = await tauriCheckDirectoryExists(directory.path);
             if (!pathExists) {
-                const confirmed = confirm(`目录 "${directory.name}" (${directory.path}) 在文件系统中不存在。\n\n确定要继续切换账号吗？\n\n注意：这可能会导致配置写入失败。`);
+                const confirmed = await customConfirm(
+                    `目录 "${directory.name}" (${directory.path}) 在文件系统中不存在。\n\n确定要继续切换账号吗？\n\n注意：这可能会导致配置写入失败。`,
+                    '目录不存在'
+                );
                 if (!confirmed) {
                     return;
                 }
@@ -1714,8 +1875,11 @@ async function promptDeleteBaseUrl(urlId) {
         // 用户确认后才执行删除
         await executeDeleteBaseUrl(urlId, urlName);
     } catch (error) {
-        // 如果 Tauri 对话框失败，fallback 到浏览器 confirm
-        const userConfirmed = confirm(`确定要删除URL "${urlName}" 吗？\n\n此操作不可撤销！`);
+        // 如果 Tauri 对话框失败，fallback 到自定义确认对话框
+        const userConfirmed = await customConfirm(
+            `确定要删除URL "${urlName}" 吗？\n\n此操作不可撤销！`,
+            '确认删除URL'
+        );
         if (userConfirmed) {
             await executeDeleteBaseUrl(urlId, urlName);
         }
@@ -1735,10 +1899,14 @@ async function executeDeleteBaseUrl(urlId, urlName) {
 
 // Delete base URL (legacy function for compatibility)
 async function deleteBaseUrl(urlId) {
-    if (!confirm('确定要删除这个URL吗？')) {
+    const confirmed = await customConfirm(
+        '确定要删除这个URL吗？',
+        '确认删除URL'
+    );
+    if (!confirmed) {
         return;
     }
-    
+
     try {
         await tauriDeleteBaseUrl(urlId);
         await loadBaseUrls();
@@ -1821,6 +1989,13 @@ function showSuccess(message) {
 function showError(message) {
     showGlobalMessage(message, 'error', 0); // 设置duration为0，错误消息不自动关闭
 }
+
+// 导出全局消息函数供其他模块使用
+window.showSuccess = showSuccess;
+window.showError = showError;
+window.showGlobalMessage = showGlobalMessage;
+window.getErrorMessage = getErrorMessage;
+window.customConfirm = customConfirm;
 
 // Tab management functions
 function saveActiveTab(tabId) {
@@ -2741,6 +2916,7 @@ window.switchDatabase = switchDatabase;
 window.testDatabase = testDatabase;
 window.selectDirectory = selectDirectory;
 window.promptDeleteDirectory = promptDeleteDirectory;
+window.cleanupInvalidDirectories = cleanupInvalidDirectories;
 
 // Claude Settings functions
 window.loadClaudeSettingsPage = loadClaudeSettingsPage;
@@ -2751,3 +2927,425 @@ window.removeCustomEnvVar = removeCustomEnvVar;
 window.updatePreview = updatePreview;
 window.saveClaudeConfigToDatabase = saveClaudeConfigToDatabase;
 window.getClaudeSettingsForSwitch = getClaudeSettingsForSwitch;
+
+// ============= WebDAV 功能 =============
+
+// 全局变量
+let webdavConfigs = [];
+let selectedWebdavConfig = null;
+
+// Tauri 命令包装函数
+async function tauriGetWebdavConfigs() {
+    return await invoke('get_webdav_configs');
+}
+
+async function tauriGetActiveWebdavConfig() {
+    return await invoke('get_active_webdav_config');
+}
+
+async function tauriCreateWebdavConfig(config) {
+    return await invoke('create_webdav_config', {
+        name: config.name,
+        url: config.url,
+        username: config.username,
+        password: config.password,
+        remotePath: config.remotePath || '/claude-config',
+        autoSync: config.autoSync || false,
+        syncInterval: config.syncInterval || 3600
+    });
+}
+
+async function tauriUpdateWebdavConfig(id, config) {
+    return await invoke('update_webdav_config', {
+        id,
+        name: config.name,
+        url: config.url,
+        username: config.username,
+        password: config.password,
+        remotePath: config.remotePath,
+        autoSync: config.autoSync,
+        syncInterval: config.syncInterval,
+        isActive: config.isActive
+    });
+}
+
+async function tauriDeleteWebdavConfig(id) {
+    return await invoke('delete_webdav_config', { id });
+}
+
+async function tauriTestWebdavConnection(id) {
+    return await invoke('test_webdav_connection', { id });
+}
+
+async function tauriUploadConfigToWebdav(configId, filename) {
+    return await invoke('upload_config_to_webdav', {
+        configId,
+        filename
+    });
+}
+
+async function tauriDownloadConfigFromWebdav(configId, filename) {
+    return await invoke('download_config_from_webdav', {
+        configId,
+        filename
+    });
+}
+
+async function tauriListWebdavFiles(configId) {
+    return await invoke('list_webdav_files', { configId });
+}
+
+async function tauriGetSyncLogs(configId = null, limit = 50) {
+    return await invoke('get_sync_logs', { configId, limit });
+}
+
+// 加载 WebDAV 配置列表
+async function loadWebdavConfigs() {
+    try {
+        webdavConfigs = await tauriGetWebdavConfigs();
+        const listElement = document.getElementById('webdavConfigsList');
+
+        if (webdavConfigs.length === 0) {
+            listElement.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                    <p>暂无 WebDAV 配置</p>
+                    <p class="small">点击上方"添加配置"按钮开始</p>
+                </div>
+            `;
+            return;
+        }
+
+        listElement.innerHTML = webdavConfigs.map(config => `
+            <div class="list-group-item list-group-item-action ${selectedWebdavConfig?.id === config.id ? 'active' : ''}"
+                 onclick="selectWebdavConfig(${config.id})">
+                <div class="d-flex w-100 justify-content-between align-items-center">
+                    <h6 class="mb-1">
+                        <i class="fas fa-cloud me-2"></i>${config.name}
+                        ${config.is_active ? '<span class="badge bg-success ms-2">活跃</span>' : ''}
+                    </h6>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editWebdavConfig(${config.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); deleteWebdavConfig(${config.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="mb-1 small">${config.url}</p>
+                <small class="text-muted">
+                    用户: ${config.username} |
+                    路径: ${config.remote_path}
+                    ${config.auto_sync ? ' | <i class="fas fa-sync-alt"></i> 自动同步' : ''}
+                </small>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        showMessage('加载 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+    }
+}
+
+// 选择 WebDAV 配置
+async function selectWebdavConfig(id) {
+    selectedWebdavConfig = webdavConfigs.find(c => c.id === id);
+    await loadWebdavConfigs();
+    await loadWebdavOperationPanel();
+}
+
+// 加载 WebDAV 操作面板
+async function loadWebdavOperationPanel() {
+    const panel = document.getElementById('webdavOperationPanel');
+
+    if (!selectedWebdavConfig) {
+        panel.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                请先选择或添加 WebDAV 配置
+            </div>
+        `;
+        return;
+    }
+
+    panel.innerHTML = `
+        <div class="mb-3">
+            <h6><i class="fas fa-info-circle me-2"></i>当前配置: ${selectedWebdavConfig.name}</h6>
+            <p class="small text-muted mb-0">${selectedWebdavConfig.url}</p>
+        </div>
+
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <button class="btn btn-success w-100" onclick="testWebdavConnection()">
+                    <i class="fas fa-plug me-2"></i>测试连接
+                </button>
+            </div>
+            <div class="col-6">
+                <button class="btn btn-primary w-100" onclick="setAsActiveWebdav()">
+                    <i class="fas fa-check-circle me-2"></i>设为活跃
+                </button>
+            </div>
+        </div>
+
+        <hr>
+
+        <h6><i class="fas fa-upload me-2"></i>上传配置</h6>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" id="uploadFilename"
+                   value="config-${new Date().toISOString().split('T')[0]}.json"
+                   placeholder="文件名">
+            <button class="btn btn-success" onclick="uploadConfigToWebdav()">
+                <i class="fas fa-cloud-upload-alt me-2"></i>上传
+            </button>
+        </div>
+
+        <h6><i class="fas fa-download me-2"></i>下载配置</h6>
+        <div class="mb-3">
+            <button class="btn btn-info btn-sm mb-2" onclick="listRemoteFiles()">
+                <i class="fas fa-list me-2"></i>查看远程文件
+            </button>
+            <div id="remoteFilesList"></div>
+        </div>
+    `;
+}
+
+// 保存 WebDAV 配置
+async function saveWebdavConfig() {
+    const config = {
+        name: document.getElementById('webdavName').value,
+        url: document.getElementById('webdavUrl').value,
+        username: document.getElementById('webdavUsername').value,
+        password: document.getElementById('webdavPassword').value,
+        remotePath: document.getElementById('webdavRemotePath').value || '/claude-config',
+        autoSync: document.getElementById('webdavAutoSync').checked,
+        syncInterval: parseInt(document.getElementById('webdavSyncInterval').value) || 3600
+    };
+
+    try {
+        await tauriCreateWebdavConfig(config);
+        showMessage('WebDAV 配置创建成功', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('webdavConfigModal')).hide();
+        await loadWebdavConfigs();
+    } catch (error) {
+        showMessage('创建 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+    }
+}
+
+// 编辑 WebDAV 配置
+async function editWebdavConfig(id) {
+    const config = webdavConfigs.find(c => c.id === id);
+    if (!config) return;
+
+    document.getElementById('webdavName').value = config.name;
+    document.getElementById('webdavUrl').value = config.url;
+    document.getElementById('webdavUsername').value = config.username;
+    document.getElementById('webdavPassword').value = config.password;
+    document.getElementById('webdavRemotePath').value = config.remote_path;
+    document.getElementById('webdavAutoSync').checked = config.auto_sync;
+    document.getElementById('webdavSyncInterval').value = config.sync_interval;
+
+    const modal = new bootstrap.Modal(document.getElementById('webdavConfigModal'));
+    modal.show();
+
+    // 修改保存按钮为更新
+    const saveBtn = document.getElementById('saveWebdavConfig');
+    saveBtn.textContent = '更新';
+    saveBtn.onclick = async () => {
+        const updatedConfig = {
+            name: document.getElementById('webdavName').value,
+            url: document.getElementById('webdavUrl').value,
+            username: document.getElementById('webdavUsername').value,
+            password: document.getElementById('webdavPassword').value,
+            remotePath: document.getElementById('webdavRemotePath').value,
+            autoSync: document.getElementById('webdavAutoSync').checked,
+            syncInterval: parseInt(document.getElementById('webdavSyncInterval').value)
+        };
+
+        try {
+            await tauriUpdateWebdavConfig(id, updatedConfig);
+            showMessage('WebDAV 配置更新成功', 'success');
+            modal.hide();
+            await loadWebdavConfigs();
+        } catch (error) {
+            showMessage('更新 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+        }
+    };
+}
+
+// 删除 WebDAV 配置
+async function deleteWebdavConfig(id) {
+    const config = webdavConfigs.find(c => c.id === id);
+    if (!config) return;
+
+    const confirmed = await customConfirm(
+        `确定要删除 WebDAV 配置 "${config.name}" 吗？`,
+        '确认删除'
+    );
+
+    if (confirmed) {
+        try {
+            await tauriDeleteWebdavConfig(id);
+            showMessage('WebDAV 配置删除成功', 'success');
+            if (selectedWebdavConfig?.id === id) {
+                selectedWebdavConfig = null;
+            }
+            await loadWebdavConfigs();
+            await loadWebdavOperationPanel();
+        } catch (error) {
+            showMessage('删除 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+        }
+    }
+}
+
+// 测试 WebDAV 连接
+async function testWebdavConnection() {
+    if (!selectedWebdavConfig) return;
+
+    try {
+        const result = await tauriTestWebdavConnection(selectedWebdavConfig.id);
+        showMessage(result, 'success');
+    } catch (error) {
+        showMessage('连接测试失败: ' + getErrorMessage(error), 'danger');
+    }
+}
+
+// 设为活跃配置
+async function setAsActiveWebdav() {
+    if (!selectedWebdavConfig) return;
+
+    try {
+        await tauriUpdateWebdavConfig(selectedWebdavConfig.id, { isActive: true });
+        showMessage('已设置为活跃配置', 'success');
+        await loadWebdavConfigs();
+    } catch (error) {
+        showMessage('设置失败: ' + getErrorMessage(error), 'danger');
+    }
+}
+
+// 上传配置到 WebDAV
+async function uploadConfigToWebdav() {
+    if (!selectedWebdavConfig) return;
+
+    const filename = document.getElementById('uploadFilename').value ||
+                     `config-${new Date().toISOString().split('T')[0]}.json`;
+
+    try {
+        const result = await tauriUploadConfigToWebdav(selectedWebdavConfig.id, filename);
+        showMessage(result, 'success');
+        await loadSyncLogs();
+    } catch (error) {
+        showMessage('上传失败: ' + getErrorMessage(error), 'danger');
+    }
+}
+
+// 列出远程文件
+async function listRemoteFiles() {
+    if (!selectedWebdavConfig) return;
+
+    try {
+        const files = await tauriListWebdavFiles(selectedWebdavConfig.id);
+        const listElement = document.getElementById('remoteFilesList');
+
+        if (files.length === 0) {
+            listElement.innerHTML = '<div class="alert alert-info small">远程目录为空</div>';
+            return;
+        }
+
+        listElement.innerHTML = `
+            <div class="list-group small">
+                ${files.map(file => `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-file-code me-2"></i>${file}</span>
+                        <button class="btn btn-sm btn-success" onclick="downloadConfigFromWebdav('${file}')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } catch (error) {
+        showMessage('获取文件列表失败: ' + getErrorMessage(error), 'danger');
+    }
+}
+
+// 从 WebDAV 下载配置
+async function downloadConfigFromWebdav(filename) {
+    if (!selectedWebdavConfig) return;
+
+    const confirmed = await customConfirm(
+        `确定要下载并应用配置文件 "${filename}" 吗？\n这将覆盖当前配置！`,
+        '确认下载'
+    );
+
+    if (confirmed) {
+        try {
+            const result = await tauriDownloadConfigFromWebdav(selectedWebdavConfig.id, filename);
+            showMessage('配置下载成功！', 'success');
+            await loadSyncLogs();
+        } catch (error) {
+            showMessage('下载失败: ' + getErrorMessage(error), 'danger');
+        }
+    }
+}
+
+// 加载同步日志
+async function loadSyncLogs() {
+    try {
+        const logs = await tauriGetSyncLogs(selectedWebdavConfig?.id, 3);
+        const listElement = document.getElementById('syncLogsList');
+
+        if (logs.length === 0) {
+            listElement.innerHTML = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-history fa-2x mb-2"></i>
+                    <p>暂无同步日志</p>
+                </div>
+            `;
+            return;
+        }
+
+        listElement.innerHTML = logs.map(log => {
+            const statusClass = log.status === 'success' ? 'success' :
+                               log.status === 'failed' ? 'danger' : 'warning';
+            const icon = log.sync_type === 'upload' ? 'fa-upload' : 'fa-download';
+
+            return `
+                <div class="border-bottom pb-2 mb-2">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <i class="fas ${icon} me-2"></i>
+                            <strong>${log.sync_type === 'upload' ? '上传' : '下载'}</strong>
+                            <span class="badge bg-${statusClass} ms-2">${log.status}</span>
+                        </div>
+                        <small class="text-muted">${new Date(log.synced_at).toLocaleString('zh-CN')}</small>
+                    </div>
+                    ${log.message ? `<p class="small text-muted mb-0 mt-1">${log.message}</p>` : ''}
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('加载同步日志失败:', error);
+    }
+}
+
+// 初始化 WebDAV 保存按钮
+document.addEventListener('DOMContentLoaded', () => {
+    const saveBtn = document.getElementById('saveWebdavConfig');
+    if (saveBtn) {
+        saveBtn.onclick = saveWebdavConfig;
+    }
+});
+
+// 导出 WebDAV 函数到全局
+window.loadWebdavConfigs = loadWebdavConfigs;
+window.selectWebdavConfig = selectWebdavConfig;
+window.saveWebdavConfig = saveWebdavConfig;
+window.editWebdavConfig = editWebdavConfig;
+window.deleteWebdavConfig = deleteWebdavConfig;
+window.testWebdavConnection = testWebdavConnection;
+window.setAsActiveWebdav = setAsActiveWebdav;
+window.uploadConfigToWebdav = uploadConfigToWebdav;
+window.downloadConfigFromWebdav = downloadConfigFromWebdav;
+window.listRemoteFiles = listRemoteFiles;
+window.loadSyncLogs = loadSyncLogs;

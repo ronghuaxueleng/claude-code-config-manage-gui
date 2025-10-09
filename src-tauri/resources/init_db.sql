@@ -57,3 +57,30 @@ INSERT OR IGNORE INTO base_urls (name, url, description, is_default) VALUES
 
 -- INSERT OR IGNORE INTO directories (name, path) VALUES
 --     ('Sample Project', '/path/to/sample/project');
+
+-- Create webdav_configs table for WebDAV synchronization
+CREATE TABLE IF NOT EXISTS webdav_configs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    url TEXT NOT NULL,
+    username TEXT NOT NULL,
+    password TEXT NOT NULL,
+    remote_path TEXT NOT NULL DEFAULT '/claude-config',
+    auto_sync BOOLEAN NOT NULL DEFAULT FALSE,
+    sync_interval INTEGER NOT NULL DEFAULT 3600,
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    last_sync_at DATETIME,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create sync_logs table for tracking synchronization history
+CREATE TABLE IF NOT EXISTS sync_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    webdav_config_id INTEGER NOT NULL,
+    sync_type TEXT NOT NULL CHECK(sync_type IN ('upload', 'download', 'auto')),
+    status TEXT NOT NULL CHECK(status IN ('success', 'failed', 'pending')),
+    message TEXT,
+    synced_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (webdav_config_id) REFERENCES webdav_configs (id) ON DELETE CASCADE
+);

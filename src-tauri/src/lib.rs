@@ -3,6 +3,7 @@ mod database;
 mod claude_config;
 mod config_manager;
 mod logger;
+mod webdav;
 
 use std::sync::Arc;
 use tauri::{State, Manager, WindowEvent, tray::{TrayIconBuilder, TrayIconEvent}, menu::{Menu, MenuItem}};
@@ -743,18 +744,326 @@ async fn save_claude_settings_to_db(
     settings_json: String
 ) -> Result<String, String> {
     tracing::info!("保存Claude设置到数据库: {}", settings_json);
-    
+
     // Validate JSON format
     serde_json::from_str::<serde_json::Value>(&settings_json)
         .map_err(|e| format!("JSON格式错误: {}", e))?;
-    
+
     let db = db.lock().await;
     db.save_claude_settings(&settings_json)
         .await
         .map_err(|e| format!("保存Claude设置失败: {}", e))?;
-    
+
     tracing::info!("Claude设置保存成功");
     Ok("Claude设置保存成功".to_string())
+}
+
+// 数据库迁移命令
+#[tauri::command]
+async fn migrate_database(db: State<'_, DbState>) -> Result<String, String> {
+    let db = db.lock().await;
+    db.migrate()
+        .await
+        .map_err(|e| format!("数据库迁移失败: {}", e))?;
+    Ok("数据库迁移成功".to_string())
+}
+
+// WebDAV 配置管理命令
+#[tauri::command]
+async fn get_webdav_configs(db: State<'_, DbState>) -> Result<Vec<WebDavConfig>, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+    webdav::get_webdav_configs(pool)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn get_active_webdav_config(db: State<'_, DbState>) -> Result<Option<WebDavConfig>, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+    webdav::get_active_webdav_config(pool)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+#[allow(non_snake_case)]
+async fn create_webdav_config(
+    db: State<'_, DbState>,
+    name: String,
+    url: String,
+    username: String,
+    password: String,
+    remotePath: Option<String>,
+    autoSync: Option<bool>,
+    syncInterval: Option<i64>,
+) -> Result<WebDavConfig, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+    webdav::create_webdav_config(
+        pool,
+        &name,
+        &url,
+        &username,
+        &password,
+        &remotePath.unwrap_or_else(|| "/claude-config".to_string()),
+        autoSync.unwrap_or(false),
+        syncInterval.unwrap_or(3600),
+    )
+    .await
+    .map_err(|e| {
+        let error_msg = e.to_string();
+        tracing::error!("创建 WebDAV 配置失败: {:?}", e);
+
+        // 处理特定的数据库错误
+        if error_msg.contains("UNIQUE constraint failed: webdav_configs.name") {
+            "配置名称已存在，请使用不同的名称".to_string()
+        } else {
+            format!("创建 WebDAV 配置失败: {}", error_msg)
+        }
+    })
+}
+
+#[tauri::command]
+#[allow(non_snake_case)]
+async fn update_webdav_config(
+    db: State<'_, DbState>,
+    id: i64,
+    name: Option<String>,
+    url: Option<String>,
+    username: Option<String>,
+    password: Option<String>,
+    remotePath: Option<String>,
+    autoSync: Option<bool>,
+    syncInterval: Option<i64>,
+    isActive: Option<bool>,
+) -> Result<WebDavConfig, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+    webdav::update_webdav_config(
+        pool,
+        id,
+        name.as_deref(),
+        url.as_deref(),
+        username.as_deref(),
+        password.as_deref(),
+        remotePath.as_deref(),
+        autoSync,
+        syncInterval,
+        isActive,
+    )
+    .await
+    .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_webdav_config(db: State<'_, DbState>, id: i64) -> Result<String, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+    webdav::delete_webdav_config(pool, id)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok("WebDAV配置删除成功".to_string())
+}
+
+#[tauri::command]
+async fn test_webdav_connection(db: State<'_, DbState>, id: i64) -> Result<String, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+
+    let config = webdav::get_webdav_config_by_id(pool, id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "WebDAV配置不存在".to_string())?;
+
+    drop(db);
+
+    let manager = webdav::WebDavManager::from_config(config)
+        .await
+        .map_err(|e| format!("创建WebDAV客户端失败: {}", e))?;
+
+    manager.test_connection()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok("WebDAV连接测试成功".to_string())
+}
+
+#[tauri::command]
+async fn upload_config_to_webdav(
+    db: State<'_, DbState>,
+    config_id: i64,
+    filename: String,
+) -> Result<String, String> {
+    let db_lock = db.lock().await;
+    let pool = db_lock.get_pool();
+
+    let config = webdav::get_webdav_config_by_id(pool, config_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "WebDAV配置不存在".to_string())?;
+
+    // 导出数据库配置
+    let accounts = db_lock.get_accounts(GetAccountsRequest {
+        page: Some(1),
+        per_page: Some(1000),
+        search: None,
+        base_url: None,
+    }).await.map_err(|e| e.to_string())?;
+
+    let base_urls = db_lock.get_base_urls().await.map_err(|e| e.to_string())?;
+    let claude_settings_json = db_lock.get_claude_settings().await.map_err(|e| e.to_string())?;
+    let claude_settings: serde_json::Value = serde_json::from_str(&claude_settings_json)
+        .map_err(|e| format!("解析Claude设置失败: {}", e))?;
+
+    drop(db_lock);
+
+    let data = serde_json::json!({
+        "accounts": accounts.accounts,
+        "base_urls": base_urls,
+        "claude_settings": claude_settings,
+        "exported_at": chrono::Utc::now().to_rfc3339(),
+    });
+
+    let manager = webdav::WebDavManager::from_config(config.clone())
+        .await
+        .map_err(|e| format!("创建WebDAV客户端失败: {}", e))?;
+
+    manager.upload_config(&data, &filename)
+        .await
+        .map_err(|e| format!("上传配置失败: {}", e))?;
+
+    // 记录同步日志
+    let db_lock = db.lock().await;
+    let pool = db_lock.get_pool();
+    webdav::create_sync_log(
+        pool,
+        CreateSyncLogRequest {
+            webdav_config_id: config_id,
+            sync_type: "upload".to_string(),
+            status: "success".to_string(),
+            message: Some(format!("成功上传配置文件: {}", filename)),
+        },
+    )
+    .await
+    .map_err(|e| format!("记录同步日志失败: {}", e))?;
+
+    webdav::update_last_sync_time(pool, config_id)
+        .await
+        .map_err(|e| format!("更新同步时间失败: {}", e))?;
+
+    Ok(format!("配置已成功上传到WebDAV: {}", filename))
+}
+
+#[tauri::command]
+async fn download_config_from_webdav(
+    db: State<'_, DbState>,
+    config_id: i64,
+    filename: String,
+) -> Result<String, String> {
+    let db_lock = db.lock().await;
+    let pool = db_lock.get_pool();
+
+    let config = webdav::get_webdav_config_by_id(pool, config_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "WebDAV配置不存在".to_string())?;
+
+    drop(db_lock);
+
+    let manager = webdav::WebDavManager::from_config(config.clone())
+        .await
+        .map_err(|e| format!("创建WebDAV客户端失败: {}", e))?;
+
+    let data = manager.download_config(&filename)
+        .await
+        .map_err(|e| format!("下载配置失败: {}", e))?;
+
+    // TODO: 实现配置导入逻辑
+    // 这里需要将下载的数据导入到数据库中
+
+    // 记录同步日志
+    let db_lock = db.lock().await;
+    let pool = db_lock.get_pool();
+    webdav::create_sync_log(
+        pool,
+        CreateSyncLogRequest {
+            webdav_config_id: config_id,
+            sync_type: "download".to_string(),
+            status: "success".to_string(),
+            message: Some(format!("成功下载配置文件: {}", filename)),
+        },
+    )
+    .await
+    .map_err(|e| format!("记录同步日志失败: {}", e))?;
+
+    webdav::update_last_sync_time(pool, config_id)
+        .await
+        .map_err(|e| format!("更新同步时间失败: {}", e))?;
+
+    Ok(format!("配置已成功从WebDAV下载: {}\n数据: {}", filename, serde_json::to_string_pretty(&data).unwrap_or_default()))
+}
+
+#[tauri::command]
+async fn list_webdav_files(db: State<'_, DbState>, config_id: i64) -> Result<Vec<String>, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+
+    let config = webdav::get_webdav_config_by_id(pool, config_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "WebDAV配置不存在".to_string())?;
+
+    drop(db);
+
+    let manager = webdav::WebDavManager::from_config(config)
+        .await
+        .map_err(|e| format!("创建WebDAV客户端失败: {}", e))?;
+
+    manager.list_remote_files()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn delete_remote_file(
+    db: State<'_, DbState>,
+    config_id: i64,
+    filename: String,
+) -> Result<String, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+
+    let config = webdav::get_webdav_config_by_id(pool, config_id)
+        .await
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| "WebDAV配置不存在".to_string())?;
+
+    drop(db);
+
+    let manager = webdav::WebDavManager::from_config(config)
+        .await
+        .map_err(|e| format!("创建WebDAV客户端失败: {}", e))?;
+
+    manager.delete_remote_file(&filename)
+        .await
+        .map_err(|e| format!("删除文件失败: {}", e))?;
+
+    Ok(format!("文件已删除: {}", filename))
+}
+
+#[tauri::command]
+async fn get_sync_logs(
+    db: State<'_, DbState>,
+    config_id: Option<i64>,
+    limit: Option<i64>,
+) -> Result<Vec<SyncLog>, String> {
+    let db = db.lock().await;
+    let pool = db.get_pool();
+    webdav::get_sync_logs(pool, config_id, limit.unwrap_or(50))
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -865,6 +1174,78 @@ async fn switch_account_with_claude_settings(
                 std::fs::set_permissions(&script_file, perms)
                     .map_err(|e| format!("设置脚本执行权限失败: {}", e))?;
                 tracing::info!("已设置 remove-root-check.sh 为可执行");
+            }
+
+            // Execute the script using wsl sh command
+            #[cfg(target_os = "windows")]
+            {
+                let script_path_str = script_file.display().to_string();
+                // Convert Windows path to WSL path if needed
+                let wsl_path = if script_path_str.starts_with("\\\\wsl") {
+                    // Already a WSL path, extract the actual path
+                    script_path_str
+                } else {
+                    // Convert Windows path (e.g., E:\path) to WSL path (e.g., /mnt/e/path)
+                    let path_fixed = script_path_str.replace("\\", "/");
+                    if let Some(drive_letter) = path_fixed.chars().next() {
+                        if path_fixed.len() > 2 && path_fixed.chars().nth(1) == Some(':') {
+                            let drive_lower = drive_letter.to_lowercase().to_string();
+                            let rest_path = &path_fixed[2..];
+                            format!("/mnt/{}{}", drive_lower, rest_path)
+                        } else {
+                            path_fixed
+                        }
+                    } else {
+                        path_fixed
+                    }
+                };
+
+                tracing::info!("准备执行脚本: wsl sh {}", wsl_path);
+
+                match std::process::Command::new("wsl")
+                    .arg("sh")
+                    .arg(&wsl_path)
+                    .output() {
+                    Ok(output) => {
+                        if output.status.success() {
+                            tracing::info!("remove-root-check.sh 执行成功");
+                            if !output.stdout.is_empty() {
+                                tracing::info!("脚本输出: {}", String::from_utf8_lossy(&output.stdout));
+                            }
+                        } else {
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            tracing::debug!("remove-root-check.sh 执行失败: {}", stderr);
+                        }
+                    }
+                    Err(_) => {
+                        // WSL 命令不存在时静默跳过，不报错
+                        tracing::debug!("WSL 命令不可用，跳过执行 remove-root-check.sh");
+                    }
+                }
+            }
+
+            // Execute the script directly on Unix systems
+            #[cfg(unix)]
+            {
+                match std::process::Command::new("sh")
+                    .arg(&script_file)
+                    .output() {
+                    Ok(output) => {
+                        if output.status.success() {
+                            tracing::info!("remove-root-check.sh 执行成功");
+                            if !output.stdout.is_empty() {
+                                tracing::info!("脚本输出: {}", String::from_utf8_lossy(&output.stdout));
+                            }
+                        } else {
+                            let stderr = String::from_utf8_lossy(&output.stderr);
+                            tracing::debug!("remove-root-check.sh 执行失败: {}", stderr);
+                        }
+                    }
+                    Err(_) => {
+                        // 执行失败时静默跳过，不报错
+                        tracing::debug!("无法执行 remove-root-check.sh");
+                    }
+                }
             }
         }
         Err(e) => {
@@ -1029,7 +1410,19 @@ pub fn run() {
             get_log_file_path,
             open_log_directory,
             get_claude_settings_from_db,
-            save_claude_settings_to_db
+            save_claude_settings_to_db,
+            migrate_database,
+            get_webdav_configs,
+            get_active_webdav_config,
+            create_webdav_config,
+            update_webdav_config,
+            delete_webdav_config,
+            test_webdav_connection,
+            upload_config_to_webdav,
+            download_config_from_webdav,
+            list_webdav_files,
+            delete_remote_file,
+            get_sync_logs
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

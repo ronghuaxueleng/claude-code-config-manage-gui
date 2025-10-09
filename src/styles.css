@@ -131,7 +131,7 @@ body {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 1050;
+    z-index: 9999;
     width: 400px;
     max-width: 90vw;
 }

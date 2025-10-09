@@ -151,3 +151,62 @@ impl<T> ApiResponse<T> {
         }
     }
 }
+
+// WebDAV 配置模型
+#[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
+pub struct WebDavConfig {
+    pub id: i64,
+    pub name: String,
+    pub url: String,
+    pub username: String,
+    pub password: String,
+    pub remote_path: String,
+    pub auto_sync: bool,
+    pub sync_interval: i64,
+    pub is_active: bool,
+    pub last_sync_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateWebDavConfigRequest {
+    pub name: String,
+    pub url: String,
+    pub username: String,
+    pub password: String,
+    pub remote_path: Option<String>,
+    pub auto_sync: Option<bool>,
+    pub sync_interval: Option<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateWebDavConfigRequest {
+    pub name: Option<String>,
+    pub url: Option<String>,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub remote_path: Option<String>,
+    pub auto_sync: Option<bool>,
+    pub sync_interval: Option<i64>,
+    pub is_active: Option<bool>,
+}
+
+// 同步日志模型
+#[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
+pub struct SyncLog {
+    pub id: i64,
+    pub webdav_config_id: i64,
+    pub sync_type: String,
+    pub status: String,
+    pub message: Option<String>,
+    pub synced_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreateSyncLogRequest {
+    pub webdav_config_id: i64,
+    pub sync_type: String,
+    pub status: String,
+    pub message: Option<String>,
+}
