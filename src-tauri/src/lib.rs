@@ -1283,9 +1283,15 @@ async fn switch_account_with_claude_settings(
 
                 tracing::info!("准备执行脚本: wsl sh {}", wsl_path);
 
+                // 在 Windows 上使用 CREATE_NO_WINDOW 标志来隐藏命令行窗口
+                #[cfg(target_os = "windows")]
+                use std::os::windows::process::CommandExt;
+                const CREATE_NO_WINDOW: u32 = 0x08000000;
+
                 match std::process::Command::new("wsl")
                     .arg("sh")
                     .arg(&wsl_path)
+                    .creation_flags(CREATE_NO_WINDOW)
                     .output() {
                     Ok(output) => {
                         if output.status.success() {

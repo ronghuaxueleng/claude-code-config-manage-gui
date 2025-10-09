@@ -37,6 +37,16 @@
       "resources/config.json",
       "resources/config/CLAUDE.local.md",
       "resources/config/remove-root-check.sh"
-    ]
+    ],
+    "windows": {
+      "nsis": {
+        "languages": ["SimpChinese", "English"],
+        "displayLanguageSelector": true,
+        "installerIcon": "icons/icon.ico",
+        "installMode": "both",
+        "compression": "lzma",
+        "startMenuFolder": "Claude Code 工具"
+      }
+    }
   }
 }
