@@ -16,23 +16,20 @@ impl Logger {
     pub fn init() -> Result<()> {
         // 获取可执行文件目录
         let exe_dir = get_exe_dir()?;
-        
+
         // 创建logs目录
         let logs_dir = exe_dir.join("logs");
         fs::create_dir_all(&logs_dir)?;
-        
+
         // 创建日志文件appender（每天滚动）
         let file_appender = rolling::daily(&logs_dir, "claude-config-manager.log");
         let (non_blocking_file, _guard) = non_blocking(file_appender);
-        
-        // 创建控制台appender
-        let (non_blocking_stdout, _guard2) = non_blocking(std::io::stdout());
-        
+
         // 设置日志级别，默认为INFO
         let env_filter = EnvFilter::try_from_default_env()
             .unwrap_or_else(|_| EnvFilter::new("info"));
-        
-        // 构建订阅器
+
+        // 构建订阅器 - 只输出到文件，不输出到控制台
         tracing_subscriber::registry()
             .with(env_filter)
             .with(
@@ -45,24 +42,13 @@ impl Logger {
                     .with_line_number(true)
                     .with_timer(fmt::time::ChronoUtc::rfc_3339())
             )
-            .with(
-                fmt::Layer::new()
-                    .with_writer(non_blocking_stdout)
-                    .with_ansi(true)
-                    .with_target(false)
-                    .with_thread_ids(false)
-                    .with_file(false)
-                    .with_line_number(false)
-                    .with_timer(fmt::time::ChronoUtc::rfc_3339())
-            )
             .init();
-        
+
         // 防止guard被释放
         std::mem::forget(_guard);
-        std::mem::forget(_guard2);
-        
+
         tracing::info!("Logger initialized, logs directory: {}", logs_dir.display());
-        
+
         Ok(())
     }
     
