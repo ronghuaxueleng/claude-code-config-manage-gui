@@ -131,21 +131,6 @@ impl WebDavManager {
         Ok(files)
     }
 
-    /// 删除远程文件
-    pub async fn delete_remote_file(&self, filename: &str) -> Result<()> {
-        let remote_file = format!("{}/{}", self.config.remote_path, filename);
-
-        info!("Deleting file from WebDAV: {}", remote_file);
-
-        self.client
-            .delete(&remote_file)
-            .await
-            .context("Failed to delete remote file")?;
-
-        info!("File deleted successfully");
-        Ok(())
-    }
-
     /// 确保远程目录存在
     async fn ensure_remote_dir(&self) -> Result<()> {
         // 尝试创建目录,如果已存在会失败但不影响后续操作
@@ -186,17 +171,6 @@ pub async fn get_webdav_config_by_id(pool: &SqlitePool, id: i64) -> Result<Optio
     Ok(config)
 }
 
-pub async fn get_active_webdav_config(pool: &SqlitePool) -> Result<Option<WebDavConfig>> {
-    let config = sqlx::query_as::<_, WebDavConfig>(
-        "SELECT * FROM webdav_configs WHERE is_active = 1 LIMIT 1"
-    )
-    .fetch_optional(pool)
-    .await
-    .context("Failed to get active WebDAV config from database")?;
-
-    Ok(config)
-}
-
 pub async fn create_webdav_config(
     pool: &SqlitePool,
     name: &str,
@@ -224,96 +198,6 @@ pub async fn create_webdav_config(
 
     let config = get_webdav_config_by_id(pool, result.last_insert_rowid()).await?
         .ok_or_else(|| anyhow::anyhow!("Failed to retrieve created WebDAV config"))?;
-
-    Ok(config)
-}
-
-pub async fn update_webdav_config(
-    pool: &SqlitePool,
-    id: i64,
-    name: Option<&str>,
-    url: Option<&str>,
-    username: Option<&str>,
-    password: Option<&str>,
-    remote_path: Option<&str>,
-    auto_sync: Option<bool>,
-    sync_interval: Option<i64>,
-    is_active: Option<bool>,
-) -> Result<WebDavConfig> {
-    // 构建动态更新语句
-    let mut updates = Vec::new();
-    let mut values: Vec<Box<dyn sqlx::Encode<'_, sqlx::Sqlite> + Send>> = Vec::new();
-
-    if let Some(v) = name {
-        updates.push("name = ?");
-        values.push(Box::new(v.to_string()));
-    }
-    if let Some(v) = url {
-        updates.push("url = ?");
-        values.push(Box::new(v.to_string()));
-    }
-    if let Some(v) = username {
-        updates.push("username = ?");
-        values.push(Box::new(v.to_string()));
-    }
-    if let Some(v) = password {
-        updates.push("password = ?");
-        values.push(Box::new(v.to_string()));
-    }
-    if let Some(v) = remote_path {
-        updates.push("remote_path = ?");
-        values.push(Box::new(v.to_string()));
-    }
-    if let Some(v) = auto_sync {
-        updates.push("auto_sync = ?");
-        values.push(Box::new(v));
-    }
-    if let Some(v) = sync_interval {
-        updates.push("sync_interval = ?");
-        values.push(Box::new(v));
-    }
-    if let Some(v) = is_active {
-        updates.push("is_active = ?");
-        values.push(Box::new(v));
-
-        // 如果设置为活跃,则取消其他配置的活跃状态
-        if v {
-            sqlx::query("UPDATE webdav_configs SET is_active = 0 WHERE id != ?")
-                .bind(id)
-                .execute(pool)
-                .await
-                .context("Failed to deactivate other WebDAV configs")?;
-        }
-    }
-
-    if updates.is_empty() {
-        return get_webdav_config_by_id(pool, id).await?
-            .ok_or_else(|| anyhow::anyhow!("WebDAV config not found"));
-    }
-
-    updates.push("updated_at = CURRENT_TIMESTAMP");
-    let update_sql = format!(
-        "UPDATE webdav_configs SET {} WHERE id = ?",
-        updates.join(", ")
-    );
-
-    // 使用原始参数构建查询
-    let mut final_query = sqlx::query::<sqlx::Sqlite>(&update_sql);
-    if let Some(v) = name { final_query = final_query.bind(v); }
-    if let Some(v) = url { final_query = final_query.bind(v); }
-    if let Some(v) = username { final_query = final_query.bind(v); }
-    if let Some(v) = password { final_query = final_query.bind(v); }
-    if let Some(v) = remote_path { final_query = final_query.bind(v); }
-    if let Some(v) = auto_sync { final_query = final_query.bind(v); }
-    if let Some(v) = sync_interval { final_query = final_query.bind(v); }
-    if let Some(v) = is_active { final_query = final_query.bind(v); }
-    final_query = final_query.bind(id);
-
-    final_query.execute(pool).await
-        .context("Failed to update WebDAV config")?;
-
-    let config = get_webdav_config_by_id(pool, id).await?
-        .ok_or_else(|| anyhow::anyhow!("Failed to retrieve updated WebDAV config"))?;
 
     Ok(config)
 }
@@ -346,29 +230,6 @@ pub async fn create_sync_log(
     .context("Failed to create sync log")?;
 
     Ok(())
-}
-
-/// 获取同步日志
-pub async fn get_sync_logs(pool: &SqlitePool, config_id: Option<i64>, limit: i64) -> Result<Vec<crate::models::SyncLog>> {
-    let logs = if let Some(id) = config_id {
-        sqlx::query_as::<_, crate::models::SyncLog>(
-            "SELECT * FROM sync_logs WHERE webdav_config_id = ? ORDER BY synced_at DESC LIMIT ?"
-        )
-        .bind(id)
-        .bind(limit)
-        .fetch_all(pool)
-        .await
-    } else {
-        sqlx::query_as::<_, crate::models::SyncLog>(
-            "SELECT * FROM sync_logs ORDER BY synced_at DESC LIMIT ?"
-        )
-        .bind(limit)
-        .fetch_all(pool)
-        .await
-    }
-    .context("Failed to get sync logs from database")?;
-
-    Ok(logs)
 }
 
 /// 更新最后同步时间

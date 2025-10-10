@@ -1,6 +1,5 @@
 use sqlx::{sqlite::SqlitePool, Row, Error as SqlxError};
-use chrono::{Utc, DateTime};
-use std::collections::HashMap;
+use chrono::Utc;
 use std::path::PathBuf;
 use crate::models::*;
 use crate::config_manager::ConfigManager;
@@ -377,17 +376,6 @@ impl Database {
         Ok(())
     }
 
-    /// 迁移数据库，确保所有表都存在
-    pub async fn migrate(&self) -> Result<(), SqlxError> {
-        info!("开始数据库迁移检查");
-
-        // 重新运行所有表创建语句（使用 IF NOT EXISTS，不会影响现有表）
-        self.initialize().await?;
-
-        info!("数据库迁移完成");
-        Ok(())
-    }
-
     async fn initialize_default_base_urls(&self) -> Result<(), SqlxError> {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM base_urls")
             .fetch_one(&self.pool)
@@ -599,13 +587,6 @@ impl Database {
         Ok(())
     }
 
-    pub async fn get_account_base_urls(&self) -> Result<Vec<String>, SqlxError> {
-        let rows: Vec<(String,)> = sqlx::query_as("SELECT DISTINCT base_url FROM accounts WHERE base_url IS NOT NULL")
-            .fetch_all(&self.pool)
-            .await?;
-        Ok(rows.into_iter().map(|(url,)| url).collect())
-    }
-
     // Directory methods
     pub async fn get_directories(&self) -> Result<Vec<Directory>, SqlxError> {
         sqlx::query_as::<_, Directory>("SELECT * FROM directories ORDER BY created_at DESC")
@@ -772,103 +753,6 @@ impl Database {
         Ok(base_url)
     }
 
-    pub async fn update_base_url(&self, id: i64, request: UpdateBaseUrlRequest) -> Result<BaseUrl, SqlxError> {
-        let now = Utc::now();
-        
-        // If setting as default, unset other defaults
-        if let Some(true) = request.is_default {
-            sqlx::query("UPDATE base_urls SET is_default = FALSE")
-                .execute(&self.pool)
-                .await?;
-        }
-
-        let mut updates = Vec::new();
-        if let Some(_name) = &request.name {
-            updates.push("name = ?");
-        }
-        if let Some(_url) = &request.url {
-            updates.push("url = ?");
-        }
-        if let Some(_description) = &request.description {
-            updates.push("description = ?");
-        }
-        if let Some(_is_default) = request.is_default {
-            updates.push("is_default = ?");
-        }
-
-        if updates.is_empty() {
-            return self.get_base_url(id).await;
-        }
-
-        updates.push("updated_at = ?");
-        let query = format!("UPDATE base_urls SET {} WHERE id = ?", updates.join(", "));
-
-        let mut q = sqlx::query(&query);
-        
-        if let Some(name) = &request.name {
-            q = q.bind(name);
-        }
-        if let Some(url) = &request.url {
-            q = q.bind(url);
-        }
-        if let Some(description) = &request.description {
-            q = q.bind(description);
-        }
-        if let Some(is_default) = request.is_default {
-            q = q.bind(is_default);
-        }
-        
-        q = q.bind(now).bind(id);
-        q.execute(&self.pool).await?;
-
-        self.get_base_url(id).await
-    }
-
-    pub async fn get_base_url(&self, id: i64) -> Result<BaseUrl, SqlxError> {
-        sqlx::query_as::<_, BaseUrl>("SELECT * FROM base_urls WHERE id = ?")
-            .bind(id)
-            .fetch_one(&self.pool)
-            .await
-    }
-
-    pub async fn delete_base_url(&self, id: i64) -> Result<(), SqlxError> {
-        // 先获取要删除的 base_url 信息
-        let base_url = self.get_base_url(id).await?;
-
-        // 查找使用这个 base_url 的所有账号
-        let affected_accounts: Vec<(i64, String)> = sqlx::query_as(
-            "SELECT id, name FROM accounts WHERE base_url = ?"
-        )
-        .bind(&base_url.url)
-        .fetch_all(&self.pool)
-        .await?;
-
-        if !affected_accounts.is_empty() {
-            info!("删除 Base URL '{}' 时，同时删除 {} 个关联的账号", base_url.name, affected_accounts.len());
-
-            // 删除所有使用该 base_url 的账号
-            for (account_id, account_name) in affected_accounts {
-                info!("删除账号: {} (ID: {})，因为其使用的 Base URL 被删除", account_name, account_id);
-
-                // 删除账号（会自动级联删除关联记录）
-                self.delete_account(account_id).await?;
-            }
-        }
-
-        // 删除 Base URL 记录
-        let result = sqlx::query("DELETE FROM base_urls WHERE id = ?")
-            .bind(id)
-            .execute(&self.pool)
-            .await?;
-
-        if result.rows_affected() == 0 {
-            return Err(SqlxError::RowNotFound);
-        }
-
-        info!("成功删除Base URL '{}' (ID: {})", base_url.name, id);
-        Ok(())
-    }
-
     // Switch account functionality
     pub async fn switch_account(&self, request: SwitchAccountRequest) -> Result<String, SqlxError> {
         // Reset all active states
@@ -908,41 +792,6 @@ impl Database {
             "已切换到账号 {}，目录 {}",
             account.name, directory.name
         ))
-    }
-
-    // Association methods
-    pub async fn get_associations(&self) -> Result<Vec<HashMap<String, serde_json::Value>>, SqlxError> {
-        let rows = sqlx::query(
-            r#"
-            SELECT 
-                ad.id,
-                ad.account_id,
-                ad.directory_id,
-                a.name as account_name,
-                d.name as directory_name,
-                ad.created_at
-            FROM account_directories ad
-            JOIN accounts a ON ad.account_id = a.id
-            JOIN directories d ON ad.directory_id = d.id
-            ORDER BY ad.created_at DESC
-            "#
-        )
-        .fetch_all(&self.pool)
-        .await?;
-
-        let mut associations = Vec::new();
-        for row in rows {
-            let mut assoc = HashMap::new();
-            assoc.insert("id".to_string(), serde_json::Value::Number(row.get::<i64, _>("id").into()));
-            assoc.insert("account_id".to_string(), serde_json::Value::Number(row.get::<i64, _>("account_id").into()));
-            assoc.insert("directory_id".to_string(), serde_json::Value::Number(row.get::<i64, _>("directory_id").into()));
-            assoc.insert("account_name".to_string(), serde_json::Value::String(row.get("account_name")));
-            assoc.insert("directory_name".to_string(), serde_json::Value::String(row.get("directory_name")));
-            assoc.insert("created_at".to_string(), serde_json::Value::String(row.get::<DateTime<Utc>, _>("created_at").to_rfc3339()));
-            associations.push(assoc);
-        }
-
-        Ok(associations)
     }
 
     // Claude Settings methods

@@ -982,9 +982,26 @@ async fn download_config_from_webdav(
 
     // 导入配置到数据库
     let db_lock = db.lock().await;
+    let pool = db_lock.get_pool();
+
+    // 先删除所有现有账号和 Base URLs,实现完全覆盖
+    tracing::info!("清空现有配置以实现完全覆盖");
+
+    let _ = sqlx::query("DELETE FROM accounts")
+        .execute(pool)
+        .await;
+
+    let _ = sqlx::query("DELETE FROM base_urls")
+        .execute(pool)
+        .await;
+
+    tracing::info!("已清空现有账号和 Base URLs");
 
     // 解析账号数据
     if let Some(accounts_array) = data.get("accounts").and_then(|v| v.as_array()) {
+        tracing::info!("开始导入账号, 共 {} 个", accounts_array.len());
+        let mut success_count = 0;
+
         for account_data in accounts_array {
             if let (Some(name), Some(token), Some(base_url)) = (
                 account_data.get("name").and_then(|v| v.as_str()),
@@ -995,7 +1012,6 @@ async fn download_config_from_webdav(
                     .and_then(|v| v.as_str())
                     .unwrap_or("claude-sonnet-4-20250514");
 
-                // 创建账号，如果已存在则忽略错误
                 let request = CreateAccountRequest {
                     name: name.to_string(),
                     token: token.to_string(),
@@ -1003,22 +1019,21 @@ async fn download_config_from_webdav(
                     model: model.to_string(),
                 };
 
-                match db_lock.create_account(request).await {
-                    Ok(_) => tracing::info!("导入账号成功: {}", name),
-                    Err(e) => {
-                        if e.to_string().contains("UNIQUE constraint") {
-                            tracing::debug!("账号已存在，跳过: {}", name);
-                        } else {
-                            tracing::warn!("导入账号失败: {} - {}", name, e);
-                        }
-                    }
+                if let Ok(_) = db_lock.create_account(request).await {
+                    success_count += 1;
+                    tracing::debug!("导入账号成功: {}", name);
                 }
             }
         }
+
+        tracing::info!("账号导入完成: 成功 {}/{}", success_count, accounts_array.len());
     }
 
     // 解析 Base URLs 数据
     if let Some(base_urls_array) = data.get("base_urls").and_then(|v| v.as_array()) {
+        tracing::info!("开始导入 Base URLs, 共 {} 个", base_urls_array.len());
+        let mut success_count = 0;
+
         for base_url_data in base_urls_array {
             if let (Some(name), Some(url)) = (
                 base_url_data.get("name").and_then(|v| v.as_str()),
@@ -1037,18 +1052,14 @@ async fn download_config_from_webdav(
                     is_default,
                 };
 
-                match db_lock.create_base_url(request).await {
-                    Ok(_) => tracing::info!("导入 Base URL 成功: {}", name),
-                    Err(e) => {
-                        if e.to_string().contains("UNIQUE constraint") {
-                            tracing::debug!("Base URL 已存在，跳过: {}", name);
-                        } else {
-                            tracing::warn!("导入 Base URL 失败: {} - {}", name, e);
-                        }
-                    }
+                if let Ok(_) = db_lock.create_base_url(request).await {
+                    success_count += 1;
+                    tracing::debug!("导入 Base URL 成功: {}", name);
                 }
             }
         }
+
+        tracing::info!("Base URL 导入完成: 成功 {}/{}", success_count, base_urls_array.len());
     }
 
     // 解析 Claude 设置数据

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use serde_json::{json, Value};
@@ -130,23 +129,6 @@ impl ClaudeConfigManager {
         self.copy_claude_local_md()?;
         
         Ok(true)
-    }
-
-    pub fn get_env_config(&self) -> Result<HashMap<String, String>> {
-        let settings = self.read_settings()?;
-        let mut env_config = HashMap::new();
-
-        if let Some(env) = settings.get("env") {
-            if let Some(obj) = env.as_object() {
-                for (key, value) in obj {
-                    if let Some(str_value) = value.as_str() {
-                        env_config.insert(key.clone(), str_value.to_string());
-                    }
-                }
-            }
-        }
-
-        Ok(env_config)
     }
 
     #[allow(dead_code)]

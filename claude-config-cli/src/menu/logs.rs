@@ -6,10 +6,10 @@ use crate::logger::Logger;
 pub async fn logs_menu() -> Result<()> {
     loop {
         let items = vec![
+            "🔙 返回主菜单",
             "📝 查看最近日志",
             "📊 日志文件信息",
             "📂 打开日志目录",
-            "🔙 返回主菜单",
         ];
 
         let selection = Select::new()
@@ -19,10 +19,10 @@ pub async fn logs_menu() -> Result<()> {
             .interact()?;
 
         match selection {
-            0 => view_recent_logs().await?,
-            1 => show_log_info().await?,
-            2 => open_log_directory().await?,
-            3 => break,
+            0 => break,
+            1 => view_recent_logs().await?,
+            2 => show_log_info().await?,
+            3 => open_log_directory().await?,
             _ => unreachable!(),
         }
     }

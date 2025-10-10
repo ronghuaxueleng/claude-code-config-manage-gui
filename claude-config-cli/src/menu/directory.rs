@@ -7,11 +7,11 @@ use comfy_table::{Attribute, Cell, Color};
 pub async fn directory_menu(db: &DbState) -> Result<()> {
     loop {
         let items = vec![
+            "🔙 返回主菜单",
             "📝 查看所有目录",
             "➕ 添加新目录",
             "✏️  编辑目录",
             "🗑️  删除目录",
-            "🔙 返回主菜单",
         ];
 
         let selection = Select::new()
@@ -21,11 +21,11 @@ pub async fn directory_menu(db: &DbState) -> Result<()> {
             .interact()?;
 
         match selection {
-            0 => list_directories(db).await?,
-            1 => add_directory(db).await?,
-            2 => edit_directory(db).await?,
-            3 => delete_directory(db).await?,
-            4 => break,
+            0 => break,
+            1 => list_directories(db).await?,
+            2 => add_directory(db).await?,
+            3 => edit_directory(db).await?,
+            4 => delete_directory(db).await?,
             _ => unreachable!(),
         }
     }

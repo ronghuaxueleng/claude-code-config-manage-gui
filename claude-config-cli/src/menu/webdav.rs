@@ -7,6 +7,7 @@ use comfy_table::{Attribute, Cell, Color};
 pub async fn webdav_menu(db: &DbState) -> Result<()> {
     loop {
         let items = vec![
+            "🔙 返回主菜单",
             "📝 查看 WebDAV 配置",
             "➕ 添加 WebDAV 配置",
             "🧪 测试连接",
@@ -14,7 +15,6 @@ pub async fn webdav_menu(db: &DbState) -> Result<()> {
             "⬇️  从云端下载配置",
             "📂 查看远程文件",
             "🗑️  删除配置",
-            "🔙 返回主菜单",
         ];
 
         let selection = Select::new()
@@ -24,14 +24,14 @@ pub async fn webdav_menu(db: &DbState) -> Result<()> {
             .interact()?;
 
         match selection {
-            0 => list_configs(db).await?,
-            1 => add_config(db).await?,
-            2 => test_connection(db).await?,
-            3 => upload_config(db).await?,
-            4 => download_config(db).await?,
-            5 => list_remote_files(db).await?,
-            6 => delete_config(db).await?,
-            7 => break,
+            0 => break,
+            1 => list_configs(db).await?,
+            2 => add_config(db).await?,
+            3 => test_connection(db).await?,
+            4 => upload_config(db).await?,
+            5 => download_config(db).await?,
+            6 => list_remote_files(db).await?,
+            7 => delete_config(db).await?,
             _ => unreachable!(),
         }
     }
@@ -106,24 +106,10 @@ async fn add_config(db: &DbState) -> Result<()> {
         .with_prompt("密码")
         .interact()?;
 
-    let remote_path: String = Input::new()
-        .with_prompt("远程路径")
-        .default("/claude-config".to_string())
-        .interact()?;
-
-    let auto_sync = Confirm::new()
-        .with_prompt("启用自动同步?")
-        .default(false)
-        .interact()?;
-
-    let sync_interval: i64 = if auto_sync {
-        Input::new()
-            .with_prompt("同步间隔(秒)")
-            .default(3600)
-            .interact()?
-    } else {
-        3600
-    };
+    // 使用固定的默认值，不再询问用户
+    let remote_path = "/claude-config";
+    let auto_sync = false;
+    let sync_interval: i64 = 3600;
 
     let db_lock = db.lock().await;
     let pool = db_lock.get_pool();
@@ -134,7 +120,7 @@ async fn add_config(db: &DbState) -> Result<()> {
         &url,
         &username,
         &password,
-        &remote_path,
+        remote_path,
         auto_sync,
         sync_interval,
     )
@@ -342,10 +328,27 @@ async fn download_config(db: &DbState) -> Result<()> {
                 Ok(data) => {
                     // 导入配置到数据库
                     let db_lock = db.lock().await;
+                    let pool = db_lock.get_pool();
+
+                    // 先删除所有现有账号和 Base URLs,实现完全覆盖
+                    println!("\n{}", "正在清空现有配置...".yellow());
+
+                    let _ = sqlx::query("DELETE FROM accounts")
+                        .execute(pool)
+                        .await;
+
+                    let _ = sqlx::query("DELETE FROM base_urls")
+                        .execute(pool)
+                        .await;
+
+                    println!("{}", "✓ 已清空现有账号和 Base URLs".green());
 
                     // 解析账号数据
                     if let Some(accounts_array) = data.get("accounts").and_then(|v| v.as_array())
                     {
+                        println!("\n{}", "正在导入账号...".cyan());
+                        let mut success_count = 0;
+
                         for account_data in accounts_array {
                             if let (Some(name), Some(token), Some(base_url)) = (
                                 account_data.get("name").and_then(|v| v.as_str()),
@@ -364,15 +367,22 @@ async fn download_config(db: &DbState) -> Result<()> {
                                     model: model.to_string(),
                                 };
 
-                                let _ = db_lock.create_account(request).await;
+                                if let Ok(_) = db_lock.create_account(request).await {
+                                    success_count += 1;
+                                }
                             }
                         }
+
+                        println!("{}", format!("✓ 成功导入 {} 个账号", success_count).green());
                     }
 
                     // 解析 Base URLs 数据
                     if let Some(base_urls_array) =
                         data.get("base_urls").and_then(|v| v.as_array())
                     {
+                        println!("\n{}", "正在导入 Base URLs...".cyan());
+                        let mut success_count = 0;
+
                         for base_url_data in base_urls_array {
                             if let (Some(name), Some(url)) = (
                                 base_url_data.get("name").and_then(|v| v.as_str()),
@@ -392,9 +402,13 @@ async fn download_config(db: &DbState) -> Result<()> {
                                     is_default,
                                 };
 
-                                let _ = db_lock.create_base_url(request).await;
+                                if let Ok(_) = db_lock.create_base_url(request).await {
+                                    success_count += 1;
+                                }
                             }
                         }
+
+                        println!("{}", format!("✓ 成功导入 {} 个 Base URL", success_count).green());
                     }
 
                     // 解析 Claude 设置数据

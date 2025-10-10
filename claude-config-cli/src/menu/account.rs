@@ -7,11 +7,11 @@ use comfy_table::{Attribute, Cell, Color};
 pub async fn account_menu(db: &DbState) -> Result<()> {
     loop {
         let items = vec![
+            "🔙 返回主菜单",
             "📝 查看所有账号",
             "➕ 添加新账号",
             "✏️  编辑账号",
             "🗑️  删除账号",
-            "🔙 返回主菜单",
         ];
 
         let selection = Select::new()
@@ -21,11 +21,11 @@ pub async fn account_menu(db: &DbState) -> Result<()> {
             .interact()?;
 
         match selection {
-            0 => list_accounts(db).await?,
-            1 => add_account(db).await?,
-            2 => edit_account(db).await?,
-            3 => delete_account(db).await?,
-            4 => break,
+            0 => break,
+            1 => list_accounts(db).await?,
+            2 => add_account(db).await?,
+            3 => edit_account(db).await?,
+            4 => delete_account(db).await?,
             _ => unreachable!(),
         }
     }

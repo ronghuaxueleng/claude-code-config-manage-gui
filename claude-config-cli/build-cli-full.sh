@@ -95,10 +95,14 @@ check_and_install_rust() {
     echo ""
 
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-        print_info "正在下载并安装 Rust..."
+        print_info "正在下载并安装 Rust (使用国内镜像加速)..."
         print_info "这可能需要几分钟时间..."
 
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        # 配置 Rust 安装镜像 (字节跳动 rsproxy)
+        export RUSTUP_DIST_SERVER="https://rsproxy.cn"
+        export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+
+        curl --proto '=https' --tlsv1.2 -sSf https://rsproxy.cn/rustup-init.sh | sh -s -- -y
 
         # 加载 Rust 环境
         export PATH="$HOME/.cargo/bin:$PATH"
@@ -179,9 +183,6 @@ timeout = 60
 # 编译优化
 [build]
 jobs = 4
-
-# 增量编译
-[build]
 incremental = true
 EOF
 

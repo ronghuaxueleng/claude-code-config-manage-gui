@@ -181,23 +181,5 @@ impl ConfigManager {
     pub fn get_default_database_config(&self) -> Option<&DatabaseConfig> {
         self.get_database_config(None)
     }
-    
-    pub fn set_default_connection(&mut self, connection_name: &str) -> Result<()> {
-        // 检查连接是否存在
-        if !self.config.connections.contains_key(connection_name) {
-            return Err(anyhow::anyhow!("Database connection '{}' not found", connection_name));
-        }
-        
-        // 更新默认连接
-        self.config.current = connection_name.to_string();
-        
-        // 如果有配置文件路径，保存到文件
-        if let Some(config_file) = &self.config_file {
-            let content = serde_json::to_string_pretty(&self.config)?;
-            std::fs::write(config_file, content)?;
-        }
-        
-        Ok(())
-    }
-    
+
 }
