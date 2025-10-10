@@ -1,0 +1,29 @@
+[package]
+name = "claude-config-cli"
+version = "1.2.0"
+description = "Claude Code Configuration Manager - CLI Version (命令行版本)"
+authors = ["ronghuaxueleng"]
+edition = "2021"
+
+[[bin]]
+name = "claude-config"
+path = "src/main.rs"
+
+[dependencies]
+sqlx = { version = "0.8", features = ["runtime-tokio-rustls", "sqlite", "mysql", "chrono", "uuid"] }
+tokio = { version = "1", features = ["full"] }
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+anyhow = "1.0"
+directories = "5.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "chrono"] }
+tracing-appender = "0.2"
+reqwest_dav = "0.2"
+reqwest = { version = "0.12", features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dialoguer = "0.11"
+console = "0.15"
+colored = "2.1"
+comfy-table = "7.1"

@@ -1,0 +1,24 @@
+{
+  "connections": {
+    "default": {
+      "url": "sqlite:///claude_config.db",
+      "type": "sqlite"
+    },
+    "mysql_example": {
+      "url": "mysql://user:password@localhost:3306/claude_config",
+      "type": "mysql"
+    }
+  },
+  "current": "default",
+  "app": {
+    "name": "Claude Configuration Manager",
+    "version": "1.0.0",
+    "port": 6666,
+    "debug": false
+  },
+  "default_settings": {
+    "accounts_per_page": 10,
+    "auto_backup": true,
+    "backup_interval_hours": 24
+  }
+}

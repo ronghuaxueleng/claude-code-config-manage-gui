@@ -1,0 +1,30 @@
+# Rust 编译产物
+/target/
+**/*.rs.bk
+*.pdb
+
+# Cargo lock 文件
+Cargo.lock
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 环境配置
+.env
+.env.local
