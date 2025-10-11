@@ -774,7 +774,11 @@ impl Database {
 
     pub async fn update_base_url(&self, id: i64, request: UpdateBaseUrlRequest) -> Result<BaseUrl, SqlxError> {
         let now = Utc::now();
-        
+
+        // 获取旧的 base_url 信息，用于级联更新账号
+        let old_base_url = self.get_base_url(id).await?;
+        let old_url = old_base_url.url.clone();
+
         // If setting as default, unset other defaults
         if let Some(true) = request.is_default {
             sqlx::query("UPDATE base_urls SET is_default = FALSE")
@@ -804,7 +808,7 @@ impl Database {
         let query = format!("UPDATE base_urls SET {} WHERE id = ?", updates.join(", "));
 
         let mut q = sqlx::query(&query);
-        
+
         if let Some(name) = &request.name {
             q = q.bind(name);
         }
@@ -817,9 +821,28 @@ impl Database {
         if let Some(is_default) = request.is_default {
             q = q.bind(is_default);
         }
-        
+
         q = q.bind(now).bind(id);
         q.execute(&self.pool).await?;
+
+        // 如果 URL 发生了变化，级联更新所有使用该 URL 的账号
+        if let Some(new_url) = &request.url {
+            if new_url != &old_url {
+                let result = sqlx::query(
+                    "UPDATE accounts SET base_url = ?, updated_at = ? WHERE base_url = ?"
+                )
+                .bind(new_url)
+                .bind(now)
+                .bind(&old_url)
+                .execute(&self.pool)
+                .await?;
+
+                let affected_rows = result.rows_affected();
+                if affected_rows > 0 {
+                    info!("更新 Base URL '{}' 时，级联更新了 {} 个账号的 base_url", old_base_url.name, affected_rows);
+                }
+            }
+        }
 
         self.get_base_url(id).await
     }
