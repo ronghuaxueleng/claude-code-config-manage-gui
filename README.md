@@ -2,11 +2,6 @@
 
 🚀 一款基于 Tauri 框架构建的现代化 Claude Code 配置管理桌面应用程序，为开发者提供便捷的 Claude API 配置管理解决方案。
 
-<div align="center">
-<img src="images/账号管理.png" alt="Claude Code 配置管理器主界面" width="700"/>
-<p><em>现代化的桌面应用界面，支持多账号管理和一键配置切换</em></p>
-</div>
-
 > **✨ 最新更新 (v1.2.0)**
 > - ☁️ **新增 WebDAV 云同步**: 支持配置数据云端备份和多设备同步
 > - 🔄 **自动同步功能**: 可设置定时自动同步，实时备份配置
@@ -207,50 +202,6 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
 6. **云端备份** (可选): 在"WebDAV 同步"页面配置云存储，实现多设备同步
 
 > **💡 提示**: 首次启动时，应用会显示空白的账号和目录列表，这是正常的。您需要手动添加自己的配置数据。
-
-## 📸 应用截图
-
-### 🔐 账号管理
-<div align="center">
-<img src="images/账号管理.png" alt="账号管理界面" width="800"/>
-<p><em>支持创建、编辑、删除多个 Claude API 账号，实时显示账号状态</em></p>
-</div>
-
-### 📁 目录管理
-<div align="center">
-<img src="images/目录管理.png" alt="目录管理界面" width="800"/>
-<p><em>管理项目目录，支持路径验证和配置预览</em></p>
-</div>
-
-### ⚡ 账号关联与切换
-<div align="center">
-<img src="images/账号关联.png" alt="账号关联界面" width="800"/>
-<p><em>一键切换不同项目的 Claude 配置，智能关联管理</em></p>
-</div>
-
-### 🌐 URL 管理
-<div align="center">
-<img src="images/URL关联.png" alt="URL管理界面" width="800"/>
-<p><em>管理 API 端点，支持自定义 URL 和默认配置</em></p>
-</div>
-
-### 🗄️ 数据库管理
-<div align="center">
-<img src="images/数据库管理.png" alt="数据库管理界面" width="800"/>
-<p><em>数据库连接状态监控，支持 SQLite 和 MySQL</em></p>
-</div>
-
-### 🛠️ Claude 高级配置
-<div align="center">
-<img src="images/Claude配置.png" alt="Claude配置界面" width="800"/>
-<p><em>精细化的权限控制和环境变量配置</em></p>
-</div>
-
-### ☁️ WebDAV 云同步
-<div align="center">
-<img src="images/WebDAV同步.png" alt="WebDAV同步界面" width="800"/>
-<p><em>支持坚果云、NextCloud 等 WebDAV 服务，实现配置云端备份和多设备同步</em></p>
-</div>
 
 ## 💡 功能详解
 
@@ -579,6 +530,50 @@ sudo dnf install webkit2gtk4.0-devel libappindicator-gtk3-devel
 - 应用会自动检测 WSL 可用性，无需手动配置
 </details>
 
+## 📸 应用截图
+
+### 🔐 账号管理
+<div align="center">
+<img src="images/账号管理.png" alt="账号管理界面" width="800"/>
+<p><em>支持创建、编辑、删除多个 Claude API 账号，实时显示账号状态</em></p>
+</div>
+
+### 📁 目录管理
+<div align="center">
+<img src="images/目录管理.png" alt="目录管理界面" width="800"/>
+<p><em>管理项目目录，支持路径验证和配置预览</em></p>
+</div>
+
+### ⚡ 账号关联与切换
+<div align="center">
+<img src="images/账号关联.png" alt="账号关联界面" width="800"/>
+<p><em>一键切换不同项目的 Claude 配置，智能关联管理</em></p>
+</div>
+
+### 🌐 URL 管理
+<div align="center">
+<img src="images/URL关联.png" alt="URL管理界面" width="800"/>
+<p><em>管理 API 端点，支持自定义 URL 和默认配置</em></p>
+</div>
+
+### 🗄️ 数据库管理
+<div align="center">
+<img src="images/数据库管理.png" alt="数据库管理界面" width="800"/>
+<p><em>数据库连接状态监控，支持 SQLite 和 MySQL</em></p>
+</div>
+
+### 🛠️ Claude 高级配置
+<div align="center">
+<img src="images/Claude配置.png" alt="Claude配置界面" width="800"/>
+<p><em>精细化的权限控制和环境变量配置</em></p>
+</div>
+
+### ☁️ WebDAV 云同步
+<div align="center">
+<img src="images/WebDAV同步.png" alt="WebDAV同步界面" width="800"/>
+<p><em>支持坚果云、NextCloud 等 WebDAV 服务，实现配置云端备份和多设备同步</em></p>
+</div>
+
 ## 👨‍💻 开发指南
 
 ### 🏗️ 项目架构
@@ -746,14 +741,8 @@ cargo test
 
 - **🐛 Bug 报告**: [GitHub Issues](../../issues)
 - **💡 功能建议**: [GitHub Discussions](../../discussions)
-- **📧 邮件联系**: [项目维护者邮箱]
-- **💬 即时交流**: [Discord/QQ 群]
 
 ---
 
 <div align="center">
 **⭐ 如果这个项目对你有帮助，请给我们一个 Star！**
-
-[![Made with ❤️ by developers](https://img.shields.io/badge/Made%20with-❤️-red.svg)](../../)
-[![Rust](https://img.shields.io/badge/Built%20with-Rust-orange.svg)](https://www.rust-lang.org/)
-[![Tauri](https://img.shields.io/badge/Powered%20by-Tauri-blue.svg)](https://tauri.app/)
