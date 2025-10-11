@@ -2,6 +2,51 @@ use anyhow::Result;
 use colored::Colorize;
 use dialoguer::Select;
 use crate::{DbState, models::*, claude_config::ClaudeConfigManager};
+use std::path::Path;
+use std::fs;
+
+// 写入 Claude 配置到 .claude/settings.local.json
+fn write_claude_settings(
+    directory_path: &str,
+    claude_settings_json: &str,
+    account_token: &str,
+    account_base_url: &str,
+) -> Result<()> {
+    use serde_json::Value;
+
+    // 解析 Claude 配置
+    let mut claude_settings: Value = serde_json::from_str(claude_settings_json)?;
+
+    // 确保是对象类型
+    if !claude_settings.is_object() {
+        claude_settings = serde_json::json!({});
+    }
+
+    let settings_obj = claude_settings.as_object_mut().unwrap();
+
+    // 确保 env 字段存在
+    if !settings_obj.contains_key("env") {
+        settings_obj.insert("env".to_string(), serde_json::json!({}));
+    }
+
+    let env_obj = settings_obj.get_mut("env").unwrap().as_object_mut().unwrap();
+
+    // 添加账号相关的环境变量
+    env_obj.insert("ANTHROPIC_API_KEY".to_string(), Value::String(account_token.to_string()));
+    env_obj.insert("ANTHROPIC_AUTH_TOKEN".to_string(), Value::String(account_token.to_string()));
+    env_obj.insert("ANTHROPIC_BASE_URL".to_string(), Value::String(account_base_url.to_string()));
+
+    // 创建 .claude 目录
+    let claude_dir = Path::new(directory_path).join(".claude");
+    fs::create_dir_all(&claude_dir)?;
+
+    // 写入 settings.local.json
+    let settings_file = claude_dir.join("settings.local.json");
+    let settings_json = serde_json::to_string_pretty(&claude_settings)?;
+    fs::write(&settings_file, settings_json)?;
+
+    Ok(())
+}
 
 pub async fn switch_menu(db: &DbState) -> Result<()> {
     println!("\n{}", "配置切换".green().bold());
@@ -73,8 +118,11 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
 
     let directory = &directories[directory_selection.unwrap() - 1];
 
-    // 默认启用沙盒模式
-    let is_sandbox = true;
+    // 询问是否启用沙盒模式
+    let is_sandbox = dialoguer::Confirm::new()
+        .with_prompt("启用沙盒模式?")
+        .default(true)
+        .interact()?;
 
     // 执行切换
     println!("\n{}", "正在切换配置...".cyan());
@@ -87,9 +135,28 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
 
     match db_lock.switch_account(request).await {
         Ok(_) => {
+            // 获取 Claude 配置
+            let claude_settings_json = match db_lock.get_claude_settings().await {
+                Ok(json) => json,
+                Err(e) => {
+                    println!("\n{}", format!("警告: 获取Claude配置失败，使用默认配置: {}", e).yellow());
+                    // 使用默认配置
+                    serde_json::to_string(&serde_json::json!({
+                        "permissions": {
+                            "defaultMode": "bypassPermissions",
+                            "allow": ["*"]
+                        },
+                        "env": {
+                            "IS_SANDBOX": "1",
+                            "DISABLE_AUTOUPDATER": 1
+                        }
+                    })).unwrap()
+                }
+            };
+
             drop(db_lock);
 
-            // 更新配置文件
+            // 更新环境配置文件
             let config_manager = ClaudeConfigManager::new(directory.path.clone());
             match config_manager.update_env_config_with_options(
                 account.token.clone(),
@@ -97,11 +164,30 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                 is_sandbox,
             ) {
                 Ok(_) => {
-                    println!("\n{}", "✓ 配置切换成功!".green().bold());
-                    println!("  账号: {}", account.name);
-                    println!("  目录: {}", directory.name);
-                    println!("  路径: {}", directory.path);
-                    println!("  沙盒: {}", if is_sandbox { "启用" } else { "禁用" });
+                    // 写入 Claude 配置到 .claude/settings.local.json
+                    match write_claude_settings(
+                        &directory.path,
+                        &claude_settings_json,
+                        &account.token,
+                        &account.base_url,
+                    ) {
+                        Ok(_) => {
+                            println!("\n{}", "✓ 配置切换成功!".green().bold());
+                            println!("  账号: {}", account.name);
+                            println!("  目录: {}", directory.name);
+                            println!("  路径: {}", directory.path);
+                            println!("  沙盒: {}", if is_sandbox { "启用" } else { "禁用" });
+                            println!("  权限配置: 已写入 .claude/settings.local.json");
+                        }
+                        Err(e) => {
+                            println!("\n{}", "✓ 环境配置切换成功!".green().bold());
+                            println!("  账号: {}", account.name);
+                            println!("  目录: {}", directory.name);
+                            println!("  路径: {}", directory.path);
+                            println!("  沙盒: {}", if is_sandbox { "启用" } else { "禁用" });
+                            println!("\n{}", format!("警告: Claude配置写入失败: {}", e).yellow());
+                        }
+                    }
                 }
                 Err(e) => {
                     println!("\n{}", format!("✗ 配置文件更新失败: {}", e).red());
