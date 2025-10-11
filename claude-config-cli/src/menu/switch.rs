@@ -11,6 +11,7 @@ fn write_claude_settings(
     claude_settings_json: &str,
     account_token: &str,
     account_base_url: &str,
+    skip_permissions: bool,
 ) -> Result<()> {
     use serde_json::Value;
 
@@ -23,6 +24,22 @@ fn write_claude_settings(
     }
 
     let settings_obj = claude_settings.as_object_mut().unwrap();
+
+    // 设置权限配置
+    if skip_permissions {
+        settings_obj.insert("permissions".to_string(), serde_json::json!({
+            "defaultMode": "bypassPermissions",
+            "allow": ["*"]
+        }));
+    } else {
+        // 如果不跳过权限，使用默认的权限配置
+        if !settings_obj.contains_key("permissions") {
+            settings_obj.insert("permissions".to_string(), serde_json::json!({
+                "defaultMode": "prompt",
+                "allow": []
+            }));
+        }
+    }
 
     // 确保 env 字段存在
     if !settings_obj.contains_key("env") {
@@ -118,11 +135,14 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
 
     let directory = &directories[directory_selection.unwrap() - 1];
 
-    // 询问是否启用沙盒模式
-    let is_sandbox = dialoguer::Confirm::new()
-        .with_prompt("启用沙盒模式?")
+    // 询问权限配置
+    let skip_permissions = dialoguer::Confirm::new()
+        .with_prompt("跳过权限检查? (推荐选择 Yes)")
         .default(true)
         .interact()?;
+
+    // 沙盒模式默认开启
+    let is_sandbox = true;
 
     // 执行切换
     println!("\n{}", "正在切换配置...".cyan());
@@ -170,21 +190,22 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                         &claude_settings_json,
                         &account.token,
                         &account.base_url,
+                        skip_permissions,
                     ) {
                         Ok(_) => {
                             println!("\n{}", "✓ 配置切换成功!".green().bold());
                             println!("  账号: {}", account.name);
                             println!("  目录: {}", directory.name);
                             println!("  路径: {}", directory.path);
-                            println!("  沙盒: {}", if is_sandbox { "启用" } else { "禁用" });
-                            println!("  权限配置: 已写入 .claude/settings.local.json");
+                            println!("  沙盒模式: 已启用");
+                            println!("  权限检查: {}", if skip_permissions { "已跳过" } else { "需要确认" });
                         }
                         Err(e) => {
                             println!("\n{}", "✓ 环境配置切换成功!".green().bold());
                             println!("  账号: {}", account.name);
                             println!("  目录: {}", directory.name);
                             println!("  路径: {}", directory.path);
-                            println!("  沙盒: {}", if is_sandbox { "启用" } else { "禁用" });
+                            println!("  沙盒模式: 已启用");
                             println!("\n{}", format!("警告: Claude配置写入失败: {}", e).yellow());
                         }
                     }
