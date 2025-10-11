@@ -96,10 +96,39 @@ async fn add_account(db: &DbState) -> Result<()> {
         .with_prompt("API Token")
         .interact()?;
 
-    let base_url: String = Input::new()
-        .with_prompt("Base URL")
-        .default("https://api.anthropic.com".to_string())
-        .interact()?;
+    // 获取所有 Base URL
+    let db_lock = db.lock().await;
+    let base_urls = db_lock.get_base_urls().await?;
+    drop(db_lock);
+
+    let base_url: String = if base_urls.is_empty() {
+        // 如果没有 Base URL，让用户手动输入
+        println!("\n{}", "暂无可用的 Base URL，请手动输入".yellow());
+        Input::new()
+            .with_prompt("Base URL")
+            .default("https://api.anthropic.com".to_string())
+            .interact()?
+    } else {
+        // 从列表选择 Base URL
+        let items: Vec<String> = base_urls
+            .iter()
+            .map(|u| {
+                if u.is_default {
+                    format!("{} - {} (默认)", u.name, u.url)
+                } else {
+                    format!("{} - {}", u.name, u.url)
+                }
+            })
+            .collect();
+
+        let selection = Select::new()
+            .with_prompt("选择 Base URL")
+            .items(&items)
+            .default(0)
+            .interact()?;
+
+        base_urls[selection].url.clone()
+    };
 
     let model: String = Input::new()
         .with_prompt("模型")
@@ -172,10 +201,45 @@ async fn edit_account(db: &DbState) -> Result<()> {
             .default(account.token.clone())
             .interact()?;
 
-        let base_url: String = Input::new()
-            .with_prompt("Base URL")
-            .default(account.base_url.clone())
-            .interact()?;
+        // 获取所有 Base URL
+        let db_lock = db.lock().await;
+        let base_urls = db_lock.get_base_urls().await?;
+        drop(db_lock);
+
+        let base_url: String = if base_urls.is_empty() {
+            // 如果没有 Base URL，让用户手动输入
+            println!("\n{}", "暂无可用的 Base URL，请手动输入".yellow());
+            Input::new()
+                .with_prompt("Base URL")
+                .default(account.base_url.clone())
+                .interact()?
+        } else {
+            // 从列表选择 Base URL
+            let items: Vec<String> = base_urls
+                .iter()
+                .map(|u| {
+                    if u.is_default {
+                        format!("{} - {} (默认)", u.name, u.url)
+                    } else {
+                        format!("{} - {}", u.name, u.url)
+                    }
+                })
+                .collect();
+
+            // 查找当前账号使用的 Base URL 的索引
+            let default_index = base_urls
+                .iter()
+                .position(|u| u.url == account.base_url)
+                .unwrap_or(0);
+
+            let selection = Select::new()
+                .with_prompt("选择 Base URL")
+                .items(&items)
+                .default(default_index)
+                .interact()?;
+
+            base_urls[selection].url.clone()
+        };
 
         let model: String = Input::new()
             .with_prompt("模型")

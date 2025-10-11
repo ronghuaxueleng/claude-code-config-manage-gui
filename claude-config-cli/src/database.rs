@@ -733,7 +733,7 @@ impl Database {
         }
 
         let result = sqlx::query(
-            "INSERT INTO base_urls (name, url, description, is_default, created_at, updated_at) 
+            "INSERT INTO base_urls (name, url, description, is_default, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?)"
         )
         .bind(&request.name)
@@ -751,6 +751,124 @@ impl Database {
             .await?;
 
         Ok(base_url)
+    }
+
+    pub async fn get_base_url(&self, id: i64) -> Result<BaseUrl, SqlxError> {
+        sqlx::query_as::<_, BaseUrl>("SELECT * FROM base_urls WHERE id = ?")
+            .bind(id)
+            .fetch_one(&self.pool)
+            .await
+    }
+
+    pub async fn update_base_url(&self, id: i64, request: UpdateBaseUrlRequest) -> Result<BaseUrl, SqlxError> {
+        let now = Utc::now();
+
+        // 获取旧的 base_url 信息，用于级联更新账号
+        let old_base_url = self.get_base_url(id).await?;
+        let old_url = old_base_url.url.clone();
+
+        // If setting as default, unset other defaults
+        if let Some(true) = request.is_default {
+            sqlx::query("UPDATE base_urls SET is_default = FALSE")
+                .execute(&self.pool)
+                .await?;
+        }
+
+        let mut updates = Vec::new();
+        if let Some(_name) = &request.name {
+            updates.push("name = ?");
+        }
+        if let Some(_url) = &request.url {
+            updates.push("url = ?");
+        }
+        if let Some(_description) = &request.description {
+            updates.push("description = ?");
+        }
+        if let Some(_is_default) = request.is_default {
+            updates.push("is_default = ?");
+        }
+
+        if updates.is_empty() {
+            return self.get_base_url(id).await;
+        }
+
+        updates.push("updated_at = ?");
+        let query = format!("UPDATE base_urls SET {} WHERE id = ?", updates.join(", "));
+
+        let mut q = sqlx::query(&query);
+
+        if let Some(name) = &request.name {
+            q = q.bind(name);
+        }
+        if let Some(url) = &request.url {
+            q = q.bind(url);
+        }
+        if let Some(description) = &request.description {
+            q = q.bind(description);
+        }
+        if let Some(is_default) = request.is_default {
+            q = q.bind(is_default);
+        }
+
+        q = q.bind(now).bind(id);
+        q.execute(&self.pool).await?;
+
+        // 如果 URL 发生了变化，级联更新所有使用该 URL 的账号
+        if let Some(new_url) = &request.url {
+            if new_url != &old_url {
+                let result = sqlx::query(
+                    "UPDATE accounts SET base_url = ?, updated_at = ? WHERE base_url = ?"
+                )
+                .bind(new_url)
+                .bind(now)
+                .bind(&old_url)
+                .execute(&self.pool)
+                .await?;
+
+                let affected_rows = result.rows_affected();
+                if affected_rows > 0 {
+                    info!("更新 Base URL '{}' 时，级联更新了 {} 个账号的 base_url", old_base_url.name, affected_rows);
+                }
+            }
+        }
+
+        self.get_base_url(id).await
+    }
+
+    pub async fn delete_base_url(&self, id: i64) -> Result<(), SqlxError> {
+        // 先获取要删除的 base_url 信息
+        let base_url = self.get_base_url(id).await?;
+
+        // 查找使用这个 base_url 的所有账号
+        let affected_accounts: Vec<(i64, String)> = sqlx::query_as(
+            "SELECT id, name FROM accounts WHERE base_url = ?"
+        )
+        .bind(&base_url.url)
+        .fetch_all(&self.pool)
+        .await?;
+
+        if !affected_accounts.is_empty() {
+            info!("删除 Base URL '{}' 时，同时删除 {} 个关联的账号", base_url.name, affected_accounts.len());
+
+            // 删除所有使用该 base_url 的账号
+            for (account_id, account_name) in affected_accounts {
+                info!("删除账号: {} (ID: {})，因为其使用的 Base URL 被删除", account_name, account_id);
+                self.delete_account(account_id).await?;
+            }
+        }
+
+        // 删除 base_url 记录
+        let result = sqlx::query("DELETE FROM base_urls WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(SqlxError::RowNotFound);
+        }
+
+        info!("成功删除 Base URL，ID: {}", id);
+        Ok(())
     }
 
     // Switch account functionality

@@ -72,6 +72,14 @@ pub struct CreateBaseUrlRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct UpdateBaseUrlRequest {
+    pub name: Option<String>,
+    pub url: Option<String>,
+    pub description: Option<String>,
+    pub is_default: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SwitchAccountRequest {
     pub account_id: i64,
     pub directory_id: i64,

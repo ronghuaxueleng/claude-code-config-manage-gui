@@ -67,18 +67,21 @@ async fn main() -> Result<()> {
                 menu::directory::directory_menu(&db).await?;
             }
             2 => {
-                menu::switch::switch_menu(&db).await?;
+                menu::base_url::base_url_menu(&db).await?;
             }
             3 => {
-                menu::webdav::webdav_menu(&db).await?;
+                menu::switch::switch_menu(&db).await?;
             }
             4 => {
-                menu::logs::logs_menu().await?;
+                menu::webdav::webdav_menu(&db).await?;
             }
             5 => {
-                remove_root_check()?;
+                menu::logs::logs_menu().await?;
             }
             6 => {
+                remove_root_check()?;
+            }
+            7 => {
                 println!("\n{}", "感谢使用 Claude Code 配置管理器！".green().bold());
                 break;
             }
@@ -103,6 +106,7 @@ fn show_main_menu() -> Result<usize> {
     let items = vec![
         "📋 账号管理",
         "📁 目录管理",
+        "🌐 URL 管理",
         "⚡ 配置切换",
         "☁️  WebDAV 同步",
         "📝 查看日志",
