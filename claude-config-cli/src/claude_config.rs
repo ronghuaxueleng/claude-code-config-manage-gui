@@ -152,46 +152,20 @@ impl ClaudeConfigManager {
     }
     
     fn copy_claude_local_md(&self) -> Result<()> {
-        use std::env;
-        
-        let exe_dir = env::current_exe()?.parent().unwrap().to_path_buf();
-        
-        let possible_source_paths = vec![
-            // 开发环境路径
-            exe_dir.join("../../../config/CLAUDE.local.md"),
-            exe_dir.join("../../../../config/CLAUDE.local.md"),
-            exe_dir.join("../../../../../config/CLAUDE.local.md"),
-            // 打包后的资源路径 - Tauri v2
-            exe_dir.join("resources/config/CLAUDE.local.md"),
-            exe_dir.join("../resources/config/CLAUDE.local.md"),
-            exe_dir.join("../../resources/config/CLAUDE.local.md"),
-        ];
-        
-        let mut source_file = None;
-        for path in possible_source_paths {
-            if path.exists() {
-                source_file = Some(path);
-                break;
-            }
-        }
-        
-        let source_file = source_file.ok_or_else(|| {
-            anyhow::anyhow!("找不到源文件 CLAUDE.local.md，已搜索的路径: {:?}", 
-                exe_dir.join("../../../config/CLAUDE.local.md"))
-        })?;
-        
+        // 使用 include_str! 在编译时嵌入 CLAUDE.local.md 内容
+        const CLAUDE_LOCAL_MD_CONTENT: &str = include_str!("../resources/config/CLAUDE.local.md");
+
         // 目标文件路径
         let target_file = Path::new(&self.directory_path).join("CLAUDE.local.md");
-        
-        // 复制文件
-        fs::copy(&source_file, &target_file)?;
-        
+
+        // 写入文件
+        fs::write(&target_file, CLAUDE_LOCAL_MD_CONTENT)?;
+
         tracing::info!(
-            "成功复制 CLAUDE.local.md 从 {} 到 {}", 
-            source_file.display(), 
+            "成功写入 CLAUDE.local.md 到 {}",
             target_file.display()
         );
-        
+
         Ok(())
     }
 }

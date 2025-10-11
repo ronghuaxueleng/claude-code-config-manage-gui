@@ -4,6 +4,8 @@ use dialoguer::{Input, Select};
 use crate::logger::Logger;
 
 pub async fn logs_menu() -> Result<()> {
+    let mut last_selection = 0;
+
     loop {
         let items = vec![
             "🔙 返回主菜单",
@@ -15,8 +17,10 @@ pub async fn logs_menu() -> Result<()> {
         let selection = Select::new()
             .with_prompt("\n日志管理")
             .items(&items)
-            .default(0)
+            .default(last_selection)
             .interact()?;
+
+        last_selection = selection;
 
         match selection {
             0 => break,

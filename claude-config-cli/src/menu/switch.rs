@@ -1,6 +1,6 @@
 use anyhow::Result;
 use colored::Colorize;
-use dialoguer::{Select, Confirm};
+use dialoguer::Select;
 use crate::{DbState, models::*, claude_config::ClaudeConfigManager};
 
 pub async fn switch_menu(db: &DbState) -> Result<()> {
@@ -29,51 +29,52 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
     }
 
     // 选择账号
-    let account_items: Vec<String> = accounts_response.accounts
-        .iter()
-        .map(|a| format!("{} - {}", a.name, a.base_url))
-        .collect();
+    let mut account_items: Vec<String> = vec!["🔙 取消".to_string()];
+    account_items.extend(
+        accounts_response.accounts
+            .iter()
+            .map(|a| format!("{} - {}", a.name, a.base_url))
+    );
 
     let account_selection = Select::new()
         .with_prompt("选择账号")
         .items(&account_items)
         .interact_opt()?;
 
-    if account_selection.is_none() {
+    if account_selection.is_none() || account_selection == Some(0) {
         return Ok(());
     }
 
-    let account = &accounts_response.accounts[account_selection.unwrap()];
+    let account = &accounts_response.accounts[account_selection.unwrap() - 1];
 
     // 选择目录
-    let directory_items: Vec<String> = directories
-        .iter()
-        .map(|d| {
-            let exists = if std::path::Path::new(&d.path).exists() {
-                "✓"
-            } else {
-                "✗"
-            };
-            format!("{} {} - {}", exists, d.name, d.path)
-        })
-        .collect();
+    let mut directory_items: Vec<String> = vec!["🔙 取消".to_string()];
+    directory_items.extend(
+        directories
+            .iter()
+            .map(|d| {
+                let exists = if std::path::Path::new(&d.path).exists() {
+                    "✓"
+                } else {
+                    "✗"
+                };
+                format!("{} {} - {}", exists, d.name, d.path)
+            })
+    );
 
     let directory_selection = Select::new()
         .with_prompt("选择目录")
         .items(&directory_items)
         .interact_opt()?;
 
-    if directory_selection.is_none() {
+    if directory_selection.is_none() || directory_selection == Some(0) {
         return Ok(());
     }
 
-    let directory = &directories[directory_selection.unwrap()];
+    let directory = &directories[directory_selection.unwrap() - 1];
 
-    // 询问是否启用沙盒模式
-    let is_sandbox = Confirm::new()
-        .with_prompt("启用沙盒模式?")
-        .default(true)
-        .interact()?;
+    // 默认启用沙盒模式
+    let is_sandbox = true;
 
     // 执行切换
     println!("\n{}", "正在切换配置...".cyan());

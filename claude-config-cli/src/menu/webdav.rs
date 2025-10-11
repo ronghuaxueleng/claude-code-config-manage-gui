@@ -5,6 +5,8 @@ use crate::{DbState, models::*, webdav};
 use comfy_table::{Attribute, Cell, Color};
 
 pub async fn webdav_menu(db: &DbState) -> Result<()> {
+    let mut last_selection = 0;
+
     loop {
         let items = vec![
             "🔙 返回主菜单",
@@ -20,8 +22,10 @@ pub async fn webdav_menu(db: &DbState) -> Result<()> {
         let selection = Select::new()
             .with_prompt("\nWebDAV 同步管理")
             .items(&items)
-            .default(0)
+            .default(last_selection)
             .interact()?;
+
+        last_selection = selection;
 
         match selection {
             0 => break,
@@ -148,10 +152,12 @@ async fn test_connection(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = configs
-        .iter()
-        .map(|c| format!("{} - {}", c.name, c.url))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        configs
+            .iter()
+            .map(|c| format!("{} - {}", c.name, c.url))
+    );
 
     let selection = Select::new()
         .with_prompt("选择要测试的配置")
@@ -159,6 +165,10 @@ async fn test_connection(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let config = &configs[idx];
 
         println!("\n{}", "正在测试连接...".cyan());
@@ -194,10 +204,12 @@ async fn upload_config(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = configs
-        .iter()
-        .map(|c| format!("{} - {}", c.name, c.url))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        configs
+            .iter()
+            .map(|c| format!("{} - {}", c.name, c.url))
+    );
 
     drop(db_lock);
 
@@ -207,6 +219,10 @@ async fn upload_config(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let config = &configs[idx];
 
         let filename: String = Input::new()
@@ -291,10 +307,12 @@ async fn download_config(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = configs
-        .iter()
-        .map(|c| format!("{} - {}", c.name, c.url))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        configs
+            .iter()
+            .map(|c| format!("{} - {}", c.name, c.url))
+    );
 
     let selection = Select::new()
         .with_prompt("选择 WebDAV 配置")
@@ -302,6 +320,10 @@ async fn download_config(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let config = &configs[idx];
 
         // 列出远程文件
@@ -314,12 +336,19 @@ async fn download_config(db: &DbState) -> Result<()> {
             return Ok(());
         }
 
+        let mut file_items: Vec<String> = vec!["🔙 取消".to_string()];
+        file_items.extend(files.clone());
+
         let file_selection = Select::new()
             .with_prompt("选择要下载的文件")
-            .items(&files)
+            .items(&file_items)
             .interact_opt()?;
 
         if let Some(file_idx) = file_selection {
+            if file_idx == 0 {
+                return Ok(());
+            }
+            let file_idx = file_idx - 1;
             let filename = &files[file_idx];
 
             println!("\n{}", "正在从云端下载配置...".cyan());
@@ -463,10 +492,12 @@ async fn list_remote_files(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = configs
-        .iter()
-        .map(|c| format!("{} - {}", c.name, c.url))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        configs
+            .iter()
+            .map(|c| format!("{} - {}", c.name, c.url))
+    );
 
     let selection = Select::new()
         .with_prompt("选择 WebDAV 配置")
@@ -474,6 +505,10 @@ async fn list_remote_files(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let config = &configs[idx];
 
         println!("\n{}", "正在获取远程文件列表...".cyan());
@@ -516,10 +551,12 @@ async fn delete_config(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = configs
-        .iter()
-        .map(|c| format!("{} - {}", c.name, c.url))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        configs
+            .iter()
+            .map(|c| format!("{} - {}", c.name, c.url))
+    );
 
     let selection = Select::new()
         .with_prompt("选择要删除的配置")
@@ -527,6 +564,10 @@ async fn delete_config(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let config = &configs[idx];
 
         if Confirm::new()

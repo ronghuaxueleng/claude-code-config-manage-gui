@@ -5,6 +5,8 @@ use crate::{DbState, models::*};
 use comfy_table::{Attribute, Cell, Color};
 
 pub async fn directory_menu(db: &DbState) -> Result<()> {
+    let mut last_selection = 0;
+
     loop {
         let items = vec![
             "🔙 返回主菜单",
@@ -17,8 +19,10 @@ pub async fn directory_menu(db: &DbState) -> Result<()> {
         let selection = Select::new()
             .with_prompt("\n目录管理")
             .items(&items)
-            .default(0)
+            .default(last_selection)
             .interact()?;
+
+        last_selection = selection;
 
         match selection {
             0 => break,
@@ -131,10 +135,12 @@ async fn edit_directory(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = directories
-        .iter()
-        .map(|d| format!("{} - {}", d.name, d.path))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        directories
+            .iter()
+            .map(|d| format!("{} - {}", d.name, d.path))
+    );
 
     let selection = Select::new()
         .with_prompt("选择要编辑的目录")
@@ -142,6 +148,10 @@ async fn edit_directory(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let directory = &directories[idx];
 
         let name: String = Input::new()
@@ -183,10 +193,12 @@ async fn delete_directory(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = directories
-        .iter()
-        .map(|d| format!("{} - {}", d.name, d.path))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        directories
+            .iter()
+            .map(|d| format!("{} - {}", d.name, d.path))
+    );
 
     let selection = Select::new()
         .with_prompt("选择要删除的目录")
@@ -194,6 +206,10 @@ async fn delete_directory(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let directory = &directories[idx];
 
         if Confirm::new()

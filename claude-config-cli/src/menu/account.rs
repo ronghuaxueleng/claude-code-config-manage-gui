@@ -5,6 +5,8 @@ use crate::{DbState, models::*};
 use comfy_table::{Attribute, Cell, Color};
 
 pub async fn account_menu(db: &DbState) -> Result<()> {
+    let mut last_selection = 0;
+
     loop {
         let items = vec![
             "🔙 返回主菜单",
@@ -17,8 +19,10 @@ pub async fn account_menu(db: &DbState) -> Result<()> {
         let selection = Select::new()
             .with_prompt("\n账号管理")
             .items(&items)
-            .default(0)
+            .default(last_selection)
             .interact()?;
+
+        last_selection = selection;
 
         match selection {
             0 => break,
@@ -139,10 +143,12 @@ async fn edit_account(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = response.accounts
-        .iter()
-        .map(|a| format!("{} - {}", a.name, a.base_url))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        response.accounts
+            .iter()
+            .map(|a| format!("{} - {}", a.name, a.base_url))
+    );
 
     let selection = Select::new()
         .with_prompt("选择要编辑的账号")
@@ -150,6 +156,10 @@ async fn edit_account(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let account = &response.accounts[idx];
 
         let name: String = Input::new()
@@ -209,10 +219,12 @@ async fn delete_account(db: &DbState) -> Result<()> {
         return Ok(());
     }
 
-    let items: Vec<String> = response.accounts
-        .iter()
-        .map(|a| format!("{} - {}", a.name, a.base_url))
-        .collect();
+    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    items.extend(
+        response.accounts
+            .iter()
+            .map(|a| format!("{} - {}", a.name, a.base_url))
+    );
 
     let selection = Select::new()
         .with_prompt("选择要删除的账号")
@@ -220,6 +232,10 @@ async fn delete_account(db: &DbState) -> Result<()> {
         .interact_opt()?;
 
     if let Some(idx) = selection {
+        if idx == 0 {
+            return Ok(());
+        }
+        let idx = idx - 1;
         let account = &response.accounts[idx];
 
         if Confirm::new()
