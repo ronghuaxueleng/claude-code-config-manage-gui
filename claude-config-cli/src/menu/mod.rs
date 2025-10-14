@@ -4,6 +4,7 @@ pub mod switch;
 pub mod webdav;
 pub mod logs;
 pub mod base_url;
+pub mod settings;
 
 use comfy_table::{Table, presets::UTF8_FULL};
 

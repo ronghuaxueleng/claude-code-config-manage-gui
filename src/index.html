@@ -7,6 +7,7 @@
     <link href="assets/css/bootstrap.min.css" rel="stylesheet">
     <link href="assets/css/font-awesome.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="i18n.js?v=1" defer></script>
     <script type="module" src="main.js?v=16" defer></script>
     <script type="module" src="webdav.js" defer></script>
 </head>
@@ -15,8 +16,18 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
-                <i class="fas fa-cog me-2"></i>Claude Code配置管理
+                <i class="fas fa-cog me-2"></i><span data-i18n="app.title">Claude Code配置管理</span>
             </span>
+            <div class="ms-auto">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-light btn-sm" id="langZh" onclick="switchLanguage('zh-CN')">
+                        <i class="fas fa-flag me-1"></i>中文
+                    </button>
+                    <button type="button" class="btn btn-outline-light btn-sm" id="langEn" onclick="switchLanguage('en-US')">
+                        <i class="fas fa-flag me-1"></i>English
+                    </button>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -29,44 +40,44 @@
         <!-- 标签导航 -->
         <ul class="nav nav-tabs" id="mainTabs" role="tablist">
             <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts-pane" 
-                        type="button" role="tab" aria-controls="accounts-pane" aria-selected="true">
+                <button class="nav-link active" id="accounts-tab" data-bs-toggle="tab" data-bs-target="#accounts-pane"
+                        type="button" role="tab" aria-controls="accounts-pane" aria-selected="true" data-i18n="nav.accounts">
                     <i class="fas fa-user"></i> 账号管理
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="directories-tab" data-bs-toggle="tab" data-bs-target="#directories-pane" 
-                        type="button" role="tab" aria-controls="directories-pane" aria-selected="false">
+                <button class="nav-link" id="directories-tab" data-bs-toggle="tab" data-bs-target="#directories-pane"
+                        type="button" role="tab" aria-controls="directories-pane" aria-selected="false" data-i18n="nav.directories">
                     <i class="fas fa-folder"></i> 目录管理
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="association-tab" data-bs-toggle="tab" data-bs-target="#association-pane" 
-                        type="button" role="tab" aria-controls="association-pane" aria-selected="false">
+                <button class="nav-link" id="association-tab" data-bs-toggle="tab" data-bs-target="#association-pane"
+                        type="button" role="tab" aria-controls="association-pane" aria-selected="false" data-i18n="nav.association">
                     <i class="fas fa-link"></i> 账号关联
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="urls-tab" data-bs-toggle="tab" data-bs-target="#urls-pane" 
-                        type="button" role="tab" aria-controls="urls-pane" aria-selected="false">
+                <button class="nav-link" id="urls-tab" data-bs-toggle="tab" data-bs-target="#urls-pane"
+                        type="button" role="tab" aria-controls="urls-pane" aria-selected="false" data-i18n="nav.urls">
                     <i class="fas fa-globe"></i> URL管理
                 </button>
             </li>
             <li class="nav-item" role="presentation" style="display: none;">
                 <button class="nav-link" id="database-tab" data-bs-toggle="tab" data-bs-target="#database-pane"
-                        type="button" role="tab" aria-controls="database-pane" aria-selected="false">
+                        type="button" role="tab" aria-controls="database-pane" aria-selected="false" data-i18n="nav.database">
                     <i class="fas fa-database"></i> 数据库管理
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="claude-settings-tab" data-bs-toggle="tab" data-bs-target="#claude-settings-pane"
-                        type="button" role="tab" aria-controls="claude-settings-pane" aria-selected="false">
+                        type="button" role="tab" aria-controls="claude-settings-pane" aria-selected="false" data-i18n="nav.claude_settings">
                     <i class="fas fa-sliders-h"></i> Claude配置
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" id="webdav-tab" data-bs-toggle="tab" data-bs-target="#webdav-pane"
-                        type="button" role="tab" aria-controls="webdav-pane" aria-selected="false">
+                        type="button" role="tab" aria-controls="webdav-pane" aria-selected="false" data-i18n="nav.webdav">
                     <i class="fas fa-cloud"></i> WebDAV同步
                 </button>
             </li>
@@ -77,31 +88,31 @@
             <!-- 账号管理标签页 -->
             <div class="tab-pane fade show active" id="accounts-pane" role="tabpanel" aria-labelledby="accounts-tab">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">账号列表</h5>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#accountModal">
+                    <h5 class="mb-0" data-i18n="accounts.title">账号列表</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#accountModal" data-i18n="accounts.add">
                         <i class="fas fa-plus"></i> 添加账号
                     </button>
                 </div>
-                
+
                 <!-- 筛选和搜索区域 -->
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label for="accountSearch" class="form-label">搜索</label>
-                        <input type="text" class="form-control" id="accountSearch" placeholder="搜索账号名称或Token...">
+                        <label for="accountSearch" class="form-label" data-i18n="accounts.search">搜索</label>
+                        <input type="text" class="form-control" id="accountSearch" data-i18n-placeholder="accounts.search_placeholder">
                     </div>
                     <div class="col-md-4">
-                        <label for="baseUrlFilter" class="form-label">筛选URL</label>
+                        <label for="baseUrlFilter" class="form-label" data-i18n="accounts.filter_url">筛选URL</label>
                         <select class="form-select" id="baseUrlFilter">
-                            <option value="">所有URL</option>
+                            <option value="" data-i18n="select.all_urls">所有URL</option>
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label for="perPageSelect" class="form-label">每页显示</label>
+                        <label for="perPageSelect" class="form-label" data-i18n="accounts.per_page">每页显示</label>
                         <select class="form-select" id="perPageSelect">
-                            <option value="5" selected>5条</option>
-                            <option value="10">10条</option>
-                            <option value="20">20条</option>
-                            <option value="50">50条</option>
+                            <option value="5" selected data-i18n="select.per_page_5">5条</option>
+                            <option value="10" data-i18n="select.per_page_10">10条</option>
+                            <option value="20" data-i18n="select.per_page_20">20条</option>
+                            <option value="50" data-i18n="select.per_page_50">50条</option>
                         </select>
                     </div>
                 </div>
@@ -122,12 +133,12 @@
             <!-- 目录管理标签页 -->
             <div class="tab-pane fade" id="directories-pane" role="tabpanel" aria-labelledby="directories-tab">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">目录管理</h5>
+                    <h5 class="mb-0" data-i18n="directories.title">目录管理</h5>
                     <div>
-                        <button id="cleanupInvalidDirBtn" class="btn btn-warning btn-sm me-2" onclick="cleanupInvalidDirectories()" style="display: none;">
+                        <button id="cleanupInvalidDirBtn" class="btn btn-warning btn-sm me-2" onclick="cleanupInvalidDirectories()" style="display: none;" data-i18n="directories.cleanup">
                             <i class="fas fa-broom"></i> 清除无效目录
                         </button>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#directoryModal">
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#directoryModal" data-i18n="directories.add">
                             <i class="fas fa-plus"></i> 添加目录
                         </button>
                     </div>
@@ -144,14 +155,14 @@
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-folder me-2"></i>目录选择
+                                    <i class="fas fa-folder me-2"></i><span data-i18n="association.directory_title">目录选择</span>
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label for="directorySelect" class="form-label">选择目录</label>
+                                    <label for="directorySelect" class="form-label" data-i18n="association.directory_select">选择目录</label>
                                     <select class="form-select" id="directorySelect">
-                                        <option value="">请选择目录</option>
+                                        <option value="" data-i18n="association.directory_placeholder">请选择目录</option>
                                     </select>
                                 </div>
                                 <div id="selectedDirectoryInfo" class="alert alert-info d-none">
@@ -163,46 +174,46 @@
                         <div class="card mt-3">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-cog me-2"></i>当前配置状态
+                                    <i class="fas fa-cog me-2"></i><span data-i18n="association.config_status_title">当前配置状态</span>
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div id="associationConfigStatus">
-                                    <div class="text-muted">请先选择目录</div>
+                                    <div class="text-muted" data-i18n="association.config_status_empty">请先选择目录</div>
                                 </div>
-                                
+
                                 <!-- Claude配置状态 -->
                                 <div id="claudeConfigStatus" class="mt-3" style="display: none;">
                                     <hr>
                                     <h6 class="text-primary">
-                                        <i class="fas fa-sliders-h me-2"></i>Claude配置状态
+                                        <i class="fas fa-sliders-h me-2"></i><span data-i18n="association.claude_config">Claude配置状态</span>
                                     </h6>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="mb-2">
-                                                <strong>权限模式：</strong>
-                                                <span id="claudePermissionMode" class="badge bg-secondary">未配置</span>
+                                                <strong data-i18n="association.permission_mode">权限模式：</strong>
+                                                <span id="claudePermissionMode" class="badge bg-secondary" data-i18n="status.not_configured">未配置</span>
                                             </div>
                                             <div class="mb-2">
-                                                <strong>沙盒模式：</strong>
-                                                <span id="claudeSandboxMode" class="badge bg-secondary">未配置</span>
+                                                <strong data-i18n="association.sandbox_mode">沙盒模式：</strong>
+                                                <span id="claudeSandboxMode" class="badge bg-secondary" data-i18n="status.not_configured">未配置</span>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="mb-2">
-                                                <strong>自动更新：</strong>
-                                                <span id="claudeAutoUpdater" class="badge bg-secondary">未配置</span>
+                                                <strong data-i18n="association.auto_updater">自动更新：</strong>
+                                                <span id="claudeAutoUpdater" class="badge bg-secondary" data-i18n="status.not_configured">未配置</span>
                                             </div>
                                             <div class="mb-2">
-                                                <strong>允许工具：</strong>
-                                                <span id="claudeAllowedTools" class="badge bg-secondary">未配置</span>
+                                                <strong data-i18n="association.allowed_tools">允许工具：</strong>
+                                                <span id="claudeAllowedTools" class="badge bg-secondary" data-i18n="status.not_configured">未配置</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="mt-2">
                                         <small class="text-muted">
                                             <i class="fas fa-info-circle me-1"></i>
-                                            切换账号时将自动应用上述Claude配置
+                                            <span data-i18n="association.config_note">切换账号时将自动应用上述Claude配置</span>
                                         </small>
                                     </div>
                                 </div>
@@ -214,18 +225,18 @@
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-sync-alt me-2"></i>账号切换
+                                    <i class="fas fa-sync-alt me-2"></i><span data-i18n="association.switch_title">账号切换</span>
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label for="associationAccountSelect" class="form-label">选择账号</label>
+                                    <label for="associationAccountSelect" class="form-label" data-i18n="association.account_select">选择账号</label>
                                     <select class="form-select" id="associationAccountSelect">
-                                        <option value="">请选择账号</option>
+                                        <option value="" data-i18n="association.account_placeholder">请选择账号</option>
                                     </select>
                                 </div>
-                                
-                                <button class="btn btn-success w-100" id="associationSwitchBtn" onclick="performAccountSwitch()" disabled>
+
+                                <button class="btn btn-success w-100" id="associationSwitchBtn" onclick="performAccountSwitch()" disabled data-i18n="association.switch_button">
                                     <i class="fas fa-sync-alt me-2"></i>切换到此账号
                                 </button>
                             </div>
@@ -234,7 +245,7 @@
                         <div class="card mt-3">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-users me-2"></i>可用账号列表
+                                    <i class="fas fa-users me-2"></i><span data-i18n="association.accounts_title">可用账号列表</span>
                                 </h5>
                             </div>
                             <div class="card-body">
@@ -250,8 +261,8 @@
             <!-- URL管理标签页 -->
             <div class="tab-pane fade" id="urls-pane" role="tabpanel" aria-labelledby="urls-tab">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">URL管理</h5>
-                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#urlModal">
+                    <h5 class="mb-0" data-i18n="urls.title">URL管理</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#urlModal" data-i18n="urls.add">
                         <i class="fas fa-plus"></i> 添加URL
                     </button>
                 </div>
@@ -266,15 +277,15 @@
                     <div class="col-md-6">
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">当前连接信息</h5>
-                                <button class="btn btn-info btn-sm" onclick="loadDatabaseInfo()">
+                                <h5 class="mb-0" data-i18n="database.current_connection">当前连接信息</h5>
+                                <button class="btn btn-info btn-sm" onclick="loadDatabaseInfo()" data-i18n="database.refresh">
                                     <i class="fas fa-sync"></i> 刷新
                                 </button>
                             </div>
                             <div class="card-body">
                                 <div id="currentDbInfo" class="alert alert-info">
                                     <div class="spinner-border spinner-border-sm" role="status"></div>
-                                    <span class="ms-2">加载中...</span>
+                                    <span class="ms-2" data-i18n="database.loading">加载中...</span>
                                 </div>
                             </div>
                         </div>
@@ -282,20 +293,20 @@
                     <div class="col-md-6">
                         <div class="card">
                             <div class="card-header">
-                                <h5 class="mb-0">数据库连接管理</h5>
+                                <h5 class="mb-0" data-i18n="database.manage_title">数据库连接管理</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label for="dbConnectionSelect" class="form-label">选择数据库连接</label>
+                                    <label for="dbConnectionSelect" class="form-label" data-i18n="database.select_connection">选择数据库连接</label>
                                     <select id="dbConnectionSelect" class="form-select">
-                                        <option value="">选择数据库连接</option>
+                                        <option value="" data-i18n="select.select_db_connection">选择数据库连接</option>
                                     </select>
                                 </div>
                                 <div class="d-grid gap-2">
-                                    <button id="switchDbBtn" class="btn btn-outline-secondary" onclick="switchDatabase()" disabled>
+                                    <button id="switchDbBtn" class="btn btn-outline-secondary" onclick="switchDatabase()" disabled data-i18n="database.switch_connection">
                                         <i class="fas fa-exchange-alt"></i> 切换连接
                                     </button>
-                                    <button id="testDbBtn" class="btn btn-success" onclick="testDatabase()">
+                                    <button id="testDbBtn" class="btn btn-success" onclick="testDatabase()" data-i18n="database.test_connection">
                                         <i class="fas fa-check-circle"></i> 测试连接
                                     </button>
                                 </div>
@@ -317,29 +328,29 @@
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-shield-alt me-2"></i>权限配置
+                                    <i class="fas fa-shield-alt me-2"></i><span data-i18n="claude.permission_title">权限配置</span>
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label">默认权限模式</label>
+                                    <label class="form-label" data-i18n="claude.permission_mode">默认权限模式</label>
                                     <select class="form-select" id="defaultPermissionMode">
-                                        <option value="normal">标准模式 (需要确认)</option>
-                                        <option value="acceptEdits">自动批准编辑</option>
-                                        <option value="bypassPermissions" selected>绕过所有权限 (仅限安全环境)</option>
+                                        <option value="normal" data-i18n="claude.permission_normal">标准模式 (需要确认)</option>
+                                        <option value="acceptEdits" data-i18n="claude.permission_accept_edits">自动批准编辑</option>
+                                        <option value="bypassPermissions" selected data-i18n="claude.permission_bypass">绕过所有权限 (仅限安全环境)</option>
                                     </select>
                                     <div class="form-text">
                                         <i class="fas fa-exclamation-triangle text-warning"></i>
-                                        bypassPermissions模式会跳过所有安全检查，请谨慎使用<br>
-                                        <small>如果提示 <code>--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons</code>，请执行 <code>sh .claude/remove-root-check.sh</code></small>
+                                        <span data-i18n="claude.permission_warning">bypassPermissions模式会跳过所有安全检查，请谨慎使用</span><br>
+                                        <small data-i18n="claude.permission_help">如果提示 <code>--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons</code>，请执行 <code>sh .claude/remove-root-check.sh</code></small>
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="allowedTools" class="form-label">允许的工具</label>
+                                    <label for="allowedTools" class="form-label" data-i18n="claude.allowed_tools">允许的工具</label>
                                     <div class="form-check mb-2">
                                         <input class="form-check-input" type="checkbox" id="allowAllTools" checked>
-                                        <label class="form-check-label" for="allowAllTools">
+                                        <label class="form-check-label" for="allowAllTools" data-i18n="claude.allow_all_tools">
                                             允许所有工具 (*)
                                         </label>
                                     </div>
@@ -349,10 +360,10 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="deniedTools" class="form-label">禁用的工具</label>
+                                    <label for="deniedTools" class="form-label" data-i18n="claude.denied_tools">禁用的工具</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" id="newDeniedTool" placeholder="输入要禁用的工具名称">
-                                        <button class="btn btn-outline-danger" type="button" onclick="addDeniedTool()">
+                                        <input type="text" class="form-control" id="newDeniedTool" data-i18n-placeholder="claude.denied_tools_placeholder">
+                                        <button class="btn btn-outline-danger" type="button" onclick="addDeniedTool()" data-i18n="claude.deny_button">
                                             <i class="fas fa-ban"></i> 禁用
                                         </button>
                                     </div>
@@ -369,110 +380,110 @@
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-cogs me-2"></i>环境变量配置
+                                    <i class="fas fa-cogs me-2"></i><span data-i18n="claude.env_title">环境变量配置</span>
                                 </h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label">沙盒模式</label>
+                                    <label class="form-label" data-i18n="claude.sandbox_mode">沙盒模式</label>
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="sandboxMode" checked>
-                                        <label class="form-check-label" for="sandboxMode">
+                                        <label class="form-check-label" for="sandboxMode" data-i18n="claude.sandbox_enable">
                                             启用沙盒模式 (IS_SANDBOX)
                                         </label>
                                     </div>
-                                    <div class="form-text">
+                                    <div class="form-text" data-i18n="claude.sandbox_help">
                                         启用后限制Claude访问范围，增强安全性
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">自动更新</label>
+                                    <label class="form-label" data-i18n="claude.auto_updater">自动更新</label>
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="disableAutoUpdater" checked>
-                                        <label class="form-check-label" for="disableAutoUpdater">
+                                        <label class="form-check-label" for="disableAutoUpdater" data-i18n="claude.auto_updater_disable">
                                             禁用自动更新 (DISABLE_AUTOUPDATER)
                                         </label>
                                     </div>
-                                    <div class="form-text">
+                                    <div class="form-text" data-i18n="claude.auto_updater_help">
                                         禁用Claude Code的自动更新功能
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">提示缓存</label>
+                                    <label class="form-label" data-i18n="claude.prompt_caching">提示缓存</label>
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="disablePromptCaching">
-                                        <label class="form-check-label" for="disablePromptCaching">
+                                        <label class="form-check-label" for="disablePromptCaching" data-i18n="claude.prompt_caching_disable">
                                             禁用提示缓存 (DISABLE_PROMPT_CACHING)
                                         </label>
                                     </div>
-                                    <div class="form-text">
+                                    <div class="form-text" data-i18n="claude.prompt_caching_help">
                                         禁用提示缓存可能增加成本但确保每次都是新鲜响应
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">指定模型</label>
-                                    <input type="text" class="form-control" id="anthropicModel" placeholder="例如: claude-sonnet-4-20250514">
-                                    <div class="form-text">
+                                    <label class="form-label" data-i18n="claude.model">指定模型</label>
+                                    <input type="text" class="form-control" id="anthropicModel" data-i18n-placeholder="claude.model_placeholder">
+                                    <div class="form-text" data-i18n="claude.model_help">
                                         指定使用的Claude模型 (ANTHROPIC_MODEL)
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">快速模型</label>
-                                    <input type="text" class="form-control" id="smallFastModel" placeholder="例如: claude-3-5-haiku-20241022">
-                                    <div class="form-text">
+                                    <label class="form-label" data-i18n="claude.fast_model">快速模型</label>
+                                    <input type="text" class="form-control" id="smallFastModel" data-i18n-placeholder="claude.fast_model_placeholder">
+                                    <div class="form-text" data-i18n="claude.fast_model_help">
                                         指定小型快速模型，用于简单任务 (ANTHROPIC_SMALL_FAST_MODEL)
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">最大输出Token数</label>
-                                    <input type="number" class="form-control" id="maxOutputTokens" placeholder="例如: 64000">
-                                    <div class="form-text">
+                                    <label class="form-label" data-i18n="claude.max_output_tokens">最大输出Token数</label>
+                                    <input type="number" class="form-control" id="maxOutputTokens" data-i18n-placeholder="claude.max_output_tokens_placeholder">
+                                    <div class="form-text" data-i18n="claude.max_output_tokens_help">
                                         设置Claude响应的最大输出token数 (CLAUDE_CODE_MAX_OUTPUT_TOKENS)，Sonnet支持最高64000
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">最大思考Token数</label>
-                                    <input type="number" class="form-control" id="maxThinkingTokens" placeholder="例如: 10000">
-                                    <div class="form-text">
+                                    <label class="form-label" data-i18n="claude.max_thinking_tokens">最大思考Token数</label>
+                                    <input type="number" class="form-control" id="maxThinkingTokens" data-i18n-placeholder="claude.max_thinking_tokens_placeholder">
+                                    <div class="form-text" data-i18n="claude.max_thinking_tokens_help">
                                         设置Claude思考时的最大token数 (MAX_THINKING_TOKENS)
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">MCP输出Token限制</label>
-                                    <input type="number" class="form-control" id="maxMcpOutputTokens" placeholder="例如: 25000">
-                                    <div class="form-text">
+                                    <label class="form-label" data-i18n="claude.max_mcp_tokens">MCP输出Token限制</label>
+                                    <input type="number" class="form-control" id="maxMcpOutputTokens" data-i18n-placeholder="claude.max_mcp_tokens_placeholder">
+                                    <div class="form-text" data-i18n="claude.max_mcp_tokens_help">
                                         设置MCP工具输出的最大token数 (MAX_MCP_OUTPUT_TOKENS)
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Bash命令超时时间(毫秒)</label>
-                                    <input type="number" class="form-control" id="bashTimeout" placeholder="例如: 120000">
-                                    <div class="form-text">
+                                    <label class="form-label" data-i18n="claude.bash_timeout">Bash命令超时时间(毫秒)</label>
+                                    <input type="number" class="form-control" id="bashTimeout" data-i18n-placeholder="claude.bash_timeout_placeholder">
+                                    <div class="form-text" data-i18n="claude.bash_timeout_help">
                                         设置Bash命令执行超时时间，单位毫秒 (BASH_DEFAULT_TIMEOUT_MS)
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">MCP超时时间(毫秒)</label>
-                                    <input type="number" class="form-control" id="mcpTimeout" placeholder="例如: 60000">
-                                    <div class="form-text">
+                                    <label class="form-label" data-i18n="claude.mcp_timeout">MCP超时时间(毫秒)</label>
+                                    <input type="number" class="form-control" id="mcpTimeout" data-i18n-placeholder="claude.mcp_timeout_placeholder">
+                                    <div class="form-text" data-i18n="claude.mcp_timeout_help">
                                         设置MCP服务器超时时间，单位毫秒 (MCP_TIMEOUT)
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="customEnvVars" class="form-label">自定义环境变量</label>
+                                    <label for="customEnvVars" class="form-label" data-i18n="claude.custom_env">自定义环境变量</label>
                                     <div class="input-group mb-2">
-                                        <input type="text" class="form-control" id="newEnvKey" placeholder="变量名">
-                                        <input type="text" class="form-control" id="newEnvValue" placeholder="变量值">
+                                        <input type="text" class="form-control" id="newEnvKey" data-i18n-placeholder="claude.custom_env_key">
+                                        <input type="text" class="form-control" id="newEnvValue" data-i18n-placeholder="claude.custom_env_value">
                                         <button class="btn btn-outline-primary" type="button" onclick="addCustomEnvVar()">
                                             <i class="fas fa-plus"></i>
                                         </button>
@@ -492,10 +503,10 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-file-code me-2"></i>生成的配置文件内容
+                                    <i class="fas fa-file-code me-2"></i><span data-i18n="claude.preview_title">生成的配置文件内容</span>
                                 </h5>
                                 <div>
-                                    <button class="btn btn-success btn-sm" onclick="saveClaudeConfigToDatabase()">
+                                    <button class="btn btn-success btn-sm" onclick="saveClaudeConfigToDatabase()" data-i18n="common.save">
                                         <i class="fas fa-save"></i> 保存配置
                                     </button>
                                 </div>
@@ -503,25 +514,25 @@
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label for="settingsJsonPreview" class="form-label">
-                                        settings.local.json 内容预览
-                                        <span class="badge bg-success ms-2">实时生成</span>
+                                        <span data-i18n="claude.preview_label">settings.local.json 内容预览</span>
+                                        <span class="badge bg-success ms-2" data-i18n="claude.preview_badge">实时生成</span>
                                     </label>
-                                    <textarea class="form-control font-monospace" id="settingsJsonPreview" rows="15" 
-                                              readonly placeholder="根据上面的配置自动生成JSON内容..."></textarea>
+                                    <textarea class="form-control font-monospace" id="settingsJsonPreview" rows="15"
+                                              readonly data-i18n-placeholder="claude.preview_placeholder"></textarea>
                                     <div class="form-text">
                                         <i class="fas fa-info-circle"></i>
-                                        此内容根据上面的配置选项实时生成，点击"保存配置"保存到数据库
+                                        <span data-i18n="claude.preview_help">此内容根据上面的配置选项实时生成，点击"保存配置"保存到数据库</span>
                                     </div>
                                 </div>
 
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle me-2"></i>
-                                    <strong>使用说明：</strong>
+                                    <strong data-i18n="claude.usage_title">使用说明：</strong>
                                     <ul class="mb-0">
-                                        <li>配置保存到数据库中，下次启动时会自动加载</li>
-                                        <li>在"账号关联"页面切换账号时，会将此配置写入 .claude/settings.local.json</li>
-                                        <li>切换账号时会自动添加对应的账号环境变量（ANTHROPIC_API_KEY等）</li>
-                                        <li>bypassPermissions模式请仅在可信的开发环境中使用</li>
+                                        <li data-i18n="claude.usage_1">配置保存到数据库中，下次启动时会自动加载</li>
+                                        <li data-i18n="claude.usage_2">在"账号关联"页面切换账号时，会将此配置写入 .claude/settings.local.json</li>
+                                        <li data-i18n="claude.usage_3">切换账号时会自动添加对应的账号环境变量（ANTHROPIC_API_KEY等）</li>
+                                        <li data-i18n="claude.usage_4">bypassPermissions模式请仅在可信的开发环境中使用</li>
                                     </ul>
                                 </div>
                             </div>
@@ -538,9 +549,9 @@
                         <div class="card">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-cloud me-2"></i>WebDAV配置
+                                    <i class="fas fa-cloud me-2"></i><span data-i18n="webdav.config_title">WebDAV配置</span>
                                 </h5>
-                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#webdavConfigModal">
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#webdavConfigModal" data-i18n="common.add">
                                     <i class="fas fa-plus"></i> 添加配置
                                 </button>
                             </div>
@@ -557,7 +568,7 @@
                         <div class="card">
                             <div class="card-header">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-sync-alt me-2"></i>同步操作
+                                    <i class="fas fa-sync-alt me-2"></i><span data-i18n="webdav.sync_title">同步操作</span>
                                 </h5>
                             </div>
                             <div class="card-body">
@@ -574,9 +585,9 @@
                         <div class="card mt-3">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">
-                                    <i class="fas fa-history me-2"></i>同步日志
+                                    <i class="fas fa-history me-2"></i><span data-i18n="webdav.logs_title">同步日志</span>
                                 </h5>
-                                <button class="btn btn-secondary btn-sm" onclick="loadSyncLogs()">
+                                <button class="btn btn-secondary btn-sm" onclick="loadSyncLogs()" data-i18n="common.refresh">
                                     <i class="fas fa-sync"></i> 刷新
                                 </button>
                             </div>
@@ -597,36 +608,36 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">添加账号</h5>
+                    <h5 class="modal-title" data-i18n="accounts.add">添加账号</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="accountForm">
                         <div class="mb-3">
-                            <label for="accountName" class="form-label">账号名称</label>
+                            <label for="accountName" class="form-label" data-i18n="accounts.name">账号名称</label>
                             <input type="text" class="form-control" id="accountName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="accountToken" class="form-label">Token</label>
-                            <input type="text" class="form-control" id="accountToken" required 
-                                   placeholder="sk-ant-api03-...">
+                            <label for="accountToken" class="form-label" data-i18n="accounts.token">Token</label>
+                            <input type="text" class="form-control" id="accountToken" required
+                                   data-i18n-placeholder="accounts.token_placeholder">
                         </div>
                         <div class="mb-3">
-                            <label for="accountBaseUrl" class="form-label">Base URL</label>
+                            <label for="accountBaseUrl" class="form-label" data-i18n="accounts.base_url">Base URL</label>
                             <div class="input-group">
                                 <select class="form-select" id="accountBaseUrlSelect" style="max-width: 200px;">
-                                    <option value="">选择预设URL</option>
+                                    <option value="" data-i18n="accounts.select_url">选择预设URL</option>
                                 </select>
-                                <input type="url" class="form-control" id="accountBaseUrl" required 
-                                       placeholder="或手动输入URL">
+                                <input type="url" class="form-control" id="accountBaseUrl" required
+                                       data-i18n-placeholder="accounts.base_url_placeholder">
                             </div>
-                            <div class="form-text">可以从预设URL中选择，或手动输入自定义URL</div>
+                            <div class="form-text" data-i18n="accounts.base_url_help">可以从预设URL中选择，或手动输入自定义URL</div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="saveAccount">保存</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveAccount" data-i18n="common.save">保存</button>
                 </div>
             </div>
         </div>
@@ -637,21 +648,21 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">添加目录</h5>
+                    <h5 class="modal-title" data-i18n="directories.add">添加目录</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="directoryForm">
                         <div class="mb-3">
-                            <label for="directoryName" class="form-label">目录名称</label>
+                            <label for="directoryName" class="form-label" data-i18n="directories.name">目录名称</label>
                             <input type="text" class="form-control" id="directoryName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="directoryPath" class="form-label">目录路径</label>
+                            <label for="directoryPath" class="form-label" data-i18n="directories.path">目录路径</label>
                             <div class="input-group">
-                                <input type="text" class="form-control" id="directoryPath" required 
-                                       placeholder="例如: /home/user/project">
-                                <button class="btn btn-outline-secondary" type="button" id="selectDirectoryBtn">
+                                <input type="text" class="form-control" id="directoryPath" required
+                                       data-i18n-placeholder="directories.path_placeholder">
+                                <button class="btn btn-outline-secondary" type="button" id="selectDirectoryBtn" data-i18n="directories.select">
                                     <i class="fas fa-folder-open"></i> 选择目录
                                 </button>
                             </div>
@@ -659,8 +670,8 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="saveDirectory">保存</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveDirectory" data-i18n="common.save">保存</button>
                 </div>
             </div>
         </div>
@@ -671,36 +682,36 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">添加URL</h5>
+                    <h5 class="modal-title" data-i18n="urls.add">添加URL</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="urlForm">
                         <div class="mb-3">
-                            <label for="urlName" class="form-label">URL名称</label>
+                            <label for="urlName" class="form-label" data-i18n="urls.name">URL名称</label>
                             <input type="text" class="form-control" id="urlName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="urlAddress" class="form-label">URL地址</label>
-                            <input type="url" class="form-control" id="urlAddress" required 
-                                   placeholder="https://api.anthropic.com">
+                            <label for="urlAddress" class="form-label" data-i18n="urls.address">URL地址</label>
+                            <input type="url" class="form-control" id="urlAddress" required
+                                   data-i18n-placeholder="urls.address_placeholder">
                         </div>
                         <div class="mb-3">
-                            <label for="urlDescription" class="form-label">描述</label>
-                            <input type="text" class="form-control" id="urlDescription" 
-                                   placeholder="可选的描述信息">
+                            <label for="urlDescription" class="form-label" data-i18n="urls.description">描述</label>
+                            <input type="text" class="form-control" id="urlDescription"
+                                   data-i18n-placeholder="urls.description_placeholder">
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="urlIsDefault">
-                            <label class="form-check-label" for="urlIsDefault">
+                            <label class="form-check-label" for="urlIsDefault" data-i18n="urls.is_default">
                                 设为默认URL
                             </label>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="saveUrl">保存</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveUrl" data-i18n="common.save">保存</button>
                 </div>
             </div>
         </div>
@@ -711,7 +722,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">配置详情</h5>
+                    <h5 class="modal-title" data-i18n="modal.config_details">配置详情</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -720,7 +731,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="modal.close">关闭</button>
                 </div>
             </div>
         </div>
@@ -731,53 +742,53 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">WebDAV配置</h5>
+                    <h5 class="modal-title" data-i18n="webdav.config_title">WebDAV配置</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="webdavConfigForm">
                         <div class="mb-3">
-                            <label for="webdavName" class="form-label">配置名称</label>
+                            <label for="webdavName" class="form-label" data-i18n="webdav.name">配置名称</label>
                             <input type="text" class="form-control" id="webdavName" required>
                         </div>
                         <div class="mb-3">
-                            <label for="webdavUrl" class="form-label">WebDAV服务器地址</label>
+                            <label for="webdavUrl" class="form-label" data-i18n="webdav.url">WebDAV服务器地址</label>
                             <input type="url" class="form-control" id="webdavUrl" required
-                                   placeholder="https://dav.example.com">
+                                   data-i18n-placeholder="webdav.url_placeholder">
                         </div>
                         <div class="mb-3">
-                            <label for="webdavUsername" class="form-label">用户名</label>
+                            <label for="webdavUsername" class="form-label" data-i18n="webdav.username">用户名</label>
                             <input type="text" class="form-control" id="webdavUsername" required>
                         </div>
                         <div class="mb-3">
-                            <label for="webdavPassword" class="form-label">密码</label>
+                            <label for="webdavPassword" class="form-label" data-i18n="webdav.password">密码</label>
                             <input type="password" class="form-control" id="webdavPassword" required>
                         </div>
                         <div class="mb-3">
-                            <label for="webdavRemotePath" class="form-label">远程路径</label>
+                            <label for="webdavRemotePath" class="form-label" data-i18n="webdav.remote_path">远程路径</label>
                             <input type="text" class="form-control" id="webdavRemotePath"
-                                   value="/claude-config" placeholder="/claude-config">
-                            <div class="form-text">配置文件在WebDAV服务器上的存储路径</div>
+                                   value="/claude-config" data-i18n-placeholder="webdav.remote_path_placeholder">
+                            <div class="form-text" data-i18n="webdav.remote_path_help">配置文件在WebDAV服务器上的存储路径</div>
                         </div>
                         <div class="mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="webdavAutoSync">
-                                <label class="form-check-label" for="webdavAutoSync">
+                                <label class="form-check-label" for="webdavAutoSync" data-i18n="webdav.auto_sync">
                                     启用自动同步
                                 </label>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="webdavSyncInterval" class="form-label">同步间隔(秒)</label>
+                            <label for="webdavSyncInterval" class="form-label" data-i18n="webdav.sync_interval">同步间隔(秒)</label>
                             <input type="number" class="form-control" id="webdavSyncInterval"
-                                   value="3600" min="60" placeholder="3600">
-                            <div class="form-text">自动同步的时间间隔(秒)</div>
+                                   value="3600" min="60" data-i18n-placeholder="webdav.sync_interval_placeholder">
+                            <div class="form-text" data-i18n="webdav.sync_interval_help">自动同步的时间间隔(秒)</div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="saveWebdavConfig">保存</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="common.cancel">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveWebdavConfig" data-i18n="common.save">保存</button>
                 </div>
             </div>
         </div>
@@ -789,16 +800,16 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="customConfirmTitle">
-                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>确认操作
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i><span data-i18n="common.confirm">确认操作</span>
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n="common.close"></button>
                 </div>
                 <div class="modal-body" id="customConfirmMessage">
                     <!-- 确认消息将通过JavaScript动态填充 -->
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="customConfirmCancel">取消</button>
-                    <button type="button" class="btn btn-danger" id="customConfirmOk">确定</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="customConfirmCancel" data-i18n="common.cancel">取消</button>
+                    <button type="button" class="btn btn-danger" id="customConfirmOk" data-i18n="common.confirm">确定</button>
                 </div>
             </div>
         </div>

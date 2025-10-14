@@ -5,6 +5,7 @@ mod config_manager;
 mod logger;
 mod webdav;
 mod menu;
+mod i18n;
 
 use anyhow::Result;
 use colored::Colorize;
@@ -31,22 +32,22 @@ async fn main() -> Result<()> {
     print_banner();
 
     // 初始化数据库
-    println!("{}", "正在初始化数据库...".cyan());
+    println!("{}", i18n::translate("db.init").cyan());
     let db = match Database::new().await {
         Ok(database) => {
-            println!("{}", "✓ 数据库初始化成功".green());
+            println!("{}", i18n::translate("db.init_success").green());
             Arc::new(Mutex::new(database))
         }
         Err(e) => {
-            eprintln!("{}", format!("✗ 数据库初始化失败: {}", e).red());
-            println!("\n尝试使用默认配置创建数据库...");
+            eprintln!("{}", format!("{}: {}", i18n::translate("db.init_error"), e).red());
+            println!("\n{}", i18n::translate("db.fallback"));
             match Database::create_with_fallback().await {
                 Ok(database) => {
-                    println!("{}", "✓ 使用默认配置创建数据库成功".green());
+                    println!("{}", i18n::translate("db.fallback_success").green());
                     Arc::new(Mutex::new(database))
                 }
                 Err(e) => {
-                    eprintln!("{}", format!("✗ 无法初始化数据库: {}", e).red());
+                    eprintln!("{}", format!("{}: {}", i18n::translate("db.fallback_error"), e).red());
                     return Err(e.into());
                 }
             }
@@ -82,7 +83,10 @@ async fn main() -> Result<()> {
                 remove_root_check()?;
             }
             7 => {
-                println!("\n{}", "感谢使用 Claude Code 配置管理器！".green().bold());
+                menu::settings::settings_menu().await?;
+            }
+            8 => {
+                println!("\n{}", i18n::translate("app.exit_message").green().bold());
                 break;
             }
             _ => unreachable!(),
@@ -95,7 +99,11 @@ async fn main() -> Result<()> {
 fn print_banner() {
     println!("{}", "╔═══════════════════════════════════════════════════════════════╗".bright_blue());
     println!("{}", "║                                                               ║".bright_blue());
-    println!("{}", "║        Claude Code 配置管理器 - 命令行版本 v1.2.0            ║".bright_blue().bold());
+    println!("{}", format!("║        {} - {} {}            ║",
+        i18n::translate("app.name"),
+        i18n::translate("app.cli_subtitle"),
+        i18n::translate("app.version")
+    ).bright_blue().bold());
     println!("{}", "║        Claude Code Configuration Manager - CLI               ║".bright_blue());
     println!("{}", "║                                                               ║".bright_blue());
     println!("{}", "╚═══════════════════════════════════════════════════════════════╝".bright_blue());
@@ -104,18 +112,19 @@ fn print_banner() {
 
 fn show_main_menu() -> Result<usize> {
     let items = vec![
-        "📋 账号管理",
-        "📁 目录管理",
-        "🌐 URL 管理",
-        "⚡ 配置切换",
-        "☁️  WebDAV 同步",
-        "📝 查看日志",
-        "🔓 删除限制代码",
-        "❌ 退出程序",
+        i18n::translate("menu.main.account"),
+        i18n::translate("menu.main.directory"),
+        i18n::translate("menu.main.url"),
+        i18n::translate("menu.main.switch"),
+        i18n::translate("menu.main.webdav"),
+        i18n::translate("menu.main.logs"),
+        i18n::translate("menu.main.remove_root"),
+        i18n::translate("menu.main.settings"),
+        i18n::translate("menu.main.exit"),
     ];
 
     let selection = Select::new()
-        .with_prompt("\n请选择操作")
+        .with_prompt(format!("\n{}", i18n::translate("menu.main.title")))
         .items(&items)
         .default(0)
         .interact()?;

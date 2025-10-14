@@ -6,7 +6,7 @@ let lastTestedConnection = null;
 let lastTestResult = null;
 
 // 自定义确认对话框函数
-async function customConfirm(message, title = '确认操作') {
+async function customConfirm(message, title = window.i18n.t('confirm.default_title')) {
     return new Promise((resolve) => {
         const modal = document.getElementById('customConfirmModal');
         const titleElement = document.getElementById('customConfirmTitle');
@@ -202,7 +202,7 @@ function getErrorMessage(error) {
     } else if (error && typeof error.toString === 'function') {
         return error.toString();
     } else {
-        return '未知错误';
+        return window.i18n.t('error.unknown');
     }
 }
 
@@ -235,7 +235,7 @@ async function loadAccounts(page = 1, resetPage = false) {
         await renderAccounts();
         renderAccountsPagination(response.pagination);
     } catch (error) {
-        showError('加载账号失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.load_accounts') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -244,7 +244,7 @@ async function renderAccounts() {
     const container = document.getElementById('accountsList');
     
     if (accounts.length === 0) {
-        container.innerHTML = '<div class="text-muted">暂无账号</div>';
+        container.innerHTML = '<div class="text-muted">' + window.i18n.t('text.no_accounts') + '</div>';
         return;
     }
     
@@ -394,7 +394,7 @@ async function loadAccountBaseUrlOptions() {
         const select = document.getElementById('baseUrlFilter');
         
         // Keep "All URLs" option
-        select.innerHTML = '<option value="">所有URL</option>';
+        select.innerHTML = '<option value="">' + window.i18n.t('text.all_urls') + '</option>';
         
         baseUrlOptions.forEach(url => {
             const option = document.createElement('option');
@@ -447,7 +447,7 @@ async function loadDirectories() {
         directories = await tauriGetDirectories();
         renderDirectories();
     } catch (error) {
-        showError('加载目录失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.load_directories') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -456,7 +456,7 @@ async function renderDirectories() {
     const container = document.getElementById('directoriesList');
     
     if (directories.length === 0) {
-        container.innerHTML = '<div class="text-muted">暂无目录</div>';
+        container.innerHTML = '<div class="text-muted">' + window.i18n.t('text.no_directories') + '</div>';
         return;
     }
     
@@ -488,16 +488,16 @@ async function renderDirectories() {
                 <div class="directory-info">
                     <div class="fw-bold">
                         ${directory.is_active ? '<span class="directory-active-indicator"></span>' : ''}${directory.name}
-                        ${!directory.exists ? '<span class="badge bg-warning text-dark ms-2">文件夹不存在</span>' : ''}
+                        ${!directory.exists ? '<span class="badge bg-warning text-dark ms-2">' + window.i18n.t('text.folder_not_exist') + '</span>' : ''}
                     </div>
                     <div class="small text-muted">${directory.path}</div>
-                    ${!directory.exists ? '<div class="small text-warning"><i class="fas fa-exclamation-triangle me-1"></i>该目录在文件系统中不存在，点击删除将清理数据库记录</div>' : ''}
+                    ${!directory.exists ? '<div class="small text-warning"><i class="fas fa-exclamation-triangle me-1"></i>' + window.i18n.t('text.dir_not_exist_hint') + '</div>' : ''}
                 </div>
                 <div class="directory-actions">
-                    <button class="btn btn-sm btn-outline-info" onclick="viewConfig(${directory.id})" ${!directory.exists ? 'disabled title="目录不存在，无法查看配置"' : ''}>查看配置</button>
-                    <button class="btn btn-sm btn-outline-primary" onclick="editDirectory(${directory.id})" ${!directory.exists ? 'disabled title="目录不存在，请先删除记录"' : ''}>编辑</button>
+                    <button class="btn btn-sm btn-outline-info" onclick="viewConfig(${directory.id})" ${!directory.exists ? 'disabled title="' + window.i18n.t('text.dir_not_exist_cannot_view') + '"' : ''}>${window.i18n.t('text.view_config')}</button>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editDirectory(${directory.id})" ${!directory.exists ? 'disabled title="' + window.i18n.t('text.dir_not_exist_delete_first') + '"' : ''}>${window.i18n.t('text.edit')}</button>
                     <button class="btn btn-sm ${!directory.exists ? 'btn-warning' : 'btn-outline-danger'}" onclick="promptDeleteDirectory(${directory.id}, '${directory.name.replace(/'/g, '\\\'')}')" ${isDeleting ? 'disabled' : ''}>
-                        ${!directory.exists ? '清理记录' : '删除'}
+                        ${!directory.exists ? window.i18n.t('button.cleanup_record') : window.i18n.t('common.delete')}
                     </button>
                 </div>
             </div>
@@ -510,23 +510,23 @@ async function saveAccount() {
     const name = document.getElementById('accountName').value.trim();
     const token = document.getElementById('accountToken').value.trim();
     const base_url = document.getElementById('accountBaseUrl').value.trim();
-    
+
     if (!name || !token || !base_url) {
-        showError('请填写所有必需字段');
+        showError(window.i18n.t('validation.required_fields'));
         return;
     }
-    
+
     // 验证base_url格式
     try {
         new URL(base_url);
     } catch (e) {
-        showError('请输入有效的Base URL格式（例如：https://api.anthropic.com）');
+        showError(window.i18n.t('validation.invalid_url'));
         return;
     }
-    
+
     // 确保URL以http或https开头
     if (!base_url.startsWith('http://') && !base_url.startsWith('https://')) {
-        showError('Base URL必须以http://或https://开头');
+        showError(window.i18n.t('validation.url_protocol'));
         return;
     }
     
@@ -541,15 +541,15 @@ async function saveAccount() {
         // Reload accounts list and base_url options
         await loadAccounts(currentAccountPage);
         await loadAccountBaseUrlOptions();
-        showSuccess('账号添加成功');
+        showSuccess(window.i18n.t('success.account_added'));
     } catch (error) {
         // 处理特定的数据库错误
         let errorMessage = getErrorMessage(error);
         if (errorMessage.includes('UNIQUE constraint failed: accounts.name')) {
-            errorMessage = '账号名称已存在，请使用不同的名称';
+            errorMessage = window.i18n.t('error.account_name_exists');
         }
-        
-        showError('添加账号失败: ' + errorMessage);
+
+        showError(window.i18n.t('error.add_account') + ': ' + errorMessage);
     }
 }
 
@@ -560,19 +560,19 @@ let editingDirectoryId = null;
 async function saveDirectory() {
     const name = document.getElementById('directoryName').value.trim();
     const path = document.getElementById('directoryPath').value.trim();
-    
+
     if (!name || !path) {
-        showError('请填写所有必需字段');
+        showError(window.i18n.t('validation.required_fields'));
         return;
     }
-    
+
     // 验证路径是否存在
     try {
         const pathExists = await tauriCheckDirectoryExists(path);
         if (!pathExists) {
             const confirmed = await customConfirm(
-                `路径 "${path}" 在文件系统中不存在。\n\n确定要继续添加吗？\n\n注意：您稍后可以在目录列表中清理不存在的目录记录。`,
-                '路径不存在'
+                window.i18n.t('confirm.path_not_exist').replace('{path}', path),
+                window.i18n.t('confirm.path_not_exist_title')
             );
             if (!confirmed) {
                 return;
@@ -582,30 +582,30 @@ async function saveDirectory() {
         console.warn('无法验证路径存在性:', error);
         // 继续执行，不阻止操作
     }
-    
+
     try {
         if (editingDirectoryId) {
             // Update existing directory
             await tauriUpdateDirectory(editingDirectoryId, { name, path });
-            showSuccess('目录更新成功');
+            showSuccess(window.i18n.t('success.directory_updated'));
         } else {
             // Create new directory
             await tauriCreateDirectory(path, name);
-            showSuccess('目录添加成功');
+            showSuccess(window.i18n.t('success.directory_added'));
         }
-        
+
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('directoryModal'));
         modal.hide();
         resetDirectoryModal();
-        
+
         // Reload directories list
         await loadDirectories();
     } catch (error) {
         if (editingDirectoryId) {
-            showError('更新目录失败: ' + getErrorMessage(error));
+            showError(window.i18n.t('error.update_directory') + ': ' + getErrorMessage(error));
         } else {
-            showError('添加目录失败: ' + getErrorMessage(error));
+            showError(window.i18n.t('error.add_directory') + ': ' + getErrorMessage(error));
         }
     }
 }
@@ -615,17 +615,17 @@ async function editAccount(accountId) {
     try {
         const account = accounts.find(acc => acc.id === accountId);
         if (!account) {
-            showError('找不到账号信息');
+            showError(window.i18n.t('error.account_not_found'));
             return;
         }
-        
+
         // Fill form
         document.getElementById('accountName').value = account.name;
         document.getElementById('accountToken').value = account.token;
         document.getElementById('accountBaseUrl').value = account.base_url;
-        
+
         // Change modal title
-        document.querySelector('#accountModal .modal-title').textContent = '编辑账号';
+        document.querySelector('#accountModal .modal-title').textContent = window.i18n.t('modal.edit_account');
         
         // Change save button behavior
         const saveBtn = document.getElementById('saveAccount');
@@ -644,7 +644,7 @@ async function editAccount(accountId) {
         modal.show();
         
     } catch (error) {
-        showError('编辑账号失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.edit_account') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -653,23 +653,23 @@ async function updateAccount(accountId) {
     const name = document.getElementById('accountName').value.trim();
     const token = document.getElementById('accountToken').value.trim();
     const base_url = document.getElementById('accountBaseUrl').value.trim();
-    
+
     if (!name || !token || !base_url) {
-        showError('请填写所有必需字段');
+        showError(window.i18n.t('validation.required_fields'));
         return;
     }
-    
+
     // 验证base_url格式
     try {
         new URL(base_url);
     } catch (e) {
-        showError('请输入有效的Base URL格式（例如：https://api.anthropic.com）');
+        showError(window.i18n.t('validation.invalid_url'));
         return;
     }
-    
+
     // 确保URL以http或https开头
     if (!base_url.startsWith('http://') && !base_url.startsWith('https://')) {
-        showError('Base URL必须以http://或https://开头');
+        showError(window.i18n.t('validation.url_protocol'));
         return;
     }
     
@@ -686,22 +686,22 @@ async function updateAccount(accountId) {
         // Reload accounts list and base_url options
         await loadAccounts(currentAccountPage);
         await loadAccountBaseUrlOptions();
-        showSuccess('账号更新成功');
+        showSuccess(window.i18n.t('success.account_updated'));
     } catch (error) {
         // 处理特定的数据库错误
         let errorMessage = getErrorMessage(error);
         if (errorMessage.includes('UNIQUE constraint failed: accounts.name')) {
-            errorMessage = '账号名称已存在，请使用不同的名称';
+            errorMessage = window.i18n.t('text.account_name_exists_hint');
         }
-        
-        showError('更新账号失败: ' + errorMessage);
+
+        showError(window.i18n.t('error.update_account') + ': ' + errorMessage);
     }
 }
 
 // Reset account modal state
 function resetAccountModal() {
     document.getElementById('accountForm').reset();
-    document.querySelector('#accountModal .modal-title').textContent = '添加账号';
+    document.querySelector('#accountModal .modal-title').textContent = window.i18n.t('modal.add_account');
     
     // Reset save button behavior
     const saveBtn = document.getElementById('saveAccount');
@@ -725,24 +725,24 @@ async function promptDeleteAccount(accountId) {
     // 显示确认框
     try {
         const userConfirmed = await ask(
-            `确定要删除账号 "${accountName}" 吗？\n\n此操作不可撤销！`,
-            { 
-                title: '确认删除账号', 
-                type: 'warning' 
+            window.i18n.t('confirm.delete_account_with_name').replace('{name}', accountName),
+            {
+                title: window.i18n.t('confirm.delete_account_title'),
+                type: 'warning'
             }
         );
-        
+
         if (!userConfirmed) {
             return;
         }
-        
+
         // 用户确认后才执行删除
         await executeDeleteAccount(accountId, accountName);
     } catch (error) {
         // 如果 Tauri 对话框失败，fallback 到自定义确认对话框
         const userConfirmed = await customConfirm(
-            `确定要删除账号 "${accountName}" 吗？\n\n此操作不可撤销！`,
-            '确认删除账号'
+            window.i18n.t('confirm.delete_account_with_name').replace('{name}', accountName),
+            window.i18n.t('confirm.delete_account_title')
         );
         if (userConfirmed) {
             await executeDeleteAccount(accountId, accountName);
@@ -756,17 +756,17 @@ async function executeDeleteAccount(accountId, accountName) {
         await tauriDeleteAccount(accountId);
         await loadAccounts(currentAccountPage);
         await loadAccountBaseUrlOptions();
-        showSuccess(`账号 "${accountName}" 删除成功`);
+        showSuccess(window.i18n.t('success.account_deleted_with_name').replace('{name}', accountName));
     } catch (error) {
-        showError(`删除账号 "${accountName}" 失败: ` + getErrorMessage(error));
+        showError(window.i18n.t('error.delete_account') + ' "' + accountName + '": ' + getErrorMessage(error));
     }
 }
 
 // Delete account (legacy function for compatibility)
 async function deleteAccount(accountId) {
     const confirmed = await customConfirm(
-        '确定要删除这个账号吗？',
-        '确认删除账号'
+        window.i18n.t('confirm.delete_account'),
+        window.i18n.t('confirm.delete_account_title')
     );
     if (!confirmed) {
         return;
@@ -776,9 +776,9 @@ async function deleteAccount(accountId) {
         await tauriDeleteAccount(accountId);
         await loadAccounts(currentAccountPage);
         await loadAccountBaseUrlOptions();
-        showSuccess('账号删除成功');
+        showSuccess(window.i18n.t('success.account_deleted'));
     } catch (error) {
-        showError('删除账号失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.delete_account') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -787,7 +787,7 @@ async function editDirectory(directoryId) {
     try {
         const directory = directories.find(dir => dir.id === directoryId);
         if (!directory) {
-            showError('找不到目录信息');
+            showError(window.i18n.t('error.directory_not_found'));
             return;
         }
         
@@ -799,14 +799,14 @@ async function editDirectory(directoryId) {
         document.getElementById('directoryPath').value = directory.path;
         
         // Change modal title
-        document.querySelector('#directoryModal .modal-title').textContent = '编辑目录';
+        document.querySelector('#directoryModal .modal-title').textContent = window.i18n.t('modal.edit_directory');
         
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('directoryModal'));
         modal.show();
         
     } catch (error) {
-        showError('编辑目录失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.edit_directory') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -814,7 +814,7 @@ async function editDirectory(directoryId) {
 // Reset directory modal state
 function resetDirectoryModal() {
     document.getElementById('directoryForm').reset();
-    document.querySelector('#directoryModal .modal-title').textContent = '添加目录';
+    document.querySelector('#directoryModal .modal-title').textContent = window.i18n.t('modal.add_directory');
     
     // Reset editing state
     editingDirectoryId = null;
@@ -827,7 +827,7 @@ let isDeleting = false;
 async function promptDeleteDirectory(directoryId, directoryName) {
     // 防止重复删除操作
     if (isDeleting) {
-        await ask('删除操作正在进行中，请稍候...', { title: '提示', type: 'info' });
+        await ask( window.i18n.t('info.deleting'), { title: window.i18n.t('info.deleting_title'), type: 'info' });
         return;
     }
     
@@ -845,11 +845,11 @@ async function promptDeleteDirectory(directoryId, directoryName) {
     // 根据目录是否存在显示不同的确认信息
     let confirmMessage, confirmTitle;
     if (exists) {
-        confirmMessage = `确定要删除目录 "${directoryName}" 吗？\n\n此操作将删除数据库记录，但不会删除文件系统中的目录文件。`;
-        confirmTitle = '确认删除目录';
+        confirmMessage = window.i18n.t('confirm.delete_directory').replace('{name}', directoryName);
+        confirmTitle = window.i18n.t('confirm.delete_directory_title');
     } else {
-        confirmMessage = `目录 "${directoryName}" 在文件系统中不存在。\n\n确定要清理数据库中的记录吗？`;
-        confirmTitle = '确认清理记录';
+        confirmMessage = window.i18n.t('confirm.cleanup_directory').replace('{name}', directoryName);
+        confirmTitle = window.i18n.t('confirm.cleanup_directory_title');
     }
     
     // 显示确认框
@@ -881,7 +881,7 @@ async function promptDeleteDirectory(directoryId, directoryName) {
 async function cleanupInvalidDirectories() {
     // 防止重复操作
     if (isDeleting) {
-        await ask('删除操作正在进行中，请稍候...', { title: '提示', type: 'info' });
+        await ask( window.i18n.t('info.deleting'), { title: window.i18n.t('info.deleting_title'), type: 'info' });
         return;
     }
 
@@ -903,18 +903,20 @@ async function cleanupInvalidDirectories() {
         const invalidDirectories = directoriesWithStatus.filter(dir => !dir.exists);
 
         if (invalidDirectories.length === 0) {
-            showSuccess('没有发现无效目录');
+            showSuccess(window.i18n.t('success.no_invalid_directories'));
             return;
         }
 
         // 显示确认对话框
         const directoryNames = invalidDirectories.map(d => d.name).join('\n- ');
-        const confirmMessage = `发现 ${invalidDirectories.length} 个无效目录：\n\n- ${directoryNames}\n\n确定要清除这些无效目录的数据库记录吗？`;
+        const confirmMessage = window.i18n.t('confirm.cleanup_directories')
+            .replace('{count}', invalidDirectories.length)
+            .replace('{names}', directoryNames);
 
         const userConfirmed = await ask(
             confirmMessage,
             {
-                title: '确认清除无效目录',
+                title: window.i18n.t('confirm.cleanup_directories_title'),
                 type: 'warning'
             }
         );
@@ -945,12 +947,15 @@ async function cleanupInvalidDirectories() {
 
         // 显示结果
         if (failCount === 0) {
-            showSuccess(`成功清除 ${successCount} 个无效目录`);
+            showSuccess(window.i18n.t('success.cleanup_directories').replace('{count}', successCount));
         } else {
-            showError(`清除完成：成功 ${successCount} 个，失败 ${failCount} 个\n失败详情：\n${errors.join('\n')}`);
+            showError(window.i18n.t('success.cleanup_partial')
+                .replace('{success}', successCount)
+                .replace('{failed}', failCount)
+                .replace('{errors}', errors.join('\n')));
         }
     } catch (error) {
-        showError('清除无效目录失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.cleanup_directories') + ': ' + getErrorMessage(error));
     } finally {
         isDeleting = false;
     }
@@ -963,9 +968,9 @@ async function executeDelete(directoryId, directoryName) {
     try {
         await tauriDeleteDirectory(directoryId);
         await loadDirectories();
-        showSuccess(`目录 "${directoryName}" 删除成功`);
+        showSuccess(window.i18n.t('success.directory_deleted').replace('{name}', directoryName));
     } catch (error) {
-        showError(`删除目录 "${directoryName}" 失败: ` + getErrorMessage(error));
+        showError(window.i18n.t('error.delete_directory') + ' "' + directoryName + '": ' + getErrorMessage(error));
     } finally {
         isDeleting = false;
     }
@@ -983,23 +988,23 @@ async function viewConfig(directoryId) {
         let configHtml = `
             <div class="mb-4">
                 <h6 class="fw-bold text-primary">
-                    <i class="fas fa-folder me-2"></i>目录信息
+                    <i class="fas fa-folder me-2"></i>${window.i18n.t('text.directory_info')}
                 </h6>
                 <div class="card bg-light">
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-sm-3"><strong>目录名称:</strong></div>
+                            <div class="col-sm-3"><strong>${window.i18n.t('text.directory_name')}:</strong></div>
                             <div class="col-sm-9">${directory.name}</div>
                         </div>
                         <div class="row mt-2">
-                            <div class="col-sm-3"><strong>目录路径:</strong></div>
+                            <div class="col-sm-3"><strong>${window.i18n.t('text.directory_path')}:</strong></div>
                             <div class="col-sm-9"><code>${directory.path}</code></div>
                         </div>
                         <div class="row mt-2">
-                            <div class="col-sm-3"><strong>状态:</strong></div>
+                            <div class="col-sm-3"><strong>${window.i18n.t('text.directory_status')}:</strong></div>
                             <div class="col-sm-9">
                                 <span class="badge ${directory.is_active ? 'bg-success' : 'bg-secondary'}">
-                                    ${directory.is_active ? '当前活跃' : '非活跃'}
+                                    ${directory.is_active ? window.i18n.t('status.active') : window.i18n.t('status.inactive')}
                                 </span>
                             </div>
                         </div>
@@ -1012,7 +1017,7 @@ async function viewConfig(directoryId) {
             configHtml += `
                 <div class="mb-4">
                     <h6 class="fw-bold text-success">
-                        <i class="fas fa-cog me-2"></i>环境配置
+                        <i class="fas fa-cog me-2"></i>${window.i18n.t('text.env_config')}
                     </h6>
                     <div class="card">
                         <div class="card-body">
@@ -1020,8 +1025,8 @@ async function viewConfig(directoryId) {
                                 <table class="table table-sm table-hover">
                                     <thead class="table-light">
                                         <tr>
-                                            <th style="width: 30%">配置项</th>
-                                            <th>配置值</th>
+                                            <th style="width: 30%">${window.i18n.t('text.config_item')}</th>
+                                            <th>${window.i18n.t('text.config_value')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1059,11 +1064,11 @@ async function viewConfig(directoryId) {
             configHtml += `
                 <div class="mb-4">
                     <h6 class="fw-bold text-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>环境配置
+                        <i class="fas fa-exclamation-triangle me-2"></i>${window.i18n.t('text.env_config')}
                     </h6>
                     <div class="alert alert-warning">
                         <i class="fas fa-info-circle me-2"></i>
-                        当前目录暂无环境配置信息
+                        ${window.i18n.t('text.no_env_config')}
                     </div>
                 </div>
             `;
@@ -1074,14 +1079,14 @@ async function viewConfig(directoryId) {
             <div class="mt-4 pt-3 border-top">
                 <small class="text-muted">
                     <i class="fas fa-clock me-1"></i>
-                    查看时间: ${new Date().toLocaleString()}
+                    ${window.i18n.t('text.view_time')}: ${new Date().toLocaleString()}
                 </small>
             </div>
         `;
-        
+
         // Update modal title and content
-        document.querySelector('#configModal .modal-title').innerHTML = 
-            `<i class="fas fa-folder-open me-2"></i>${directory.name} - 配置详情`;
+        document.querySelector('#configModal .modal-title').innerHTML =
+            `<i class="fas fa-folder-open me-2"></i>${directory.name} - ${window.i18n.t('text.config_details')}`;
         document.getElementById('configContent').innerHTML = configHtml;
         
         // Show modal
@@ -1089,7 +1094,7 @@ async function viewConfig(directoryId) {
         modal.show();
         
     } catch (error) {
-        showError('获取配置失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.get_config') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1100,7 +1105,7 @@ async function loadAssociationPage() {
         await loadAssociationDirectories();
         await loadClaudeConfigStatusInAssociation();
     } catch (error) {
-        showError('加载账号关联页面失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.load_association_page') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1108,10 +1113,10 @@ async function loadAssociationPage() {
 async function loadAssociationDirectories() {
     try {
         associationDirectories = await tauriGetDirectories();
-        
+
         const select = document.getElementById('directorySelect');
-        select.innerHTML = '<option value="">请选择目录</option>';
-        
+        select.innerHTML = '<option value="">' + window.i18n.t('text.select_directory') + '</option>';
+
         associationDirectories.forEach(directory => {
             const option = document.createElement('option');
             option.value = directory.id;
@@ -1129,7 +1134,7 @@ async function loadAssociationDirectories() {
         }
         
     } catch (error) {
-        showError('加载目录列表失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.load_directory_list') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1138,10 +1143,10 @@ async function loadAssociationAccounts() {
     try {
         const accountsResponse = await tauriGetAccounts({ per_page: 1000 });
         associationAccounts = accountsResponse.accounts || accountsResponse;
-        
+
         const select = document.getElementById('associationAccountSelect');
-        select.innerHTML = '<option value="">请选择账号</option>';
-        
+        select.innerHTML = '<option value="">' + window.i18n.t('text.select_account') + '</option>';
+
         associationAccounts.forEach(account => {
             const option = document.createElement('option');
             option.value = account.id;
@@ -1152,7 +1157,7 @@ async function loadAssociationAccounts() {
         await renderAssociationAccountsList();
         
     } catch (error) {
-        showError('加载账号列表失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.load_account_list') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1160,7 +1165,7 @@ async function loadAssociationAccounts() {
 async function onDirectorySelectionChange(directoryId) {
     if (!directoryId) {
         document.getElementById('selectedDirectoryInfo').classList.add('d-none');
-        document.getElementById('associationConfigStatus').innerHTML = '<div class="text-muted">请先选择目录</div>';
+        document.getElementById('associationConfigStatus').innerHTML = '<div class="text-muted">' + window.i18n.t('text.select_directory') + '</div>';
         document.getElementById('associationSwitchBtn').disabled = true;
         currentDirectoryForAssociation = null;
         return;
@@ -1177,10 +1182,10 @@ async function onDirectorySelectionChange(directoryId) {
                 <h6 class="alert-heading">
                     <i class="fas fa-folder-open me-2"></i>${directory.name}
                 </h6>
-                <p class="mb-1"><strong>路径:</strong> <code>${directory.path}</code></p>
-                <p class="mb-0"><strong>状态:</strong> 
+                <p class="mb-1"><strong>${window.i18n.t('text.path')}:</strong> <code>${directory.path}</code></p>
+                <p class="mb-0"><strong>${window.i18n.t('text.directory_status')}:</strong>
                     <span class="badge ${directory.is_active ? 'bg-success' : 'bg-secondary'}">
-                        ${directory.is_active ? '当前活跃' : '非活跃'}
+                        ${directory.is_active ? window.i18n.t('status.active') : window.i18n.t('status.inactive')}
                     </span>
                 </p>
             `;
@@ -1205,33 +1210,33 @@ async function onDirectorySelectionChange(directoryId) {
             statusHtml = `
                 <div class="alert alert-success">
                     <h6 class="alert-heading">
-                        <i class="fas fa-check-circle me-2"></i>配置状态
+                        <i class="fas fa-check-circle me-2"></i>${window.i18n.t('text.config_status')}
                     </h6>
                     ${matchedAccount ? `<p class="mb-1">
-                        <strong>当前账号:</strong>
+                        <strong>${window.i18n.t('text.current_account')}:</strong>
                         <span class="badge bg-primary">${matchedAccount.name}</span>
                     </p>` : ''}
                     <p class="mb-1">
-                        <strong>API密钥:</strong>
+                        <strong>${window.i18n.t('text.api_key')}:</strong>
                         <span class="badge ${hasToken ? 'bg-success' : 'bg-danger'}">
-                            ${hasToken ? '已配置' : '未配置'}
+                            ${hasToken ? window.i18n.t('status.configured') : window.i18n.t('status.not_configured')}
                         </span>
                     </p>
                     <p class="mb-0">
                         <strong>Base URL:</strong>
                         <span class="badge ${hasBaseUrl ? 'bg-success' : 'bg-danger'}">
-                            ${hasBaseUrl ? '已配置' : '未配置'}
+                            ${hasBaseUrl ? window.i18n.t('status.configured') : window.i18n.t('status.not_configured')}
                         </span>
                     </p>
-                    ${hasToken ? `<p class="mb-0 mt-2"><small class="text-muted">Token预览: ${hasToken.toString().substring(0, 20)}...</small></p>` : ''}
-                    ${hasBaseUrl ? `<p class="mb-0"><small class="text-muted">URL: ${hasBaseUrl}</small></p>` : ''}
+                    ${hasToken ? `<p class="mb-0 mt-2"><small class="text-muted">${window.i18n.t('text.token_preview')}: ${hasToken.toString().substring(0, 20)}...</small></p>` : ''}
+                    ${hasBaseUrl ? `<p class="mb-0"><small class="text-muted">${window.i18n.t('text.url')}: ${hasBaseUrl}</small></p>` : ''}
                 </div>
             `;
         } else {
             statusHtml = `
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    当前目录暂无环境配置
+                    ${window.i18n.t('text.no_env_config')}
                 </div>
             `;
         }
@@ -1246,7 +1251,7 @@ async function onDirectorySelectionChange(directoryId) {
         document.getElementById('associationConfigStatus').innerHTML = `
             <div class="alert alert-danger">
                 <i class="fas fa-times-circle me-2"></i>
-                获取配置状态失败: ${errorMessage}
+                ${window.i18n.t('text.failed_get_config_status')}: ${errorMessage}
             </div>
         `;
     }
@@ -1257,7 +1262,7 @@ async function renderAssociationAccountsList() {
     const container = document.getElementById('associationAccountsList');
     
     if (associationAccounts.length === 0) {
-        container.innerHTML = '<div class="text-muted">暂无账号</div>';
+        container.innerHTML = '<div class="text-muted">' + window.i18n.t('text.no_accounts') + '</div>';
         return;
     }
     
@@ -1282,7 +1287,7 @@ async function renderAssociationAccountsList() {
                     <h6 class="mb-1">
                         ${account.associated_directories.length > 0 ? '<span class="association-indicator me-2"></span>' : ''}
                         ${account.name}
-                        ${account.is_active ? '<span class="badge bg-success ms-2">当前活跃</span>' : ''}
+                        ${account.is_active ? '<span class="badge bg-success ms-2">' + window.i18n.t('text.current_active') + '</span>' : ''}
                     </h6>
                     <p class="mb-1"><small class="text-muted">${account.base_url}</small></p>
                     <small class="text-muted">Token: ${account.token.substring(0, 20)}...</small>
@@ -1290,32 +1295,32 @@ async function renderAssociationAccountsList() {
                         <div class="mt-2">
                             <small class="text-info">
                                 <i class="fas fa-folder me-1"></i>
-                                关联目录: ${account.associated_directories.map(dir => dir.name).join(', ')}
+                                ${window.i18n.t('text.associated_directories')}: ${account.associated_directories.map(dir => dir.name).join(', ')}
                             </small>
                         </div>
                     ` : ''}
                 </div>
                 <div>
-                    ${account.is_active ? 
-                        '<span class="badge bg-primary">活跃中</span>' : 
+                    ${account.is_active ?
+                        '<span class="badge bg-primary">' + window.i18n.t('text.active_status') + '</span>' :
                         `<button class="btn btn-sm btn-outline-primary" onclick="quickSwitchFromList(${account.id})">
-                            <i class="fas fa-sync-alt"></i> 切换
+                            <i class="fas fa-sync-alt"></i> ${window.i18n.t('text.switch')}
                         </button>`
                     }
                 </div>
             </div>
         </div>
     `).join('');
-    
+
     } catch (error) {
-        container.innerHTML = '<div class="text-muted text-danger">加载账号关联信息失败</div>';
+        container.innerHTML = '<div class="text-muted text-danger">' + window.i18n.t('text.failed_load_association') + '</div>';
     }
 }
 
 // Quick switch from list
 async function quickSwitchFromList(accountId) {
     if (!currentDirectoryForAssociation) {
-        showError('请先选择目录');
+        showError(window.i18n.t('error.select_directory_first'));
         return;
     }
     
@@ -1327,7 +1332,7 @@ async function performAccountSwitch() {
     const accountId = document.getElementById('associationAccountSelect').value;
     
     if (!accountId) {
-        showError('请选择要切换的账号');
+        showError(window.i18n.t('error.select_account'));
         return;
     }
     
@@ -1340,7 +1345,7 @@ async function performAccountSwitch() {
 // Internal account switch function
 async function performAccountSwitchInternal(accountId, isSandbox = true) {
     if (!currentDirectoryForAssociation) {
-        showError('请先选择目录');
+        showError(window.i18n.t('error.select_directory_first'));
         return;
     }
     
@@ -1351,8 +1356,10 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
             const pathExists = await tauriCheckDirectoryExists(directory.path);
             if (!pathExists) {
                 const confirmed = await customConfirm(
-                    `目录 "${directory.name}" (${directory.path}) 在文件系统中不存在。\n\n确定要继续切换账号吗？\n\n注意：这可能会导致配置写入失败。`,
-                    '目录不存在'
+                    window.i18n.t('confirm.directory_not_exist_switch')
+                        .replace('{name}', directory.name)
+                        .replace('{path}', directory.path),
+                    window.i18n.t('confirm.directory_not_exist_title')
                 );
                 if (!confirmed) {
                     return;
@@ -1385,7 +1392,7 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
         document.getElementById('associationAccountSelect').value = '';
         
     } catch (error) {
-        showError('切换账号失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.switch_account') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1414,9 +1421,9 @@ async function loadDatabaseInfo() {
         if (select) {
             // 保存当前选择的值
             const currentSelection = select.value;
-            
-            select.innerHTML = '<option value="">选择数据库连接</option>';
-            
+
+            select.innerHTML = '<option value="">' + window.i18n.t('text.select_db_connection') + '</option>';
+
             for (const [name, config] of Object.entries(connections.connections)) {
                 const option = document.createElement('option');
                 option.value = name;
@@ -1440,7 +1447,7 @@ async function loadDatabaseInfo() {
         }
     } catch (error) {
         const currentDbInfo = document.getElementById('currentDbInfo');
-        currentDbInfo.innerHTML = '加载数据库信息失败: ' + getErrorMessage(error);
+        currentDbInfo.innerHTML = window.i18n.t('error.load_database_info') + ': ' + getErrorMessage(error);
         currentDbInfo.className = 'alert alert-danger';
     }
 }
@@ -1450,15 +1457,15 @@ function displayDatabaseInfo(info) {
     const currentDbInfo = document.getElementById('currentDbInfo');
     if (info.name) {
         currentDbInfo.innerHTML = `
-            <strong>连接名称:</strong> ${info.name}<br>
-            <strong>数据库URL:</strong> <code>${info.url}</code><br>
-            <strong>连接池大小:</strong> ${info.pool_size}<br>
-            <strong>已签出连接:</strong> ${info.checked_out}<br>
-            <strong>已签入连接:</strong> ${info.checked_in}
+            <strong>${window.i18n.t('text.connection_name')}:</strong> ${info.name}<br>
+            <strong>${window.i18n.t('text.database_url')}:</strong> <code>${info.url}</code><br>
+            <strong>${window.i18n.t('text.pool_size')}:</strong> ${info.pool_size}<br>
+            <strong>${window.i18n.t('text.checked_out')}:</strong> ${info.checked_out}<br>
+            <strong>${window.i18n.t('text.checked_in')}:</strong> ${info.checked_in}
         `;
         currentDbInfo.className = 'alert alert-success';
     } else {
-        currentDbInfo.innerHTML = '无连接信息';
+        currentDbInfo.innerHTML = window.i18n.t('info.no_connection_info');
         currentDbInfo.className = 'alert alert-warning';
     }
 }
@@ -1489,43 +1496,43 @@ async function previewDatabaseConnection(connectionName) {
         const config = connections.connections[connectionName];
         
         if (!config) {
-            showDbMessage('选择的数据库连接不存在', 'error');
+            showDbMessage(window.i18n.t('error.connection_not_exist'), 'error');
             return;
         }
         
         // 显示预览信息
         const currentDbInfo = document.getElementById('currentDbInfo');
         const isCurrentConnection = connectionName === connections.current;
-        
+
         currentDbInfo.innerHTML = `
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <strong>连接名称:</strong> 
+                <strong>${window.i18n.t('text.connection_name')}:</strong>
                 <span>
                     ${connectionName}
-                    ${isCurrentConnection ? '<span class="badge bg-success ms-2">当前活跃</span>' : '<span class="badge bg-secondary ms-2">预览</span>'}
+                    ${isCurrentConnection ? '<span class="badge bg-success ms-2">' + window.i18n.t('text.current_active') + '</span>' : '<span class="badge bg-secondary ms-2">' + window.i18n.t('text.preview_info') + '</span>'}
                 </span>
             </div>
-            <strong>数据库URL:</strong> <code>${config.url}</code><br>
-            <strong>连接池大小:</strong> ${config.pool_size}<br>
-            ${!isCurrentConnection ? '<div class="mt-2"><small class="text-muted"><i class="fas fa-info-circle me-1"></i>这是预览信息，点击"切换连接"按钮来激活此连接</small></div>' : ''}
+            <strong>${window.i18n.t('text.database_url')}:</strong> <code>${config.url}</code><br>
+            <strong>${window.i18n.t('text.pool_size')}:</strong> ${config.pool_size}<br>
+            ${!isCurrentConnection ? '<div class="mt-2"><small class="text-muted"><i class="fas fa-info-circle me-1"></i>' + window.i18n.t('text.preview_help') + '</small></div>' : ''}
         `;
         currentDbInfo.className = isCurrentConnection ? 'alert alert-success' : 'alert alert-info';
         
     } catch (error) {
-        showDbMessage('预览连接信息失败: ' + getErrorMessage(error), 'error');
+        showDbMessage(window.i18n.t('error.preview_connection') + ': ' + getErrorMessage(error), 'error');
     }
 }
 
 async function switchDatabase() {
     const connectionName = document.getElementById('dbConnectionSelect').value;
     if (!connectionName) {
-        showDbMessage('请选择数据库连接', 'error');
+        showDbMessage(window.i18n.t('error.select_database'), 'error');
         return;
     }
     
     // 检查是否已经测试过该连接且测试成功
     if (lastTestedConnection !== connectionName || lastTestResult !== true) {
-        showDbMessage('请先测试数据库连接成功后再切换', 'warning');
+        showDbMessage(window.i18n.t('error.test_before_switch'), 'warning');
         return;
     }
     
@@ -1542,14 +1549,14 @@ async function switchDatabase() {
             await loadDirectories();
         }
     } catch (error) {
-        showDbMessage('切换数据库失败: ' + getErrorMessage(error), 'error');
+        showDbMessage(window.i18n.t('error.switch_database') + ': ' + getErrorMessage(error), 'error');
     }
 }
 
 async function testDatabase() {
     const connectionName = document.getElementById('dbConnectionSelect').value;
     if (!connectionName) {
-        showDbMessage('请选择数据库连接', 'error');
+        showDbMessage(window.i18n.t('error.select_database'), 'error');
         return;
     }
     
@@ -1559,10 +1566,10 @@ async function testDatabase() {
     
     // 设置加载状态
     testBtn.disabled = true;
-    testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>测试中...';
-    
+    testBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>' + window.i18n.t('text.testing');
+
     // 显示测试开始消息
-    showDbMessage('正在测试数据库连接，请稍候...', 'info');
+    showDbMessage( window.i18n.t('info.testing_connection'), 'info');
     
     try {
         const result = await tauriTestDatabaseConnection(connectionName);
@@ -1585,12 +1592,12 @@ async function testDatabase() {
         
         // 使用标准化的错误消息处理
         const errorMessage = getErrorMessage(error);
-        
+
         // 如果错误信息已经包含"测试失败"，直接使用
-        if (errorMessage.includes('测试失败')) {
+        if (errorMessage.includes(window.i18n.t('text.testing_failed'))) {
             showDbMessage(errorMessage, 'error');
         } else {
-            showDbMessage('数据库连接测试失败: ' + errorMessage, 'error');
+            showDbMessage(window.i18n.t('error.test_database') + ': ' + errorMessage, 'error');
         }
         
     } finally {
@@ -1621,7 +1628,7 @@ function showDbMessage(message, type) {
     container.innerHTML = `
         <div class="${alertClass} alert alert-dismissible">
             <i class="${icon} me-2"></i>${message}
-            ${type === 'error' || type === 'warning' ? '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>' : ''}
+            ${type === 'error' || type === 'warning' ? '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="' + window.i18n.t('text.close_aria') + '"></button>' : ''}
         </div>
     `;
     
@@ -1641,7 +1648,7 @@ async function loadBaseUrls() {
         renderBaseUrls();
         updateBaseUrlSelect();
     } catch (error) {
-        showError('加载URL失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.load_urls') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1650,7 +1657,7 @@ function renderBaseUrls() {
     const container = document.getElementById('urlsList');
     
     if (baseUrls.length === 0) {
-        container.innerHTML = '<div class="text-muted">暂无URL</div>';
+        container.innerHTML = '<div class="text-muted">' + window.i18n.t('text.no_urls') + '</div>';
         return;
     }
     
@@ -1695,23 +1702,23 @@ async function saveBaseUrl() {
     const url = document.getElementById('urlAddress').value.trim();
     const description = document.getElementById('urlDescription').value;
     const isDefault = document.getElementById('urlIsDefault').checked;
-    
+
     if (!name || !url) {
-        showError('请填写所有必需字段');
+        showError(window.i18n.t('validation.required_fields'));
         return;
     }
-    
+
     // 验证URL格式
     try {
         new URL(url);
     } catch (e) {
-        showError('请输入有效的URL格式（例如：https://api.example.com）');
+        showError(window.i18n.t('validation.invalid_url_format'));
         return;
     }
-    
+
     // 确保URL以http或https开头
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        showError('URL必须以http://或https://开头');
+        showError(window.i18n.t('validation.url_must_http'));
         return;
     }
     
@@ -1725,7 +1732,7 @@ async function saveBaseUrl() {
         
         // Reload URL list
         await loadBaseUrls();
-        showSuccess('URL添加成功');
+        showSuccess(window.i18n.t('success.url_added'));
     } catch (error) {
         // 处理特定的数据库错误
         let errorMessage = getErrorMessage(error);
@@ -1735,7 +1742,7 @@ async function saveBaseUrl() {
             errorMessage = 'URL地址已存在，请使用不同的URL地址';
         }
         
-        showError('添加URL失败: ' + errorMessage);
+        showError(window.i18n.t('error.add_url') + ': ' + errorMessage);
     }
 }
 
@@ -1744,7 +1751,7 @@ async function editBaseUrl(urlId) {
     try {
         const url = baseUrls.find(u => u.id === urlId);
         if (!url) {
-            showError('找不到URL信息');
+            showError(window.i18n.t('error.url_not_found'));
             return;
         }
         
@@ -1755,7 +1762,7 @@ async function editBaseUrl(urlId) {
         document.getElementById('urlIsDefault').checked = url.is_default;
         
         // Change modal title
-        document.querySelector('#urlModal .modal-title').textContent = '编辑URL';
+        document.querySelector('#urlModal .modal-title').textContent = window.i18n.t('modal.edit_url');
         
         // Change save button behavior
         const saveBtn = document.getElementById('saveUrl');
@@ -1778,7 +1785,7 @@ async function editBaseUrl(urlId) {
         modal.show();
         
     } catch (error) {
-        showError('编辑URL失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.edit_url') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1790,7 +1797,7 @@ async function updateBaseUrl(urlId) {
     const isDefault = document.getElementById('urlIsDefault').checked;
     
     if (!name || !url) {
-        showError('请填写所有必需字段');
+        showError(window.i18n.t('validation.required_fields'));
         return;
     }
     
@@ -1798,13 +1805,13 @@ async function updateBaseUrl(urlId) {
     try {
         new URL(url);
     } catch (e) {
-        showError('请输入有效的URL格式（例如：https://api.example.com）');
+        showError(window.i18n.t('validation.invalid_url_format'));
         return;
     }
-    
+
     // 确保URL以http或https开头
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        showError('URL必须以http://或https://开头');
+        showError(window.i18n.t('validation.url_must_http'));
         return;
     }
     
@@ -1820,7 +1827,7 @@ async function updateBaseUrl(urlId) {
         
         // Reload URL list
         await loadBaseUrls();
-        showSuccess('URL更新成功');
+        showSuccess(window.i18n.t('success.url_updated'));
     } catch (error) {
         // 处理特定的数据库错误
         let errorMessage = getErrorMessage(error);
@@ -1830,14 +1837,14 @@ async function updateBaseUrl(urlId) {
             errorMessage = 'URL地址已存在，请使用不同的URL地址';
         }
         
-        showError('更新URL失败: ' + errorMessage);
+        showError(window.i18n.t('error.update_url') + ': ' + errorMessage);
     }
 }
 
 // Reset URL modal state
 function resetUrlModal() {
     document.getElementById('urlForm').reset();
-    document.querySelector('#urlModal .modal-title').textContent = '添加URL';
+    document.querySelector('#urlModal .modal-title').textContent = window.i18n.t('modal.add_url');
     
     // Reset save button behavior
     const saveBtn = document.getElementById('saveUrl');
@@ -1861,24 +1868,24 @@ async function promptDeleteBaseUrl(urlId) {
     // 显示确认框
     try {
         const userConfirmed = await ask(
-            `确定要删除URL "${urlName}" 吗？\n\n此操作不可撤销！`,
-            { 
-                title: '确认删除URL', 
-                type: 'warning' 
+            window.i18n.t('confirm.delete_url_with_name').replace('{name}', urlName),
+            {
+                title: window.i18n.t('confirm.delete_url_title'),
+                type: 'warning'
             }
         );
-        
+
         if (!userConfirmed) {
             return;
         }
-        
+
         // 用户确认后才执行删除
         await executeDeleteBaseUrl(urlId, urlName);
     } catch (error) {
         // 如果 Tauri 对话框失败，fallback 到自定义确认对话框
         const userConfirmed = await customConfirm(
-            `确定要删除URL "${urlName}" 吗？\n\n此操作不可撤销！`,
-            '确认删除URL'
+            window.i18n.t('confirm.delete_url_with_name').replace('{name}', urlName),
+            window.i18n.t('confirm.delete_url_title')
         );
         if (userConfirmed) {
             await executeDeleteBaseUrl(urlId, urlName);
@@ -1891,17 +1898,17 @@ async function executeDeleteBaseUrl(urlId, urlName) {
     try {
         await tauriDeleteBaseUrl(urlId);
         await loadBaseUrls();
-        showSuccess(`URL "${urlName}" 删除成功`);
+        showSuccess(window.i18n.t('success.url_deleted_with_name').replace('{name}', urlName));
     } catch (error) {
-        showError(`删除URL "${urlName}" 失败: ` + getErrorMessage(error));
+        showError(window.i18n.t('error.delete_url') + ' "' + urlName + '": ' + getErrorMessage(error));
     }
 }
 
 // Delete base URL (legacy function for compatibility)
 async function deleteBaseUrl(urlId) {
     const confirmed = await customConfirm(
-        '确定要删除这个URL吗？',
-        '确认删除URL'
+        window.i18n.t('confirm.delete_url'),
+        window.i18n.t('confirm.delete_url_title')
     );
     if (!confirmed) {
         return;
@@ -1910,9 +1917,9 @@ async function deleteBaseUrl(urlId) {
     try {
         await tauriDeleteBaseUrl(urlId);
         await loadBaseUrls();
-        showSuccess('URL删除成功');
+        showSuccess(window.i18n.t('success.url_deleted'));
     } catch (error) {
-        showError('删除URL失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.delete_url') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -1948,7 +1955,7 @@ function showGlobalMessage(message, type = 'error', duration = 3000) {
     messageElement.innerHTML = `
         <i class="${icon} me-2"></i>
         <span>${message}</span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="关闭"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="` + window.i18n.t('text.close_aria') + `"></button>
     `;
     
     // Add to container top
@@ -2152,7 +2159,7 @@ async function selectDirectory() {
         const selected = await open({
             directory: true,
             multiple: false,
-            title: '选择目录'
+            title: window.i18n.t('button.select_directory')
         });
         
         if (selected) {
@@ -2169,7 +2176,7 @@ async function selectDirectory() {
             }
         }
     } catch (error) {
-        showError('选择目录失败: ' + getErrorMessage(error));
+        showError(window.i18n.t('error.select_directory') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -2206,11 +2213,11 @@ async function loadClaudeSettingsPage() {
         if (loadResult !== true) {
             if (loadResult && loadResult.error) {
                 showClaudeSettingsMessage(
-                    '从数据库加载配置失败，正在使用默认配置。错误: ' + loadResult.error,
+                    window.i18n.t('claude.loading_warning').replace('{error}', loadResult.error),
                     'warning'
                 );
             } else {
-                showClaudeSettingsMessage('从数据库加载配置失败，正在使用默认配置', 'warning');
+                showClaudeSettingsMessage(window.i18n.t('claude.loading_warning_simple'), 'warning');
             }
         }
 
@@ -2227,7 +2234,7 @@ async function loadClaudeSettingsPage() {
         setupClaudeSettingsEventListeners();
 
     } catch (error) {
-        showClaudeSettingsMessage('加载Claude配置失败: ' + getErrorMessage(error), 'error');
+        showClaudeSettingsMessage(window.i18n.t('error.load_claude_settings') + ': ' + getErrorMessage(error), 'error');
     }
 }
 
@@ -2240,7 +2247,7 @@ async function loadCurrentClaudeSettings() {
 
         // 验证数据结构完整性
         if (!settings || typeof settings !== 'object') {
-            throw new Error('数据库返回的配置格式无效');
+            throw new Error(window.i18n.t('claude.invalid_format'));
         }
 
         // 确保 permissions 对象存在
@@ -2610,12 +2617,12 @@ function addDeniedTool() {
     const tool = input.value.trim();
     
     if (!tool) {
-        showClaudeSettingsMessage('请输入工具名称', 'warning');
+        showClaudeSettingsMessage(window.i18n.t('claude.tool_name_required'), 'warning');
         return;
     }
     
     if (claudeSettingsData.permissions.deny.includes(tool)) {
-        showClaudeSettingsMessage('工具已在禁用列表中', 'warning');
+        showClaudeSettingsMessage(window.i18n.t('claude.tool_already_denied'), 'warning');
         return;
     }
     
@@ -2642,7 +2649,7 @@ function addCustomEnvVar() {
     const value = valueInput.value.trim();
     
     if (!key) {
-        showClaudeSettingsMessage('请输入环境变量名称', 'warning');
+        showClaudeSettingsMessage(window.i18n.t('claude.env_name_required'), 'warning');
         return;
     }
     
@@ -2661,7 +2668,7 @@ function addCustomEnvVar() {
     ];
 
     if (systemManagedEnvVars.includes(key)) {
-        showClaudeSettingsMessage('该环境变量由系统管理，请使用上面的配置选项', 'warning');
+        showClaudeSettingsMessage(window.i18n.t('claude.env_system_managed'), 'warning');
         return;
     }
     
@@ -2731,7 +2738,7 @@ async function saveClaudeConfigToDatabase() {
             parsedJson = JSON.parse(jsonContent);
             console.log('JSON格式验证通过:', parsedJson);
         } catch (error) {
-            const errorMsg = 'JSON格式错误: ' + error.message;
+            const errorMsg = window.i18n.t('claude.json_error') + ': ' + error.message;
             console.error(errorMsg);
             showClaudeSettingsMessage(errorMsg, 'error');
             return;
@@ -2740,7 +2747,7 @@ async function saveClaudeConfigToDatabase() {
         try {
             await invoke('save_claude_settings_to_db', { settingsJson: jsonContent });
             console.log('Claude配置已成功保存到数据库');
-            showClaudeSettingsMessage('Claude配置保存成功！配置已保存到数据库', 'success');
+            showClaudeSettingsMessage(window.i18n.t('success.claude_settings_saved'), 'success');
 
             // 如果账号关联页面是活动的，更新配置状态显示
             if (getActiveTab() === 'association-pane') {
@@ -2749,14 +2756,14 @@ async function saveClaudeConfigToDatabase() {
         } catch (invokeError) {
             const errorMsg = getErrorMessage(invokeError);
             console.error('调用后端保存接口失败:', errorMsg);
-            throw new Error('后端保存失败: ' + errorMsg);
+            throw new Error(window.i18n.t('claude.save_error') + ': ' + errorMsg);
         }
 
     } catch (error) {
         console.error('保存Claude配置失败:', error);
         const detailedError = getErrorMessage(error);
         showClaudeSettingsMessage(
-            '保存Claude配置失败: ' + detailedError +
+            window.i18n.t('error.save_claude_settings') + ': ' + detailedError +
             '\n\n请检查:\n1. 数据库连接是否正常\n2. 数据库表结构是否完整\n3. 查看浏览器控制台获取详细错误信息',
             'error'
         );
@@ -2835,16 +2842,16 @@ async function loadClaudeConfigStatusInAssociation() {
         
         switch (permissionMode) {
             case 'bypassPermissions':
-                permissionElement.textContent = '绕过权限';
+                permissionElement.textContent = window.i18n.t('claude.permission_mode_bypass_short');
                 permissionElement.className = 'badge bg-warning';
                 break;
             case 'acceptEdits':
-                permissionElement.textContent = '自动批准编辑';
+                permissionElement.textContent = window.i18n.t('claude.permission_mode_accept_short');
                 permissionElement.className = 'badge bg-info';
                 break;
             case 'normal':
             default:
-                permissionElement.textContent = '标准模式';
+                permissionElement.textContent = window.i18n.t('claude.permission_mode_normal_short');
                 permissionElement.className = 'badge bg-success';
                 break;
         }
@@ -2854,10 +2861,10 @@ async function loadClaudeConfigStatusInAssociation() {
         const sandboxElement = document.getElementById('claudeSandboxMode');
         
         if (sandboxMode === '1' || sandboxMode === 1) {
-            sandboxElement.textContent = '已启用';
+            sandboxElement.textContent = window.i18n.t('status.enabled');
             sandboxElement.className = 'badge bg-success';
         } else {
-            sandboxElement.textContent = '已禁用';
+            sandboxElement.textContent = window.i18n.t('status.disabled');
             sandboxElement.className = 'badge bg-secondary';
         }
         
@@ -2866,10 +2873,10 @@ async function loadClaudeConfigStatusInAssociation() {
         const autoUpdaterElement = document.getElementById('claudeAutoUpdater');
         
         if (autoUpdater === 1 || autoUpdater === '1') {
-            autoUpdaterElement.textContent = '已禁用';
+            autoUpdaterElement.textContent = window.i18n.t('status.disabled');
             autoUpdaterElement.className = 'badge bg-success';
         } else {
-            autoUpdaterElement.textContent = '已启用';
+            autoUpdaterElement.textContent = window.i18n.t('status.enabled');
             autoUpdaterElement.className = 'badge bg-secondary';
         }
         
@@ -2878,14 +2885,14 @@ async function loadClaudeConfigStatusInAssociation() {
         const allowedToolsElement = document.getElementById('claudeAllowedTools');
         
         if (allowedTools.includes('*')) {
-            allowedToolsElement.textContent = '全部允许 (*)';
+            allowedToolsElement.textContent = window.i18n.t('text.all_tools_allowed_full');
             allowedToolsElement.className = 'badge bg-success';
         } else if (allowedTools.length > 0) {
-            allowedToolsElement.textContent = `${allowedTools.length} 个工具`;
+            allowedToolsElement.textContent = window.i18n.t('text.tools_count').replace('{count}', allowedTools.length);
             allowedToolsElement.className = 'badge bg-info';
             allowedToolsElement.title = allowedTools.join(', ');
         } else {
-            allowedToolsElement.textContent = '无';
+            allowedToolsElement.textContent = window.i18n.t('common.none');
             allowedToolsElement.className = 'badge bg-warning';
         }
         
@@ -3009,8 +3016,8 @@ async function loadWebdavConfigs() {
             listElement.innerHTML = `
                 <div class="text-center text-muted py-4">
                     <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
-                    <p>暂无 WebDAV 配置</p>
-                    <p class="small">点击上方"添加配置"按钮开始</p>
+                    <p>${window.i18n.t('text.no_webdav')}</p>
+                    <p class="small">${window.i18n.t('text.webdav_help')}</p>
                 </div>
             `;
             return;
@@ -3022,7 +3029,7 @@ async function loadWebdavConfigs() {
                 <div class="d-flex w-100 justify-content-between align-items-center">
                     <h6 class="mb-1">
                         <i class="fas fa-cloud me-2"></i>${config.name}
-                        ${config.is_active ? '<span class="badge bg-success ms-2">活跃</span>' : ''}
+                        ${config.is_active ? '<span class="badge bg-success ms-2">' + window.i18n.t('text.active') + '</span>' : ''}
                     </h6>
                     <div>
                         <button class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation(); editWebdavConfig(${config.id})">
@@ -3035,15 +3042,15 @@ async function loadWebdavConfigs() {
                 </div>
                 <p class="mb-1 small">${config.url}</p>
                 <small class="text-muted">
-                    用户: ${config.username} |
-                    路径: ${config.remote_path}
-                    ${config.auto_sync ? ' | <i class="fas fa-sync-alt"></i> 自动同步' : ''}
+                    ${window.i18n.t('text.user')}: ${config.username} |
+                    ${window.i18n.t('text.path')}: ${config.remote_path}
+                    ${config.auto_sync ? ' | <i class="fas fa-sync-alt"></i> ' + window.i18n.t('text.auto_sync') : ''}
                 </small>
             </div>
         `).join('');
 
     } catch (error) {
-        showMessage('加载 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+        showMessage(window.i18n.t('text.webdav_load_failed') + ': ' + getErrorMessage(error), 'danger');
     }
 }
 
@@ -3062,7 +3069,7 @@ async function loadWebdavOperationPanel() {
         panel.innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                请先选择或添加 WebDAV 配置
+                ${window.i18n.t('info.select_directory_or_add')}
             </div>
         `;
         return;
@@ -3070,39 +3077,39 @@ async function loadWebdavOperationPanel() {
 
     panel.innerHTML = `
         <div class="mb-3">
-            <h6><i class="fas fa-info-circle me-2"></i>当前配置: ${selectedWebdavConfig.name}</h6>
+            <h6><i class="fas fa-info-circle me-2"></i>${window.i18n.t('text.current_config')}: ${selectedWebdavConfig.name}</h6>
             <p class="small text-muted mb-0">${selectedWebdavConfig.url}</p>
         </div>
 
         <div class="row g-2 mb-3">
             <div class="col-6">
                 <button class="btn btn-success w-100" onclick="testWebdavConnection()">
-                    <i class="fas fa-plug me-2"></i>测试连接
+                    <i class="fas fa-plug me-2"></i>${window.i18n.t('text.test_connection')}
                 </button>
             </div>
             <div class="col-6">
                 <button class="btn btn-primary w-100" onclick="setAsActiveWebdav()">
-                    <i class="fas fa-check-circle me-2"></i>设为活跃
+                    <i class="fas fa-check-circle me-2"></i>${window.i18n.t('text.set_active')}
                 </button>
             </div>
         </div>
 
         <hr>
 
-        <h6><i class="fas fa-upload me-2"></i>上传配置</h6>
+        <h6><i class="fas fa-upload me-2"></i>${window.i18n.t('text.upload_config')}</h6>
         <div class="input-group mb-3">
             <input type="text" class="form-control" id="uploadFilename"
                    value="config-${new Date().toISOString().split('T')[0]}.json"
-                   placeholder="文件名">
+                   placeholder="${window.i18n.t('text.filename')}">
             <button class="btn btn-success" onclick="uploadConfigToWebdav()">
-                <i class="fas fa-cloud-upload-alt me-2"></i>上传
+                <i class="fas fa-cloud-upload-alt me-2"></i>${window.i18n.t('text.upload')}
             </button>
         </div>
 
-        <h6><i class="fas fa-download me-2"></i>下载配置</h6>
+        <h6><i class="fas fa-download me-2"></i>${window.i18n.t('text.download_config')}</h6>
         <div class="mb-3">
             <button class="btn btn-info btn-sm mb-2" onclick="listRemoteFiles()">
-                <i class="fas fa-list me-2"></i>查看远程文件
+                <i class="fas fa-list me-2"></i>${window.i18n.t('text.view_remote_files')}
             </button>
             <div id="remoteFilesList"></div>
         </div>
@@ -3123,11 +3130,11 @@ async function saveWebdavConfig() {
 
     try {
         await tauriCreateWebdavConfig(config);
-        showMessage('WebDAV 配置创建成功', 'success');
+        showMessage(window.i18n.t('text.webdav_create_success'), 'success');
         bootstrap.Modal.getInstance(document.getElementById('webdavConfigModal')).hide();
         await loadWebdavConfigs();
     } catch (error) {
-        showMessage('创建 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+        showMessage(window.i18n.t('text.webdav_create_failed') + ': ' + getErrorMessage(error), 'danger');
     }
 }
 
@@ -3149,7 +3156,7 @@ async function editWebdavConfig(id) {
 
     // 修改保存按钮为更新
     const saveBtn = document.getElementById('saveWebdavConfig');
-    saveBtn.textContent = '更新';
+    saveBtn.textContent = window.i18n.t('button.update');
     saveBtn.onclick = async () => {
         const updatedConfig = {
             name: document.getElementById('webdavName').value,
@@ -3163,11 +3170,11 @@ async function editWebdavConfig(id) {
 
         try {
             await tauriUpdateWebdavConfig(id, updatedConfig);
-            showMessage('WebDAV 配置更新成功', 'success');
+            showMessage(window.i18n.t('text.webdav_update_success'), 'success');
             modal.hide();
             await loadWebdavConfigs();
         } catch (error) {
-            showMessage('更新 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+            showMessage(window.i18n.t('text.webdav_update_failed') + ': ' + getErrorMessage(error), 'danger');
         }
     };
 }
@@ -3178,21 +3185,21 @@ async function deleteWebdavConfig(id) {
     if (!config) return;
 
     const confirmed = await customConfirm(
-        `确定要删除 WebDAV 配置 "${config.name}" 吗？`,
-        '确认删除'
+        window.i18n.t('text.webdav_confirm_delete').replace('{name}', config.name),
+        window.i18n.t('text.webdav_confirm_delete_title')
     );
 
     if (confirmed) {
         try {
             await tauriDeleteWebdavConfig(id);
-            showMessage('WebDAV 配置删除成功', 'success');
+            showMessage(window.i18n.t('text.webdav_delete_success'), 'success');
             if (selectedWebdavConfig?.id === id) {
                 selectedWebdavConfig = null;
             }
             await loadWebdavConfigs();
             await loadWebdavOperationPanel();
         } catch (error) {
-            showMessage('删除 WebDAV 配置失败: ' + getErrorMessage(error), 'danger');
+            showMessage(window.i18n.t('text.webdav_delete_failed') + ': ' + getErrorMessage(error), 'danger');
         }
     }
 }
@@ -3205,7 +3212,7 @@ async function testWebdavConnection() {
         const result = await tauriTestWebdavConnection(selectedWebdavConfig.id);
         showMessage(result, 'success');
     } catch (error) {
-        showMessage('连接测试失败: ' + getErrorMessage(error), 'danger');
+        showMessage(window.i18n.t('text.webdav_test_failed') + ': ' + getErrorMessage(error), 'danger');
     }
 }
 
@@ -3215,10 +3222,10 @@ async function setAsActiveWebdav() {
 
     try {
         await tauriUpdateWebdavConfig(selectedWebdavConfig.id, { isActive: true });
-        showMessage('已设置为活跃配置', 'success');
+        showMessage(window.i18n.t('text.webdav_set_active_success'), 'success');
         await loadWebdavConfigs();
     } catch (error) {
-        showMessage('设置失败: ' + getErrorMessage(error), 'danger');
+        showMessage(window.i18n.t('text.webdav_set_active_failed') + ': ' + getErrorMessage(error), 'danger');
     }
 }
 
@@ -3234,7 +3241,7 @@ async function uploadConfigToWebdav() {
         showMessage(result, 'success');
         await loadSyncLogs();
     } catch (error) {
-        showMessage('上传失败: ' + getErrorMessage(error), 'danger');
+        showMessage(window.i18n.t('text.webdav_upload_failed') + ': ' + getErrorMessage(error), 'danger');
     }
 }
 
@@ -3247,7 +3254,7 @@ async function listRemoteFiles() {
         const listElement = document.getElementById('remoteFilesList');
 
         if (files.length === 0) {
-            listElement.innerHTML = '<div class="alert alert-info small">远程目录为空</div>';
+            listElement.innerHTML = '<div class="alert alert-info small">' + window.i18n.t('text.remote_dir_empty') + '</div>';
             return;
         }
 
@@ -3264,7 +3271,7 @@ async function listRemoteFiles() {
             </div>
         `;
     } catch (error) {
-        showMessage('获取文件列表失败: ' + getErrorMessage(error), 'danger');
+        showMessage(window.i18n.t('text.webdav_list_failed') + ': ' + getErrorMessage(error), 'danger');
     }
 }
 
@@ -3273,17 +3280,17 @@ async function downloadConfigFromWebdav(filename) {
     if (!selectedWebdavConfig) return;
 
     const confirmed = await customConfirm(
-        `确定要下载并应用配置文件 "${filename}" 吗？\n这将覆盖当前配置！`,
-        '确认下载'
+        window.i18n.t('text.webdav_confirm_download').replace('{filename}', filename),
+        window.i18n.t('text.webdav_confirm_download_title')
     );
 
     if (confirmed) {
         try {
             const result = await tauriDownloadConfigFromWebdav(selectedWebdavConfig.id, filename);
-            showMessage('配置下载成功！', 'success');
+            showMessage(window.i18n.t('text.webdav_download_success'), 'success');
             await loadSyncLogs();
         } catch (error) {
-            showMessage('下载失败: ' + getErrorMessage(error), 'danger');
+            showMessage(window.i18n.t('text.webdav_download_failed') + ': ' + getErrorMessage(error), 'danger');
         }
     }
 }
@@ -3298,7 +3305,7 @@ async function loadSyncLogs() {
             listElement.innerHTML = `
                 <div class="text-center text-muted py-3">
                     <i class="fas fa-history fa-2x mb-2"></i>
-                    <p>暂无同步日志</p>
+                    <p>${window.i18n.t('text.no_sync_logs')}</p>
                 </div>
             `;
             return;
@@ -3314,7 +3321,7 @@ async function loadSyncLogs() {
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <i class="fas ${icon} me-2"></i>
-                            <strong>${log.sync_type === 'upload' ? '上传' : '下载'}</strong>
+                            <strong>${log.sync_type === 'upload' ? window.i18n.t('webdav.upload_text') : window.i18n.t('webdav.download_text')}</strong>
                             <span class="badge bg-${statusClass} ms-2">${log.status}</span>
                         </div>
                         <small class="text-muted">${new Date(log.synced_at).toLocaleString('zh-CN')}</small>
@@ -3349,3 +3356,81 @@ window.uploadConfigToWebdav = uploadConfigToWebdav;
 window.downloadConfigFromWebdav = downloadConfigFromWebdav;
 window.listRemoteFiles = listRemoteFiles;
 window.loadSyncLogs = loadSyncLogs;
+
+// ============= 多语言切换功能 =============
+
+/**
+ * 切换语言
+ * @param {string} lang - 语言代码 ('zh-CN' 或 'en-US')
+ */
+function switchLanguage(lang) {
+    if (window.i18n && window.i18n.setLanguage(lang)) {
+        // 更新按钮状态
+        const langZh = document.getElementById('langZh');
+        const langEn = document.getElementById('langEn');
+
+        if (!langZh || !langEn) {
+            console.warn('语言切换按钮未找到');
+            return;
+        }
+
+        if (lang === 'zh-CN') {
+            langZh.classList.add('active');
+            langEn.classList.remove('active');
+        } else if (lang === 'en-US') {
+            langEn.classList.add('active');
+            langZh.classList.remove('active');
+        }
+
+        // 显示切换成功消息
+        showSuccess(lang === 'zh-CN' ? window.i18n.t('success.language_switched_zh') : 'Switched to English');
+    } else {
+        showError(window.i18n.t('error.language_switch'));
+    }
+}
+
+/**
+ * 初始化语言按钮状态
+ */
+function initLanguageButtons() {
+    if (!window.i18n) {
+        console.warn('i18n 未初始化');
+        return;
+    }
+
+    const currentLang = window.i18n.getLanguage();
+    const langZh = document.getElementById('langZh');
+    const langEn = document.getElementById('langEn');
+
+    if (!langZh || !langEn) {
+        console.warn('语言切换按钮未找到');
+        return;
+    }
+
+    // 移除所有active类
+    langZh.classList.remove('active');
+    langEn.classList.remove('active');
+
+    // 根据当前语言设置active类
+    if (currentLang === 'zh-CN') {
+        langZh.classList.add('active');
+    } else {
+        langEn.classList.add('active');
+    }
+}
+
+// 导出函数到全局
+window.switchLanguage = switchLanguage;
+
+// 监听 DOMContentLoaded 事件以初始化语言按钮状态
+// 使用 setTimeout 确保在 i18n.js 加载完成后执行
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        initLanguageButtons();
+    }, 100);
+});
+
+// 监听语言变化事件，更新按钮状态
+window.addEventListener('languageChanged', (event) => {
+    initLanguageButtons();
+});

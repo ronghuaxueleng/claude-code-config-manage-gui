@@ -26,6 +26,24 @@ impl WebDavManager {
         Ok(Self { config, client })
     }
 
+    /// 规范化 WebDAV 路径
+    fn normalize_path(&self, filename: &str) -> String {
+        let remote_path = self.config.remote_path.trim_end_matches('/');
+        let remote_path = if remote_path.is_empty() {
+            "/"
+        } else if !remote_path.starts_with('/') {
+            &format!("/{}", remote_path)
+        } else {
+            remote_path
+        };
+
+        if filename.is_empty() {
+            remote_path.to_string()
+        } else {
+            format!("{}/{}", remote_path, filename.trim_start_matches('/'))
+        }
+    }
+
     /// 测试 WebDAV 连接
     pub async fn test_connection(&self) -> Result<bool> {
         match self.client.list("", Depth::Number(0)).await {
@@ -42,10 +60,11 @@ impl WebDavManager {
 
     /// 上传配置数据到 WebDAV
     pub async fn upload_config(&self, data: &Value, filename: &str) -> Result<()> {
-        let remote_file = format!("{}/{}", self.config.remote_path, filename);
+        let remote_file = self.normalize_path(filename);
         let json_data = serde_json::to_string_pretty(data)?;
 
         info!("Uploading config to WebDAV: {}", remote_file);
+        info!("Remote path: {}, Filename: {}", self.config.remote_path, filename);
 
         // 确保远程目录存在
         self.ensure_remote_dir().await?;
@@ -54,22 +73,22 @@ impl WebDavManager {
         self.client
             .put(&remote_file, json_data.as_bytes().to_vec())
             .await
-            .context("Failed to upload config to WebDAV")?;
+            .context(format!("上传文件失败: {}. 请检查路径格式和服务器权限", remote_file))?;
 
-        info!("Config uploaded successfully");
+        info!("Config uploaded successfully to {}", remote_file);
         Ok(())
     }
 
     /// 从 WebDAV 下载配置数据
     pub async fn download_config(&self, filename: &str) -> Result<Value> {
-        let remote_file = format!("{}/{}", self.config.remote_path, filename);
+        let remote_file = self.normalize_path(filename);
 
         info!("Downloading config from WebDAV: {}", remote_file);
 
         let response = self.client
             .get(&remote_file)
             .await
-            .context("Failed to download config from WebDAV")?;
+            .context(format!("下载文件失败: {}", remote_file))?;
 
         let data = response.bytes().await
             .context("Failed to read response bytes")?;
@@ -86,10 +105,11 @@ impl WebDavManager {
 
     /// 列出远程目录中的文件
     pub async fn list_remote_files(&self) -> Result<Vec<String>> {
-        info!("Listing files in remote directory: {}", self.config.remote_path);
+        let remote_dir = self.normalize_path("");
+        info!("Listing files in remote directory: {}", remote_dir);
 
         let list = self.client
-            .list(&self.config.remote_path, Depth::Number(1))
+            .list(&remote_dir, Depth::Number(1))
             .await
             .context("Failed to list remote files")?;
 
@@ -133,14 +153,24 @@ impl WebDavManager {
 
     /// 确保远程目录存在
     async fn ensure_remote_dir(&self) -> Result<()> {
+        let remote_dir = self.normalize_path("");
+
+        // 如果是根目录，不需要创建
+        if remote_dir == "/" || remote_dir.is_empty() {
+            info!("Using root directory, no need to create");
+            return Ok(());
+        }
+
+        info!("Ensuring remote directory exists: {}", remote_dir);
+
         // 尝试创建目录,如果已存在会失败但不影响后续操作
-        match self.client.mkcol(&self.config.remote_path).await {
+        match self.client.mkcol(&remote_dir).await {
             Ok(_) => {
-                info!("Remote directory created: {}", self.config.remote_path);
+                info!("Remote directory created: {}", remote_dir);
             }
             Err(e) => {
                 // 目录可能已存在,记录警告但不报错
-                warn!("Failed to create remote directory (may already exist): {}", e);
+                warn!("Failed to create remote directory (may already exist): {}. Path: {}", e, remote_dir);
             }
         }
         Ok(())
