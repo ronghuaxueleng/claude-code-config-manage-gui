@@ -15,7 +15,7 @@ function getErrorMessage(error) {
     } else if (error && typeof error.toString === 'function') {
         return error.toString();
     } else {
-        return '未知错误';
+        return window.i18n.t('error.unknown');
     }
 }
 
@@ -92,15 +92,15 @@ async function tauriDeleteRemoteFile(configId, filename) {
 async function loadWebdavConfigs() {
     try {
         webdavConfigs = await tauriGetWebdavConfigs();
-        console.log('加载到的 WebDAV 配置:', webdavConfigs);
+        console.log(window.i18n.t('webdav.configs_loaded') + ':', webdavConfigs);
         const listElement = document.getElementById('webdavConfigsList');
 
         if (webdavConfigs.length === 0) {
             listElement.innerHTML = `
                 <div class="text-center text-muted py-4">
                     <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
-                    <p>暂无 WebDAV 配置</p>
-                    <p class="small">点击上方"添加配置"按钮开始</p>
+                    <p>${window.i18n.t('text.no_webdav')}</p>
+                    <p class="small">${window.i18n.t('text.webdav_help')}</p>
                 </div>
             `;
             return;
@@ -111,14 +111,14 @@ async function loadWebdavConfigs() {
             const activeConfig = webdavConfigs.find(c => c.is_active);
             if (activeConfig) {
                 selectedWebdavConfig = activeConfig;
-                console.log('自动选中活跃配置:', selectedWebdavConfig);
+                console.log(window.i18n.t('webdav.auto_selected') + ':', selectedWebdavConfig);
             }
         }
 
         listElement.innerHTML = webdavConfigs.map(config => {
             const selectedStyle = selectedWebdavConfig?.id === config.id ? 'border-primary border-2' : '';
-            const activeBadge = config.is_active ? '<span class="badge bg-success ms-2">活跃</span>' : '';
-            const autoSyncIcon = config.auto_sync ? ' | <i class="fas fa-sync-alt"></i> 自动同步' : '';
+            const activeBadge = config.is_active ? '<span class="badge bg-success ms-2">' + window.i18n.t('text.active') + '</span>' : '';
+            const autoSyncIcon = config.auto_sync ? ' | <i class="fas fa-sync-alt"></i> ' + window.i18n.t('text.auto_sync') : '';
 
             return `
                 <div class="list-group-item list-group-item-action ${selectedStyle}"
@@ -139,8 +139,8 @@ async function loadWebdavConfigs() {
                     </div>
                     <p class="mb-1 small">${config.url}</p>
                     <small class="text-muted">
-                        用户: ${config.username} |
-                        路径: ${config.remote_path}
+                        ${window.i18n.t('text.user')}: ${config.username} |
+                        ${window.i18n.t('text.path')}: ${config.remote_path}
                         ${autoSyncIcon}
                     </small>
                 </div>
@@ -148,14 +148,14 @@ async function loadWebdavConfigs() {
         }).join('');
 
     } catch (error) {
-        window.showError('加载 WebDAV 配置失败: ' + getErrorMessage(error));
+        window.showError(window.i18n.t('text.webdav_load_failed') + ': ' + getErrorMessage(error));
     }
 }
 
 // 选择 WebDAV 配置
 async function selectWebdavConfig(id) {
     selectedWebdavConfig = webdavConfigs.find(c => c.id === id);
-    console.log('选中的 WebDAV 配置:', selectedWebdavConfig);
+    console.log(window.i18n.t('webdav.config_selected') + ':', selectedWebdavConfig);
     await loadWebdavConfigs();  // 重新渲染列表以显示选中状态
     await loadWebdavOperationPanel();  // 更新操作面板
 }
@@ -168,7 +168,7 @@ async function loadWebdavOperationPanel() {
         panel.innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                请先选择或添加 WebDAV 配置
+                ${window.i18n.t('info.select_directory_or_add')}
             </div>
         `;
         return;
@@ -177,39 +177,39 @@ async function loadWebdavOperationPanel() {
     const today = new Date().toISOString().split('T')[0];
     panel.innerHTML = `
         <div class="mb-3">
-            <h6><i class="fas fa-info-circle me-2"></i>当前配置: ${selectedWebdavConfig.name}</h6>
+            <h6><i class="fas fa-info-circle me-2"></i>${window.i18n.t('text.current_config')}: ${selectedWebdavConfig.name}</h6>
             <p class="small text-muted mb-0">${selectedWebdavConfig.url}</p>
         </div>
 
         <div class="row g-2 mb-3">
             <div class="col-6">
                 <button class="btn btn-success w-100" onclick="testWebdavConnection()">
-                    <i class="fas fa-plug me-2"></i>测试连接
+                    <i class="fas fa-plug me-2"></i>${window.i18n.t('text.test_connection')}
                 </button>
             </div>
             <div class="col-6">
                 <button class="btn btn-primary w-100" onclick="setAsActiveWebdav()">
-                    <i class="fas fa-check-circle me-2"></i>设为活跃
+                    <i class="fas fa-check-circle me-2"></i>${window.i18n.t('text.set_active')}
                 </button>
             </div>
         </div>
 
         <hr>
 
-        <h6><i class="fas fa-upload me-2"></i>上传配置</h6>
+        <h6><i class="fas fa-upload me-2"></i>${window.i18n.t('text.upload_config')}</h6>
         <div class="input-group mb-3">
             <input type="text" class="form-control" id="uploadFilename"
                    value="config-${today}.json"
-                   placeholder="文件名">
+                   placeholder="${window.i18n.t('text.filename')}">
             <button class="btn btn-success" onclick="uploadConfigToWebdav()">
-                <i class="fas fa-cloud-upload-alt me-2"></i>上传
+                <i class="fas fa-cloud-upload-alt me-2"></i>${window.i18n.t('text.upload')}
             </button>
         </div>
 
-        <h6><i class="fas fa-download me-2"></i>下载配置</h6>
+        <h6><i class="fas fa-download me-2"></i>${window.i18n.t('text.download_config')}</h6>
         <div class="mb-3">
             <button class="btn btn-info btn-sm mb-2" onclick="listRemoteFiles()">
-                <i class="fas fa-list me-2"></i>查看远程文件
+                <i class="fas fa-list me-2"></i>${window.i18n.t('text.view_remote_files')}
             </button>
             <div id="remoteFilesList"></div>
         </div>
@@ -230,12 +230,12 @@ async function saveWebdavConfig() {
 
     try {
         await tauriCreateWebdavConfig(config);
-        window.showSuccess('WebDAV 配置创建成功');
+        window.showSuccess(window.i18n.t('text.webdav_create_success'));
         bootstrap.Modal.getInstance(document.getElementById('webdavConfigModal')).hide();
         await loadWebdavConfigs();
         await loadWebdavOperationPanel();  // 刷新操作面板
     } catch (error) {
-        window.showError('创建 WebDAV 配置失败: ' + getErrorMessage(error));
+        window.showError(window.i18n.t('text.webdav_create_failed') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -257,7 +257,7 @@ async function editWebdavConfig(id) {
 
     // 修改保存按钮为更新
     const saveBtn = document.getElementById('saveWebdavConfig');
-    saveBtn.textContent = '更新';
+    saveBtn.textContent = window.i18n.t('button.update');
     saveBtn.onclick = async () => {
         const updatedConfig = {
             name: document.getElementById('webdavName').value,
@@ -271,7 +271,7 @@ async function editWebdavConfig(id) {
 
         try {
             await tauriUpdateWebdavConfig(id, updatedConfig);
-            window.showSuccess('WebDAV 配置更新成功');
+            window.showSuccess(window.i18n.t('text.webdav_update_success'));
             modal.hide();
             // 如果更新的是当前选中的配置，需要更新 selectedWebdavConfig
             if (selectedWebdavConfig && selectedWebdavConfig.id === id) {
@@ -280,7 +280,7 @@ async function editWebdavConfig(id) {
             await loadWebdavConfigs();
             await loadWebdavOperationPanel();  // 刷新操作面板
         } catch (error) {
-            window.showError('更新 WebDAV 配置失败: ' + getErrorMessage(error));
+            window.showError(window.i18n.t('text.webdav_update_failed') + ': ' + getErrorMessage(error));
         }
     };
 }
@@ -291,21 +291,21 @@ async function deleteWebdavConfig(id) {
     if (!config) return;
 
     const confirmed = await window.customConfirm(
-        `确定要删除 WebDAV 配置 "${config.name}" 吗？`,
-        '确认删除'
+        window.i18n.t('text.webdav_confirm_delete').replace('{name}', config.name),
+        window.i18n.t('text.webdav_confirm_delete_title')
     );
 
     if (confirmed) {
         try {
             await tauriDeleteWebdavConfig(id);
-            window.showSuccess('WebDAV 配置删除成功');
+            window.showSuccess(window.i18n.t('text.webdav_delete_success'));
             if (selectedWebdavConfig?.id === id) {
                 selectedWebdavConfig = null;
             }
             await loadWebdavConfigs();
             await loadWebdavOperationPanel();
         } catch (error) {
-            window.showError('删除 WebDAV 配置失败: ' + getErrorMessage(error));
+            window.showError(window.i18n.t('text.webdav_delete_failed') + ': ' + getErrorMessage(error));
         }
     }
 }
@@ -318,7 +318,7 @@ async function testWebdavConnection() {
         const result = await tauriTestWebdavConnection(selectedWebdavConfig.id);
         window.showSuccess(result);
     } catch (error) {
-        window.showError('连接测试失败: ' + getErrorMessage(error));
+        window.showError(window.i18n.t('text.webdav_test_failed') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -340,11 +340,11 @@ async function setAsActiveWebdav() {
         await tauriUpdateWebdavConfig(selectedWebdavConfig.id, updatedConfig);
         // 更新 selectedWebdavConfig 的 is_active 状态
         selectedWebdavConfig.is_active = true;
-        window.showSuccess('已设置为活跃配置');
+        window.showSuccess(window.i18n.t('text.webdav_set_active_success'));
         await loadWebdavConfigs();
         await loadWebdavOperationPanel();  // 刷新操作面板
     } catch (error) {
-        window.showError('设置失败: ' + getErrorMessage(error));
+        window.showError(window.i18n.t('text.webdav_set_active_failed') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -360,7 +360,7 @@ async function uploadConfigToWebdav() {
         window.showSuccess(result);
         await loadSyncLogs();
     } catch (error) {
-        window.showError('上传失败: ' + getErrorMessage(error));
+        window.showError(window.i18n.t('text.webdav_upload_failed') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -370,11 +370,11 @@ async function listRemoteFiles() {
 
     try {
         const files = await tauriListWebdavFiles(selectedWebdavConfig.id);
-        console.log('远程文件列表:', files);
+        console.log(window.i18n.t('webdav.remote_files') + ':', files);
         const listElement = document.getElementById('remoteFilesList');
 
         if (files.length === 0) {
-            listElement.innerHTML = '<div class="alert alert-info small">远程目录为空</div>';
+            listElement.innerHTML = '<div class="alert alert-info small">' + window.i18n.t('text.remote_dir_empty') + '</div>';
             return;
         }
 
@@ -384,10 +384,10 @@ async function listRemoteFiles() {
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <span><i class="fas fa-file-code me-2"></i>${file}</span>
                         <div>
-                            <button class="btn btn-sm btn-success me-1" onclick="downloadConfigFromWebdav('${file}')" title="下载">
+                            <button class="btn btn-sm btn-success me-1" onclick="downloadConfigFromWebdav('${file}')" title="${window.i18n.t('button.download')}">
                                 <i class="fas fa-download"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteRemoteFile('${file}')" title="删除">
+                            <button class="btn btn-sm btn-danger" onclick="deleteRemoteFile('${file}')" title="${window.i18n.t('common.delete')}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -396,7 +396,7 @@ async function listRemoteFiles() {
             </div>
         `;
     } catch (error) {
-        window.showError('获取文件列表失败: ' + getErrorMessage(error));
+        window.showError(window.i18n.t('text.webdav_list_failed') + ': ' + getErrorMessage(error));
     }
 }
 
@@ -405,17 +405,17 @@ async function downloadConfigFromWebdav(filename) {
     if (!selectedWebdavConfig) return;
 
     const confirmed = await window.customConfirm(
-        `确定要下载并应用配置文件 "${filename}" 吗？\n这将覆盖当前配置！`,
-        '确认下载'
+        window.i18n.t('text.webdav_confirm_download').replace('{filename}', filename),
+        window.i18n.t('text.webdav_confirm_download_title')
     );
 
     if (confirmed) {
         try {
             const result = await tauriDownloadConfigFromWebdav(selectedWebdavConfig.id, filename);
-            window.showSuccess('配置下载成功！');
+            window.showSuccess(window.i18n.t('text.webdav_download_success'));
             await loadSyncLogs();
         } catch (error) {
-            window.showError('下载失败: ' + getErrorMessage(error));
+            window.showError(window.i18n.t('text.webdav_download_failed') + ': ' + getErrorMessage(error));
         }
     }
 }
@@ -425,18 +425,18 @@ async function deleteRemoteFile(filename) {
     if (!selectedWebdavConfig) return;
 
     const confirmed = await window.customConfirm(
-        `确定要删除远程文件 "${filename}" 吗？\n\n此操作不可撤销！`,
-        '确认删除'
+        window.i18n.t('text.webdav_confirm_delete_file').replace('{filename}', filename),
+        window.i18n.t('text.webdav_confirm_delete_title')
     );
 
     if (confirmed) {
         try {
             await tauriDeleteRemoteFile(selectedWebdavConfig.id, filename);
-            window.showSuccess('文件删除成功');
+            window.showSuccess(window.i18n.t('text.webdav_file_delete_success'));
             // 刷新文件列表
             await listRemoteFiles();
         } catch (error) {
-            window.showError('删除文件失败: ' + getErrorMessage(error));
+            window.showError(window.i18n.t('text.webdav_file_delete_failed') + ': ' + getErrorMessage(error));
         }
     }
 }
@@ -451,7 +451,7 @@ async function loadSyncLogs() {
             listElement.innerHTML = `
                 <div class="text-center text-muted py-3">
                     <i class="fas fa-history fa-2x mb-2"></i>
-                    <p>暂无同步日志</p>
+                    <p>${window.i18n.t('text.no_sync_logs')}</p>
                 </div>
             `;
             return;
@@ -461,8 +461,21 @@ async function loadSyncLogs() {
             const statusClass = log.status === 'success' ? 'success' :
                                log.status === 'failed' ? 'danger' : 'warning';
             const icon = log.sync_type === 'upload' ? 'fa-upload' : 'fa-download';
-            const typeText = log.sync_type === 'upload' ? '上传' : '下载';
-            const dateStr = new Date(log.synced_at).toLocaleString('zh-CN');
+            const typeText = log.sync_type === 'upload' ? window.i18n.t('webdav.upload_text') : window.i18n.t('webdav.download_text');
+
+            // 翻译状态文本
+            let statusText = log.status;
+            if (log.status === 'success') {
+                statusText = window.i18n.t('webdav.status_success');
+            } else if (log.status === 'failed') {
+                statusText = window.i18n.t('webdav.status_failed');
+            } else if (log.status === 'warning') {
+                statusText = window.i18n.t('webdav.status_warning');
+            }
+
+            // 根据当前语言格式化日期
+            const locale = window.i18n.getLanguage() === 'zh-CN' ? 'zh-CN' : 'en-US';
+            const dateStr = new Date(log.synced_at).toLocaleString(locale);
 
             return `
                 <div class="border-bottom pb-2 mb-2">
@@ -470,7 +483,7 @@ async function loadSyncLogs() {
                         <div>
                             <i class="fas ${icon} me-2"></i>
                             <strong>${typeText}</strong>
-                            <span class="badge bg-${statusClass} ms-2">${log.status}</span>
+                            <span class="badge bg-${statusClass} ms-2">${statusText}</span>
                         </div>
                         <small class="text-muted">${dateStr}</small>
                     </div>
@@ -480,7 +493,7 @@ async function loadSyncLogs() {
         }).join('');
 
     } catch (error) {
-        console.error('加载同步日志失败:', error);
+        console.error(window.i18n.t('webdav.load_sync_logs_failed') + ':', error);
     }
 }
 
@@ -498,9 +511,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // 首次加载时运行数据库迁移，确保 WebDAV 表存在
             try {
                 await invoke('migrate_database');
-                console.log('数据库迁移检查完成');
+                console.log(window.i18n.t('webdav.migration_complete'));
             } catch (error) {
-                console.warn('数据库迁移检查失败:', error);
+                console.warn(window.i18n.t('webdav.migration_failed') + ':', error);
             }
 
             await loadWebdavConfigs();
@@ -512,6 +525,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 导出函数到全局
 window.loadWebdavConfigs = loadWebdavConfigs;
+window.loadWebdavOperationPanel = loadWebdavOperationPanel;
 window.selectWebdavConfig = selectWebdavConfig;
 window.saveWebdavConfig = saveWebdavConfig;
 window.editWebdavConfig = editWebdavConfig;
@@ -526,8 +540,8 @@ window.loadSyncLogs = loadSyncLogs;
 
 // 调试函数
 window.debugWebdav = function() {
-    console.log('WebDAV 配置列表:', webdavConfigs);
-    console.log('当前选中的配置:', selectedWebdavConfig);
-    console.log('配置列表元素存在:', !!document.getElementById('webdavConfigsList'));
-    console.log('操作面板元素存在:', !!document.getElementById('webdavOperationPanel'));
+    console.log(window.i18n.t('webdav.debug_configs') + ':', webdavConfigs);
+    console.log(window.i18n.t('webdav.debug_selected') + ':', selectedWebdavConfig);
+    console.log(window.i18n.t('webdav.debug_list_element') + ':', !!document.getElementById('webdavConfigsList'));
+    console.log(window.i18n.t('webdav.debug_panel_element') + ':', !!document.getElementById('webdavOperationPanel'));
 };

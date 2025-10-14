@@ -339,6 +339,7 @@ const translations = {
         'button.test_connection': '测试连接',
         'button.switch_connection': '切换连接',
         'button.update': '更新',
+        'button.download': '下载',
 
         // 模态框标题
         'modal.edit_account': '编辑账号',
@@ -374,6 +375,20 @@ const translations = {
         'webdav.list_failed': '获取文件列表失败',
         'webdav.upload_text': '上传',
         'webdav.download_text': '下载',
+        'webdav.configs_loaded': '配置已加载',
+        'webdav.auto_selected': '自动选中活跃配置',
+        'webdav.config_selected': '已选择配置',
+        'webdav.remote_files': '远程文件列表',
+        'webdav.load_sync_logs_failed': '加载同步日志失败',
+        'webdav.migration_complete': '数据库迁移完成',
+        'webdav.migration_failed': '数据库迁移失败',
+        'webdav.debug_configs': '调试：所有配置',
+        'webdav.debug_selected': '调试：选中的配置',
+        'webdav.debug_list_element': '调试：列表元素存在',
+        'webdav.debug_panel_element': '调试：面板元素存在',
+        'webdav.status_success': '成功',
+        'webdav.status_failed': '失败',
+        'webdav.status_warning': '警告',
 
         // 其他文本
         'text.no_accounts': '暂无账号',
@@ -467,6 +482,10 @@ const translations = {
         'text.url_address_exists': 'URL地址已存在，请使用不同的URL地址',
         'text.account_name_exists_hint': '账号名称已存在，请使用不同的名称',
         'text.testing_failed': '测试失败',
+        'text.webdav_confirm_delete_file': '确定要删除远程文件 "{filename}" 吗？',
+        'text.webdav_file_delete_success': '文件删除成功',
+        'text.webdav_file_delete_failed': '文件删除失败',
+        'text.no_custom_env_vars': '暂无自定义环境变量',
     },
 
     'en-US': {
@@ -804,6 +823,7 @@ const translations = {
         'button.test_connection': 'Test Connection',
         'button.switch_connection': 'Switch Connection',
         'button.update': 'Update',
+        'button.download': 'Download',
 
         // Modal titles
         'modal.edit_account': 'Edit Account',
@@ -839,6 +859,20 @@ const translations = {
         'webdav.list_failed': 'Failed to get file list',
         'webdav.upload_text': 'Upload',
         'webdav.download_text': 'Download',
+        'webdav.configs_loaded': 'Configurations loaded',
+        'webdav.auto_selected': 'Auto-selected active configuration',
+        'webdav.config_selected': 'Configuration selected',
+        'webdav.remote_files': 'Remote files list',
+        'webdav.load_sync_logs_failed': 'Failed to load sync logs',
+        'webdav.migration_complete': 'Database migration completed',
+        'webdav.migration_failed': 'Database migration failed',
+        'webdav.debug_configs': 'Debug: All configurations',
+        'webdav.debug_selected': 'Debug: Selected configuration',
+        'webdav.debug_list_element': 'Debug: List element exists',
+        'webdav.debug_panel_element': 'Debug: Panel element exists',
+        'webdav.status_success': 'Success',
+        'webdav.status_failed': 'Failed',
+        'webdav.status_warning': 'Warning',
 
         // Other text
         'text.no_accounts': 'No accounts',
@@ -932,6 +966,10 @@ const translations = {
         'text.url_address_exists': 'URL address already exists, please use a different URL',
         'text.account_name_exists_hint': 'Account name already exists, please use a different name',
         'text.testing_failed': 'Test failed',
+        'text.webdav_confirm_delete_file': 'Are you sure you want to delete remote file "{filename}"?',
+        'text.webdav_file_delete_success': 'File deleted successfully',
+        'text.webdav_file_delete_failed': 'Failed to delete file',
+        'text.no_custom_env_vars': 'No custom environment variables',
     }
 };
 
@@ -963,19 +1001,10 @@ class I18n {
 
     // 获取翻译文本
     t(key) {
-        const keys = key.split('.');
-        let value = this.translations[this.currentLanguage];
-
-        for (const k of keys) {
-            if (value && typeof value === 'object') {
-                value = value[k];
-            } else {
-                break;
-            }
-        }
-
+        // 直接从当前语言的翻译对象中获取翻译值
+        const translation = this.translations[this.currentLanguage][key];
         // 如果没有找到翻译，返回 key
-        return value !== undefined ? value : key;
+        return translation !== undefined ? translation : key;
     }
 
     // 更新页面所有带有 data-i18n 属性的元素

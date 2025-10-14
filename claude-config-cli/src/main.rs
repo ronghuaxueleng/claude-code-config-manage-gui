@@ -1,19 +1,19 @@
-mod models;
-mod database;
 mod claude_config;
 mod config_manager;
-mod logger;
-mod webdav;
-mod menu;
+mod database;
 mod i18n;
+mod logger;
+mod menu;
+mod models;
+mod webdav;
 
 use anyhow::Result;
 use colored::Colorize;
 use console::Term;
+use database::Database;
 use dialoguer::Select;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use database::Database;
 
 type DbState = Arc<Mutex<Database>>;
 
@@ -39,7 +39,10 @@ async fn main() -> Result<()> {
             Arc::new(Mutex::new(database))
         }
         Err(e) => {
-            eprintln!("{}", format!("{}: {}", i18n::translate("db.init_error"), e).red());
+            eprintln!(
+                "{}",
+                format!("{}: {}", i18n::translate("db.init_error"), e).red()
+            );
             println!("\n{}", i18n::translate("db.fallback"));
             match Database::create_with_fallback().await {
                 Ok(database) => {
@@ -47,7 +50,10 @@ async fn main() -> Result<()> {
                     Arc::new(Mutex::new(database))
                 }
                 Err(e) => {
-                    eprintln!("{}", format!("{}: {}", i18n::translate("db.fallback_error"), e).red());
+                    eprintln!(
+                        "{}",
+                        format!("{}: {}", i18n::translate("db.fallback_error"), e).red()
+                    );
                     return Err(e.into());
                 }
             }
@@ -97,16 +103,37 @@ async fn main() -> Result<()> {
 }
 
 fn print_banner() {
-    println!("{}", "╔═══════════════════════════════════════════════════════════════╗".bright_blue());
-    println!("{}", "║                                                               ║".bright_blue());
-    println!("{}", format!("║        {} - {} {}            ║",
-        i18n::translate("app.name"),
-        i18n::translate("app.cli_subtitle"),
-        i18n::translate("app.version")
-    ).bright_blue().bold());
-    println!("{}", "║        Claude Code Configuration Manager - CLI               ║".bright_blue());
-    println!("{}", "║                                                               ║".bright_blue());
-    println!("{}", "╚═══════════════════════════════════════════════════════════════╝".bright_blue());
+    println!(
+        "{}",
+        "╔═══════════════════════════════════════════════════════════════╗".bright_blue()
+    );
+    println!(
+        "{}",
+        "║                                                               ║".bright_blue()
+    );
+    println!(
+        "{}",
+        format!(
+            "║        {} - {} {}            ║",
+            i18n::translate("app.name"),
+            i18n::translate("app.cli_subtitle"),
+            i18n::translate("app.version")
+        )
+        .bright_blue()
+        .bold()
+    );
+    println!(
+        "{}",
+        "║        Claude Code Configuration Manager - CLI               ║".bright_blue()
+    );
+    println!(
+        "{}",
+        "║                                                               ║".bright_blue()
+    );
+    println!(
+        "{}",
+        "╚═══════════════════════════════════════════════════════════════╝".bright_blue()
+    );
     println!();
 }
 
@@ -133,35 +160,46 @@ fn show_main_menu() -> Result<usize> {
 }
 
 fn remove_root_check() -> Result<()> {
-    use dialoguer::{Input, Confirm};
-    use std::process::Command;
+    use dialoguer::{Confirm, Input};
     use std::io::Write;
+    use std::process::Command;
 
-    println!("\n{}", "========================================".bright_blue());
-    println!("{}", "      删除 Claude Code Root Check      ".bright_blue().bold());
-    println!("{}", "========================================".bright_blue());
+    println!(
+        "\n{}",
+        "========================================".bright_blue()
+    );
+    println!(
+        "{}",
+        format!("      {}      ", i18n::translate("remove_root.title"))
+            .bright_blue()
+            .bold()
+    );
+    println!(
+        "{}",
+        "========================================".bright_blue()
+    );
     println!();
 
     // 将脚本内容嵌入到二进制文件中
     const SCRIPT_CONTENT: &str = include_str!("../resources/config/remove-root-check.sh");
 
-    println!("{}", "此操作将执行以下步骤:".yellow());
-    println!("  1. 查找 claude 命令位置");
-    println!("  2. 创建包装脚本自动删除 root check 限制");
-    println!("  3. 备份原始 claude 命令");
-    println!("  4. 替换 claude 命令为包装脚本");
+    println!("{}", i18n::translate("remove_root.steps_intro").yellow());
+    println!("{}", i18n::translate("remove_root.step1"));
+    println!("{}", i18n::translate("remove_root.step2"));
+    println!("{}", i18n::translate("remove_root.step3"));
+    println!("{}", i18n::translate("remove_root.step4"));
     println!();
 
     if !Confirm::new()
-        .with_prompt("是否继续执行删除限制代码操作?")
+        .with_prompt(i18n::translate("remove_root.confirm"))
         .default(false)
         .interact()?
     {
-        println!("\n{}", "操作已取消".yellow());
+        println!("\n{}", i18n::translate("common.cancel").yellow());
         return Ok(());
     }
 
-    println!("\n{}", "正在执行删除限制代码脚本...".cyan());
+    println!("\n{}", i18n::translate("remove_root.executing").cyan());
     println!();
 
     // 创建临时脚本文件
@@ -186,9 +224,7 @@ fn remove_root_check() -> Result<()> {
     }
 
     // 执行脚本
-    let output = Command::new("bash")
-        .arg(&temp_script)
-        .output();
+    let output = Command::new("bash").arg(&temp_script).output();
 
     // 清理临时文件
     let _ = std::fs::remove_file(&temp_script);
@@ -208,18 +244,28 @@ fn remove_root_check() -> Result<()> {
             }
 
             if output.status.success() {
-                println!("\n{}", "✓ 删除限制代码完成".green().bold());
+                println!("\n{}", i18n::translate("remove_root.success").green().bold());
             } else {
-                println!("\n{}", format!("✗ 脚本执行失败，退出代码: {}", output.status).red());
+                println!(
+                    "\n{}",
+                    i18n::translate("remove_root.error_exit")
+                        .replace("{}", &output.status.to_string())
+                        .red()
+                );
             }
         }
         Err(e) => {
-            println!("{}", format!("✗ 执行脚本失败: {}", e).red());
+            println!(
+                "{}",
+                i18n::translate("remove_root.error_execute")
+                    .replace("{}", &e.to_string())
+                    .red()
+            );
         }
     }
 
     let _ = Input::<String>::new()
-        .with_prompt("\n按 Enter 继续")
+        .with_prompt(i18n::translate("common.continue"))
         .allow_empty(true)
         .interact()?;
 

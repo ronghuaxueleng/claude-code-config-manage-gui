@@ -64,7 +64,10 @@ impl WebDavManager {
         let json_data = serde_json::to_string_pretty(data)?;
 
         info!("Uploading config to WebDAV: {}", remote_file);
-        info!("Remote path: {}, Filename: {}", self.config.remote_path, filename);
+        info!(
+            "Remote path: {}, Filename: {}",
+            self.config.remote_path, filename
+        );
 
         // 确保远程目录存在
         self.ensure_remote_dir().await?;
@@ -73,7 +76,10 @@ impl WebDavManager {
         self.client
             .put(&remote_file, json_data.as_bytes().to_vec())
             .await
-            .context(format!("上传文件失败: {}. 请检查路径格式和服务器权限", remote_file))?;
+            .context(format!(
+                "上传文件失败: {}. 请检查路径格式和服务器权限",
+                remote_file
+            ))?;
 
         info!("Config uploaded successfully to {}", remote_file);
         Ok(())
@@ -85,19 +91,22 @@ impl WebDavManager {
 
         info!("Downloading config from WebDAV: {}", remote_file);
 
-        let response = self.client
+        let response = self
+            .client
             .get(&remote_file)
             .await
             .context(format!("下载文件失败: {}", remote_file))?;
 
-        let data = response.bytes().await
+        let data = response
+            .bytes()
+            .await
             .context("Failed to read response bytes")?;
 
-        let json_str = String::from_utf8(data.to_vec())
-            .context("Failed to parse downloaded data as UTF-8")?;
+        let json_str =
+            String::from_utf8(data.to_vec()).context("Failed to parse downloaded data as UTF-8")?;
 
-        let config: Value = serde_json::from_str(&json_str)
-            .context("Failed to parse downloaded data as JSON")?;
+        let config: Value =
+            serde_json::from_str(&json_str).context("Failed to parse downloaded data as JSON")?;
 
         info!("Config downloaded successfully");
         Ok(config)
@@ -108,7 +117,8 @@ impl WebDavManager {
         let remote_dir = self.normalize_path("");
         info!("Listing files in remote directory: {}", remote_dir);
 
-        let list = self.client
+        let list = self
+            .client
             .list(&remote_dir, Depth::Number(1))
             .await
             .context("Failed to list remote files")?;
@@ -128,7 +138,8 @@ impl WebDavManager {
                 if let Some(start) = debug_str.find("href:") {
                     if let Some(href_start) = debug_str[start..].find('"') {
                         if let Some(href_end) = debug_str[start + href_start + 1..].find('"') {
-                            let href = &debug_str[start + href_start + 1..start + href_start + 1 + href_end];
+                            let href = &debug_str
+                                [start + href_start + 1..start + href_start + 1 + href_end];
                             info!("Extracted href: {}", href);
 
                             // 从 href 中提取文件名（最后一个 / 之后的部分）
@@ -170,7 +181,10 @@ impl WebDavManager {
             }
             Err(e) => {
                 // 目录可能已存在,记录警告但不报错
-                warn!("Failed to create remote directory (may already exist): {}. Path: {}", e, remote_dir);
+                warn!(
+                    "Failed to create remote directory (may already exist): {}. Path: {}",
+                    e, remote_dir
+                );
             }
         }
         Ok(())
@@ -179,24 +193,21 @@ impl WebDavManager {
 
 /// 数据库操作 - WebDAV 配置
 pub async fn get_webdav_configs(pool: &SqlitePool) -> Result<Vec<WebDavConfig>> {
-    let configs = sqlx::query_as::<_, WebDavConfig>(
-        "SELECT * FROM webdav_configs ORDER BY created_at DESC"
-    )
-    .fetch_all(pool)
-    .await
-    .context("Failed to get WebDAV configs from database")?;
+    let configs =
+        sqlx::query_as::<_, WebDavConfig>("SELECT * FROM webdav_configs ORDER BY created_at DESC")
+            .fetch_all(pool)
+            .await
+            .context("Failed to get WebDAV configs from database")?;
 
     Ok(configs)
 }
 
 pub async fn get_webdav_config_by_id(pool: &SqlitePool, id: i64) -> Result<Option<WebDavConfig>> {
-    let config = sqlx::query_as::<_, WebDavConfig>(
-        "SELECT * FROM webdav_configs WHERE id = ?"
-    )
-    .bind(id)
-    .fetch_optional(pool)
-    .await
-    .context("Failed to get WebDAV config from database")?;
+    let config = sqlx::query_as::<_, WebDavConfig>("SELECT * FROM webdav_configs WHERE id = ?")
+        .bind(id)
+        .fetch_optional(pool)
+        .await
+        .context("Failed to get WebDAV config from database")?;
 
     Ok(config)
 }
@@ -226,7 +237,8 @@ pub async fn create_webdav_config(
     .await
     .context("Failed to create WebDAV config")?;
 
-    let config = get_webdav_config_by_id(pool, result.last_insert_rowid()).await?
+    let config = get_webdav_config_by_id(pool, result.last_insert_rowid())
+        .await?
         .ok_or_else(|| anyhow::anyhow!("Failed to retrieve created WebDAV config"))?;
 
     Ok(config)
@@ -243,13 +255,10 @@ pub async fn delete_webdav_config(pool: &SqlitePool, id: i64) -> Result<()> {
 }
 
 /// 记录同步日志
-pub async fn create_sync_log(
-    pool: &SqlitePool,
-    log: CreateSyncLogRequest,
-) -> Result<()> {
+pub async fn create_sync_log(pool: &SqlitePool, log: CreateSyncLogRequest) -> Result<()> {
     sqlx::query(
         "INSERT INTO sync_logs (webdav_config_id, sync_type, status, message)
-         VALUES (?, ?, ?, ?)"
+         VALUES (?, ?, ?, ?)",
     )
     .bind(log.webdav_config_id)
     .bind(log.sync_type)

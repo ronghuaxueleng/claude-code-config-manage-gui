@@ -1,9 +1,9 @@
-use sqlx::{sqlite::SqlitePool, Row, Error as SqlxError};
-use chrono::Utc;
-use std::path::PathBuf;
-use crate::models::*;
 use crate::config_manager::ConfigManager;
-use tracing::{info, error, warn};
+use crate::models::*;
+use chrono::Utc;
+use sqlx::{sqlite::SqlitePool, Error as SqlxError, Row};
+use std::path::PathBuf;
+use tracing::{error, info, warn};
 
 pub struct Database {
     pub pool: SqlitePool,
@@ -19,28 +19,31 @@ impl Database {
     pub async fn create_with_fallback() -> Result<Self, SqlxError> {
         info!("尝试使用回退策略初始化数据库");
         println!("正在尝试回退策略，将在用户主目录创建数据库...");
-        
+
         // 获取用户主目录
         let home_dir = std::env::var("HOME")
             .or_else(|_| std::env::var("USERPROFILE"))
             .map_err(|_| {
                 error!("无法获取用户主目录");
-                SqlxError::Configuration("无法获取用户主目录，请检查环境变量 HOME 或 USERPROFILE".into())
+                SqlxError::Configuration(
+                    "无法获取用户主目录，请检查环境变量 HOME 或 USERPROFILE".into(),
+                )
             })?;
-        
+
         // 创建应用数据目录
         let app_data_dir = std::path::PathBuf::from(&home_dir).join(".claude-config-manager");
         println!("创建应用数据目录: {}", app_data_dir.display());
-        
-        std::fs::create_dir_all(&app_data_dir)
-            .map_err(|e| {
-                error!("无法创建应用数据目录 {}: {}", app_data_dir.display(), e);
-                SqlxError::Configuration(format!("无法创建应用数据目录 {}: {}", app_data_dir.display(), e).into())
-            })?;
-        
+
+        std::fs::create_dir_all(&app_data_dir).map_err(|e| {
+            error!("无法创建应用数据目录 {}: {}", app_data_dir.display(), e);
+            SqlxError::Configuration(
+                format!("无法创建应用数据目录 {}: {}", app_data_dir.display(), e).into(),
+            )
+        })?;
+
         // 使用固定的数据库文件名
         let db_path = app_data_dir.join("claude_config.db");
-        
+
         // 修复：使用正确的 SQLite URL 格式
         #[cfg(windows)]
         let database_url = {
@@ -49,40 +52,39 @@ impl Database {
         };
         #[cfg(not(windows))]
         let database_url = format!("sqlite:///{}?mode=rwc", db_path.display());
-        
+
         info!("回退数据库路径: {}", database_url);
         println!("数据库将创建在: {}", db_path.display());
-        
+
         // 确保父目录可写
         if let Some(parent) = db_path.parent() {
             if !parent.exists() {
-                std::fs::create_dir_all(parent)
-                    .map_err(|e| SqlxError::Configuration(format!("无法创建数据库目录: {}", e).into()))?;
+                std::fs::create_dir_all(parent).map_err(|e| {
+                    SqlxError::Configuration(format!("无法创建数据库目录: {}", e).into())
+                })?;
             }
         }
-        
+
         // 连接数据库
-        let pool = SqlitePool::connect(&database_url).await
-            .map_err(|e| {
-                error!("回退策略连接数据库失败: {}", e);
-                println!("回退策略数据库连接失败: {}", e);
-                e
-            })?;
-        
+        let pool = SqlitePool::connect(&database_url).await.map_err(|e| {
+            error!("回退策略连接数据库失败: {}", e);
+            println!("回退策略数据库连接失败: {}", e);
+            e
+        })?;
+
         info!("回退策略数据库连接成功");
         println!("数据库连接成功！");
-        
+
         let db = Self { pool };
-        
+
         // 初始化数据库结构
         println!("正在初始化数据库结构...");
-        db.initialize().await
-            .map_err(|e| {
-                error!("回退策略数据库初始化失败: {}", e);
-                println!("数据库初始化失败: {}", e);
-                e
-            })?;
-        
+        db.initialize().await.map_err(|e| {
+            error!("回退策略数据库初始化失败: {}", e);
+            println!("数据库初始化失败: {}", e);
+            e
+        })?;
+
         info!("回退策略数据库初始化完成");
         println!("数据库初始化完成！应用现在应该可以正常工作了。");
         Ok(db)
@@ -93,7 +95,8 @@ impl Database {
 
         // 使用配置管理器获取数据库配置
         let config_manager = ConfigManager::new();
-        let db_config = config_manager.get_default_database_config()
+        let db_config = config_manager
+            .get_default_database_config()
             .ok_or_else(|| SqlxError::Configuration("No database configuration found".into()))?;
 
         let mut database_url = db_config.url.clone();
@@ -107,38 +110,54 @@ impl Database {
 
             // 使用程序目录下的 resources 目录存储数据库
             let final_db_path = if let Some(resources_dir) = ConfigManager::get_resource_dir() {
-                info!("使用resources目录作为数据库位置: {}", resources_dir.display());
+                info!(
+                    "使用resources目录作为数据库位置: {}",
+                    resources_dir.display()
+                );
 
                 // 确保 resources 目录存在
                 if !resources_dir.exists() {
                     info!("创建 resources 目录: {}", resources_dir.display());
-                    std::fs::create_dir_all(&resources_dir)
-                        .map_err(|e| SqlxError::Configuration(format!("创建resources目录失败: {}", e).into()))?;
+                    std::fs::create_dir_all(&resources_dir).map_err(|e| {
+                        SqlxError::Configuration(format!("创建resources目录失败: {}", e).into())
+                    })?;
                 }
 
                 resources_dir.join(&db_filename)
             } else {
                 // 如果无法获取 resources 目录，使用当前目录
                 warn!("无法获取resources目录，使用当前目录");
-                let current_dir = std::env::current_dir()
-                    .map_err(|e| SqlxError::Configuration(format!("获取当前目录失败: {}", e).into()))?;
+                let current_dir = std::env::current_dir().map_err(|e| {
+                    SqlxError::Configuration(format!("获取当前目录失败: {}", e).into())
+                })?;
                 current_dir.join(&db_filename)
             };
 
             // 检查数据库文件状态
             match std::fs::metadata(&final_db_path) {
                 Ok(metadata) => {
-                    info!("数据库文件已存在: {}, 大小: {} bytes", final_db_path.display(), metadata.len());
-                },
+                    info!(
+                        "数据库文件已存在: {}, 大小: {} bytes",
+                        final_db_path.display(),
+                        metadata.len()
+                    );
+                }
                 Err(e) => {
                     if e.kind() == std::io::ErrorKind::NotFound {
-                        info!("数据库文件不存在，SQLite 将在连接时自动创建: {}", final_db_path.display());
+                        info!(
+                            "数据库文件不存在，SQLite 将在连接时自动创建: {}",
+                            final_db_path.display()
+                        );
                     } else {
-                        warn!("检查数据库文件时出现问题 {}: {}", final_db_path.display(), e);
+                        warn!(
+                            "检查数据库文件时出现问题 {}: {}",
+                            final_db_path.display(),
+                            e
+                        );
                     }
                 }
             }
-            
+
             // 修复：使用正确的 SQLite URL 格式
             #[cfg(windows)]
             {
@@ -150,77 +169,101 @@ impl Database {
             {
                 database_url = format!("sqlite:///{}?mode=rwc", final_db_path.display());
             }
-            
+
             info!("最终数据库URL: {}", database_url);
-            
+
             // 确保数据库所在目录存在且可写
             if let Some(parent) = final_db_path.parent() {
                 if !parent.exists() {
                     info!("创建数据库目录: {}", parent.display());
-                    std::fs::create_dir_all(parent)
-                        .map_err(|e| SqlxError::Configuration(format!("Failed to create database directory {}: {}", parent.display(), e).into()))?;
+                    std::fs::create_dir_all(parent).map_err(|e| {
+                        SqlxError::Configuration(
+                            format!(
+                                "Failed to create database directory {}: {}",
+                                parent.display(),
+                                e
+                            )
+                            .into(),
+                        )
+                    })?;
                 } else {
                     info!("数据库目录已存在: {}", parent.display());
                 }
             }
-            
+
             // 检查数据库文件是否可访问（仅记录状态，不进行测试创建）
             match std::fs::metadata(&final_db_path) {
                 Ok(metadata) => {
-                    info!("数据库文件已存在: {}, 大小: {} bytes", final_db_path.display(), metadata.len());
-                },
+                    info!(
+                        "数据库文件已存在: {}, 大小: {} bytes",
+                        final_db_path.display(),
+                        metadata.len()
+                    );
+                }
                 Err(e) => {
                     if e.kind() == std::io::ErrorKind::NotFound {
-                        info!("数据库文件不存在，SQLite 将在连接时自动创建: {}", final_db_path.display());
+                        info!(
+                            "数据库文件不存在，SQLite 将在连接时自动创建: {}",
+                            final_db_path.display()
+                        );
                     } else {
-                        warn!("检查数据库文件时出现问题 {}: {}", final_db_path.display(), e);
+                        warn!(
+                            "检查数据库文件时出现问题 {}: {}",
+                            final_db_path.display(),
+                            e
+                        );
                     }
                 }
             }
         }
-        
+
         info!("尝试连接数据库: {}", database_url);
-        
+
         let pool = match SqlitePool::connect(&database_url).await {
             Ok(pool) => {
                 info!("数据库连接成功");
                 pool
-            },
+            }
             Err(e) => {
                 error!("数据库连接失败，URL: {}, 错误: {}", database_url, e);
-                
+
                 // 如果是相对路径，打印绝对路径信息
                 if database_url.starts_with("sqlite:") {
                     let db_path = database_url.replace("sqlite:", "");
-                    let absolute_path = std::path::Path::new(&db_path).canonicalize()
+                    let absolute_path = std::path::Path::new(&db_path)
+                        .canonicalize()
                         .unwrap_or_else(|_| PathBuf::from(&db_path));
                     error!("数据库文件绝对路径: {}", absolute_path.display());
-                    
+
                     // 检查目录权限
                     if let Some(parent) = std::path::Path::new(&db_path).parent() {
                         match std::fs::metadata(parent) {
                             Ok(metadata) => {
-                                error!("父目录 {} 存在，权限: {:?}", parent.display(), metadata.permissions());
-                            },
+                                error!(
+                                    "父目录 {} 存在，权限: {:?}",
+                                    parent.display(),
+                                    metadata.permissions()
+                                );
+                            }
                             Err(e) => {
                                 error!("父目录 {} 不可访问: {}", parent.display(), e);
                             }
                         }
                     }
-                    
+
                     // 提供诊断建议
                     warn!("数据库连接失败，可能的原因:");
                     warn!("1. 路径权限问题");
-                    warn!("2. SQLite 版本不兼容"); 
+                    warn!("2. SQLite 版本不兼容");
                     warn!("3. 文件被其他进程占用");
                 }
-                
+
                 return Err(e);
             }
         };
-        
+
         let db = Self { pool };
-        
+
         info!("开始数据库初始化");
         match db.initialize().await {
             Ok(_) => info!("数据库初始化完成"),
@@ -229,7 +272,7 @@ impl Database {
                 return Err(e);
             }
         }
-        
+
         Ok(db)
     }
 
@@ -238,9 +281,9 @@ impl Database {
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&self.pool)
             .await?;
-        
+
         info!("已启用SQLite外键约束");
-        
+
         // Create accounts table
         sqlx::query(
             r#"
@@ -368,7 +411,8 @@ impl Database {
 
         // 输出初始化完成信息
         let base_url_count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM base_urls")
-            .fetch_one(&self.pool).await?;
+            .fetch_one(&self.pool)
+            .await?;
 
         println!("数据库初始化完成 - 默认 API 端点: {} 个", base_url_count);
         println!("数据库已就绪，请在界面中添加您的账号和项目目录");
@@ -383,7 +427,12 @@ impl Database {
 
         if count == 0 {
             let default_urls = vec![
-                ("Anthropic官方", "https://api.anthropic.com", "Anthropic官方API地址", true),
+                (
+                    "Anthropic官方",
+                    "https://api.anthropic.com",
+                    "Anthropic官方API地址",
+                    true,
+                ),
                 // 只保留官方API端点，移除网页版
             ];
 
@@ -406,9 +455,11 @@ impl Database {
         Ok(())
     }
 
-
     // Account methods
-    pub async fn get_accounts(&self, request: GetAccountsRequest) -> Result<AccountsResponse, SqlxError> {
+    pub async fn get_accounts(
+        &self,
+        request: GetAccountsRequest,
+    ) -> Result<AccountsResponse, SqlxError> {
         let page = request.page.unwrap_or(1).max(1);
         let per_page = request.per_page.unwrap_or(10).max(1).min(100);
         let offset = (page - 1) * per_page;
@@ -436,7 +487,6 @@ impl Database {
         }
 
         query.push_str(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
-        
 
         let total: i64 = {
             let mut q = sqlx::query_scalar(&count_query);
@@ -475,11 +525,14 @@ impl Database {
         })
     }
 
-    pub async fn create_account(&self, request: CreateAccountRequest) -> Result<Account, SqlxError> {
+    pub async fn create_account(
+        &self,
+        request: CreateAccountRequest,
+    ) -> Result<Account, SqlxError> {
         let now = Utc::now();
         let result = sqlx::query(
             "INSERT INTO accounts (name, token, base_url, model, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?)"
+             VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(&request.name)
         .bind(&request.token)
@@ -498,7 +551,11 @@ impl Database {
         Ok(account)
     }
 
-    pub async fn update_account(&self, id: i64, request: UpdateAccountRequest) -> Result<Account, SqlxError> {
+    pub async fn update_account(
+        &self,
+        id: i64,
+        request: UpdateAccountRequest,
+    ) -> Result<Account, SqlxError> {
         let now = Utc::now();
         let mut updates = Vec::new();
 
@@ -523,7 +580,7 @@ impl Database {
         let query = format!("UPDATE accounts SET {} WHERE id = ?", updates.join(", "));
 
         let mut q = sqlx::query(&query);
-        
+
         if let Some(name) = &request.name {
             q = q.bind(name);
         }
@@ -536,7 +593,7 @@ impl Database {
         if let Some(model) = &request.model {
             q = q.bind(model);
         }
-        
+
         q = q.bind(now).bind(id);
         q.execute(&self.pool).await?;
 
@@ -555,15 +612,14 @@ impl Database {
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&self.pool)
             .await?;
-        
+
         // 检查是否有关联的账号-目录记录
-        let association_count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM account_directories WHERE account_id = ?"
-        )
-        .bind(id)
-        .fetch_one(&self.pool)
-        .await?;
-        
+        let association_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM account_directories WHERE account_id = ?")
+                .bind(id)
+                .fetch_one(&self.pool)
+                .await?;
+
         if association_count > 0 {
             // 先删除关联记录
             info!("删除账号 {} 的关联记录，共 {} 条", id, association_count);
@@ -572,17 +628,17 @@ impl Database {
                 .execute(&self.pool)
                 .await?;
         }
-        
+
         // 删除账号记录
         let result = sqlx::query("DELETE FROM accounts WHERE id = ?")
             .bind(id)
             .execute(&self.pool)
             .await?;
-            
+
         if result.rows_affected() == 0 {
             return Err(SqlxError::RowNotFound);
         }
-        
+
         info!("成功删除账号，ID: {}", id);
         Ok(())
     }
@@ -594,10 +650,13 @@ impl Database {
             .await
     }
 
-    pub async fn create_directory(&self, request: CreateDirectoryRequest) -> Result<Directory, SqlxError> {
+    pub async fn create_directory(
+        &self,
+        request: CreateDirectoryRequest,
+    ) -> Result<Directory, SqlxError> {
         let now = Utc::now();
         let result = sqlx::query(
-            "INSERT INTO directories (path, name, created_at, updated_at) VALUES (?, ?, ?, ?)"
+            "INSERT INTO directories (path, name, created_at, updated_at) VALUES (?, ?, ?, ?)",
         )
         .bind(&request.path)
         .bind(&request.name)
@@ -614,7 +673,11 @@ impl Database {
         Ok(directory)
     }
 
-    pub async fn update_directory(&self, id: i64, request: UpdateDirectoryRequest) -> Result<Directory, SqlxError> {
+    pub async fn update_directory(
+        &self,
+        id: i64,
+        request: UpdateDirectoryRequest,
+    ) -> Result<Directory, SqlxError> {
         let now = Utc::now();
         let mut updates = Vec::new();
 
@@ -633,14 +696,14 @@ impl Database {
         let query = format!("UPDATE directories SET {} WHERE id = ?", updates.join(", "));
 
         let mut q = sqlx::query(&query);
-        
+
         if let Some(path) = &request.path {
             q = q.bind(path);
         }
         if let Some(name) = &request.name {
             q = q.bind(name);
         }
-        
+
         q = q.bind(now).bind(id);
         q.execute(&self.pool).await?;
 
@@ -659,33 +722,38 @@ impl Database {
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&self.pool)
             .await?;
-        
+
         // 先获取目录信息，检查文件系统中是否存在
-        let directory = match sqlx::query_as::<_, crate::models::Directory>("SELECT * FROM directories WHERE id = ?")
-            .bind(id)
-            .fetch_one(&self.pool)
-            .await {
-            Ok(dir) => dir,
-            Err(_) => return Err(SqlxError::RowNotFound),
-        };
-        
-        // 检查目录在文件系统中是否存在
-        let path_exists = std::path::Path::new(&directory.path).exists();
-        
-        if !path_exists {
-            info!("目录 '{}' 在文件系统中不存在，将清理数据库记录", directory.path);
-        } else {
-            info!("目录 '{}' 在文件系统中存在，将进行正常删除", directory.path);
-        }
-        
-        // 检查是否有关联的账号-目录记录
-        let association_count: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM account_directories WHERE directory_id = ?"
+        let directory = match sqlx::query_as::<_, crate::models::Directory>(
+            "SELECT * FROM directories WHERE id = ?",
         )
         .bind(id)
         .fetch_one(&self.pool)
-        .await?;
-        
+        .await
+        {
+            Ok(dir) => dir,
+            Err(_) => return Err(SqlxError::RowNotFound),
+        };
+
+        // 检查目录在文件系统中是否存在
+        let path_exists = std::path::Path::new(&directory.path).exists();
+
+        if !path_exists {
+            info!(
+                "目录 '{}' 在文件系统中不存在，将清理数据库记录",
+                directory.path
+            );
+        } else {
+            info!("目录 '{}' 在文件系统中存在，将进行正常删除", directory.path);
+        }
+
+        // 检查是否有关联的账号-目录记录
+        let association_count: i64 =
+            sqlx::query_scalar("SELECT COUNT(*) FROM account_directories WHERE directory_id = ?")
+                .bind(id)
+                .fetch_one(&self.pool)
+                .await?;
+
         if association_count > 0 {
             // 先删除关联记录
             info!("删除目录 {} 的关联记录，共 {} 条", id, association_count);
@@ -694,34 +762,39 @@ impl Database {
                 .execute(&self.pool)
                 .await?;
         }
-        
+
         // 删除目录记录
         let result = sqlx::query("DELETE FROM directories WHERE id = ?")
             .bind(id)
             .execute(&self.pool)
             .await?;
-            
+
         if result.rows_affected() == 0 {
             return Err(SqlxError::RowNotFound);
         }
-        
+
         if path_exists {
             info!("成功删除目录记录，ID: {}，文件系统中的目录需要手动删除", id);
         } else {
             info!("成功清理不存在的目录记录，ID: {}", id);
         }
-        
+
         Ok(())
     }
 
     // BaseUrl methods
     pub async fn get_base_urls(&self) -> Result<Vec<BaseUrl>, SqlxError> {
-        sqlx::query_as::<_, BaseUrl>("SELECT * FROM base_urls ORDER BY is_default DESC, created_at DESC")
-            .fetch_all(&self.pool)
-            .await
+        sqlx::query_as::<_, BaseUrl>(
+            "SELECT * FROM base_urls ORDER BY is_default DESC, created_at DESC",
+        )
+        .fetch_all(&self.pool)
+        .await
     }
 
-    pub async fn create_base_url(&self, request: CreateBaseUrlRequest) -> Result<BaseUrl, SqlxError> {
+    pub async fn create_base_url(
+        &self,
+        request: CreateBaseUrlRequest,
+    ) -> Result<BaseUrl, SqlxError> {
         let now = Utc::now();
         let is_default = request.is_default.unwrap_or(false);
 
@@ -734,7 +807,7 @@ impl Database {
 
         let result = sqlx::query(
             "INSERT INTO base_urls (name, url, description, is_default, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?)"
+             VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(&request.name)
         .bind(&request.url)
@@ -760,7 +833,11 @@ impl Database {
             .await
     }
 
-    pub async fn update_base_url(&self, id: i64, request: UpdateBaseUrlRequest) -> Result<BaseUrl, SqlxError> {
+    pub async fn update_base_url(
+        &self,
+        id: i64,
+        request: UpdateBaseUrlRequest,
+    ) -> Result<BaseUrl, SqlxError> {
         let now = Utc::now();
 
         // 获取旧的 base_url 信息，用于级联更新账号
@@ -817,7 +894,7 @@ impl Database {
         if let Some(new_url) = &request.url {
             if new_url != &old_url {
                 let result = sqlx::query(
-                    "UPDATE accounts SET base_url = ?, updated_at = ? WHERE base_url = ?"
+                    "UPDATE accounts SET base_url = ?, updated_at = ? WHERE base_url = ?",
                 )
                 .bind(new_url)
                 .bind(now)
@@ -827,7 +904,10 @@ impl Database {
 
                 let affected_rows = result.rows_affected();
                 if affected_rows > 0 {
-                    info!("更新 Base URL '{}' 时，级联更新了 {} 个账号的 base_url", old_base_url.name, affected_rows);
+                    info!(
+                        "更新 Base URL '{}' 时，级联更新了 {} 个账号的 base_url",
+                        old_base_url.name, affected_rows
+                    );
                 }
             }
         }
@@ -840,19 +920,25 @@ impl Database {
         let base_url = self.get_base_url(id).await?;
 
         // 查找使用这个 base_url 的所有账号
-        let affected_accounts: Vec<(i64, String)> = sqlx::query_as(
-            "SELECT id, name FROM accounts WHERE base_url = ?"
-        )
-        .bind(&base_url.url)
-        .fetch_all(&self.pool)
-        .await?;
+        let affected_accounts: Vec<(i64, String)> =
+            sqlx::query_as("SELECT id, name FROM accounts WHERE base_url = ?")
+                .bind(&base_url.url)
+                .fetch_all(&self.pool)
+                .await?;
 
         if !affected_accounts.is_empty() {
-            info!("删除 Base URL '{}' 时，同时删除 {} 个关联的账号", base_url.name, affected_accounts.len());
+            info!(
+                "删除 Base URL '{}' 时，同时删除 {} 个关联的账号",
+                base_url.name,
+                affected_accounts.len()
+            );
 
             // 删除所有使用该 base_url 的账号
             for (account_id, account_name) in affected_accounts {
-                info!("删除账号: {} (ID: {})，因为其使用的 Base URL 被删除", account_name, account_id);
+                info!(
+                    "删除账号: {} (ID: {})，因为其使用的 Base URL 被删除",
+                    account_name, account_id
+                );
                 self.delete_account(account_id).await?;
             }
         }
@@ -894,7 +980,7 @@ impl Database {
         // Create or update association
         sqlx::query(
             "INSERT OR IGNORE INTO account_directories (account_id, directory_id, created_at) 
-             VALUES (?, ?, ?)"
+             VALUES (?, ?, ?)",
         )
         .bind(request.account_id)
         .bind(request.directory_id)
@@ -920,7 +1006,7 @@ impl Database {
             UPDATE claude_settings 
             SET settings_json = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = (SELECT MIN(id) FROM claude_settings)
-            "#
+            "#,
         )
         .bind(settings_json)
         .execute(&self.pool)
@@ -932,7 +1018,7 @@ impl Database {
                 r#"
                 INSERT INTO claude_settings (settings_json)
                 VALUES (?)
-                "#
+                "#,
             )
             .bind(settings_json)
             .execute(&self.pool)
@@ -948,7 +1034,7 @@ impl Database {
             SELECT settings_json FROM claude_settings 
             ORDER BY updated_at DESC 
             LIMIT 1
-            "#
+            "#,
         )
         .fetch_optional(&self.pool)
         .await?;

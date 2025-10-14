@@ -1,9 +1,9 @@
+use crate::{claude_config::ClaudeConfigManager, models::*, t, DbState};
 use anyhow::Result;
 use colored::Colorize;
 use dialoguer::Select;
-use crate::{DbState, models::*, claude_config::ClaudeConfigManager};
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 // 写入 Claude 配置到 .claude/settings.local.json
 fn write_claude_settings(
@@ -27,17 +27,23 @@ fn write_claude_settings(
 
     // 设置权限配置
     if skip_permissions {
-        settings_obj.insert("permissions".to_string(), serde_json::json!({
-            "defaultMode": "bypassPermissions",
-            "allow": ["*"]
-        }));
+        settings_obj.insert(
+            "permissions".to_string(),
+            serde_json::json!({
+                "defaultMode": "bypassPermissions",
+                "allow": ["*"]
+            }),
+        );
     } else {
         // 如果不跳过权限，使用默认的权限配置
         if !settings_obj.contains_key("permissions") {
-            settings_obj.insert("permissions".to_string(), serde_json::json!({
-                "defaultMode": "prompt",
-                "allow": []
-            }));
+            settings_obj.insert(
+                "permissions".to_string(),
+                serde_json::json!({
+                    "defaultMode": "prompt",
+                    "allow": []
+                }),
+            );
         }
     }
 
@@ -46,12 +52,25 @@ fn write_claude_settings(
         settings_obj.insert("env".to_string(), serde_json::json!({}));
     }
 
-    let env_obj = settings_obj.get_mut("env").unwrap().as_object_mut().unwrap();
+    let env_obj = settings_obj
+        .get_mut("env")
+        .unwrap()
+        .as_object_mut()
+        .unwrap();
 
     // 添加账号相关的环境变量
-    env_obj.insert("ANTHROPIC_API_KEY".to_string(), Value::String(account_token.to_string()));
-    env_obj.insert("ANTHROPIC_AUTH_TOKEN".to_string(), Value::String(account_token.to_string()));
-    env_obj.insert("ANTHROPIC_BASE_URL".to_string(), Value::String(account_base_url.to_string()));
+    env_obj.insert(
+        "ANTHROPIC_API_KEY".to_string(),
+        Value::String(account_token.to_string()),
+    );
+    env_obj.insert(
+        "ANTHROPIC_AUTH_TOKEN".to_string(),
+        Value::String(account_token.to_string()),
+    );
+    env_obj.insert(
+        "ANTHROPIC_BASE_URL".to_string(),
+        Value::String(account_base_url.to_string()),
+    );
 
     // 创建 .claude 目录
     let claude_dir = Path::new(directory_path).join(".claude");
@@ -66,40 +85,43 @@ fn write_claude_settings(
 }
 
 pub async fn switch_menu(db: &DbState) -> Result<()> {
-    println!("\n{}", "配置切换".green().bold());
+    println!("\n{}", t!("switch.title").green().bold());
 
     // 获取所有账号
     let db_lock = db.lock().await;
-    let accounts_response = db_lock.get_accounts(GetAccountsRequest {
-        page: Some(1),
-        per_page: Some(100),
-        search: None,
-        base_url: None,
-    }).await?;
+    let accounts_response = db_lock
+        .get_accounts(GetAccountsRequest {
+            page: Some(1),
+            per_page: Some(100),
+            search: None,
+            base_url: None,
+        })
+        .await?;
 
     let directories = db_lock.get_directories().await?;
     drop(db_lock);
 
     if accounts_response.accounts.is_empty() {
-        println!("\n{}", "暂无账号记录，请先添加账号".yellow());
+        println!("\n{}", t!("switch.no_accounts").yellow());
         return Ok(());
     }
 
     if directories.is_empty() {
-        println!("\n{}", "暂无目录记录，请先添加目录".yellow());
+        println!("\n{}", t!("switch.no_directories").yellow());
         return Ok(());
     }
 
     // 选择账号
-    let mut account_items: Vec<String> = vec!["🔙 取消".to_string()];
+    let mut account_items: Vec<String> = vec![t!("common.back_cancel").to_string()];
     account_items.extend(
-        accounts_response.accounts
+        accounts_response
+            .accounts
             .iter()
-            .map(|a| format!("{} - {}", a.name, a.base_url))
+            .map(|a| format!("{} - {}", a.name, a.base_url)),
     );
 
     let account_selection = Select::new()
-        .with_prompt("选择账号")
+        .with_prompt(t!("switch.select_account"))
         .items(&account_items)
         .interact_opt()?;
 
@@ -110,22 +132,18 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
     let account = &accounts_response.accounts[account_selection.unwrap() - 1];
 
     // 选择目录
-    let mut directory_items: Vec<String> = vec!["🔙 取消".to_string()];
-    directory_items.extend(
-        directories
-            .iter()
-            .map(|d| {
-                let exists = if std::path::Path::new(&d.path).exists() {
-                    "✓"
-                } else {
-                    "✗"
-                };
-                format!("{} {} - {}", exists, d.name, d.path)
-            })
-    );
+    let mut directory_items: Vec<String> = vec![t!("common.back_cancel").to_string()];
+    directory_items.extend(directories.iter().map(|d| {
+        let exists = if std::path::Path::new(&d.path).exists() {
+            "✓"
+        } else {
+            "✗"
+        };
+        format!("{} {} - {}", exists, d.name, d.path)
+    }));
 
     let directory_selection = Select::new()
-        .with_prompt("选择目录")
+        .with_prompt(t!("switch.select_directory"))
         .items(&directory_items)
         .interact_opt()?;
 
@@ -137,7 +155,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
 
     // 询问权限配置
     let skip_permissions = dialoguer::Confirm::new()
-        .with_prompt("跳过权限检查? (推荐选择 Yes)")
+        .with_prompt(t!("switch.prompt_skip_permissions"))
         .default(true)
         .interact()?;
 
@@ -145,7 +163,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
     let is_sandbox = true;
 
     // 执行切换
-    println!("\n{}", "正在切换配置...".cyan());
+    println!("\n{}", t!("switch.switching").cyan());
 
     let db_lock = db.lock().await;
     let request = SwitchAccountRequest {
@@ -159,7 +177,10 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
             let claude_settings_json = match db_lock.get_claude_settings().await {
                 Ok(json) => json,
                 Err(e) => {
-                    println!("\n{}", format!("警告: 获取Claude配置失败，使用默认配置: {}", e).yellow());
+                    println!(
+                        "\n{}",
+                        t!("switch.warn_claude_config").replace("{}", &e.to_string()).yellow()
+                    );
                     // 使用默认配置
                     serde_json::to_string(&serde_json::json!({
                         "permissions": {
@@ -170,7 +191,8 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                             "IS_SANDBOX": "1",
                             "DISABLE_AUTOUPDATER": 1
                         }
-                    })).unwrap()
+                    }))
+                    .unwrap()
                 }
             };
 
@@ -193,35 +215,45 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                         skip_permissions,
                     ) {
                         Ok(_) => {
-                            println!("\n{}", "✓ 配置切换成功!".green().bold());
-                            println!("  账号: {}", account.name);
-                            println!("  目录: {}", directory.name);
-                            println!("  路径: {}", directory.path);
-                            println!("  沙盒模式: 已启用");
-                            println!("  权限检查: {}", if skip_permissions { "已跳过" } else { "需要确认" });
+                            println!("\n{}", t!("switch.success").green().bold());
+                            println!("{}", t!("switch.account").replace("{}", &account.name));
+                            println!("{}", t!("switch.directory").replace("{}", &directory.name));
+                            println!("{}", t!("switch.path").replace("{}", &directory.path));
+                            println!("{}", t!("switch.sandbox"));
+                            println!(
+                                "{}",
+                                t!("switch.permission").replace(
+                                    "{}",
+                                    if skip_permissions {
+                                        t!("switch.permission_skipped")
+                                    } else {
+                                        t!("switch.permission_required")
+                                    }
+                                )
+                            );
                         }
                         Err(e) => {
-                            println!("\n{}", "✓ 环境配置切换成功!".green().bold());
-                            println!("  账号: {}", account.name);
-                            println!("  目录: {}", directory.name);
-                            println!("  路径: {}", directory.path);
-                            println!("  沙盒模式: 已启用");
-                            println!("\n{}", format!("警告: Claude配置写入失败: {}", e).yellow());
+                            println!("\n{}", t!("switch.success_env").green().bold());
+                            println!("{}", t!("switch.account").replace("{}", &account.name));
+                            println!("{}", t!("switch.directory").replace("{}", &directory.name));
+                            println!("{}", t!("switch.path").replace("{}", &directory.path));
+                            println!("{}", t!("switch.sandbox"));
+                            println!("\n{}", t!("switch.warn_write_fail").replace("{}", &e.to_string()).yellow());
                         }
                     }
                 }
                 Err(e) => {
-                    println!("\n{}", format!("✗ 配置文件更新失败: {}", e).red());
+                    println!("\n{}", t!("switch.error_update").replace("{}", &e.to_string()).red());
                 }
             }
         }
         Err(e) => {
-            println!("\n{}", format!("✗ 切换失败: {}", e).red());
+            println!("\n{}", t!("switch.error").replace("{}", &e.to_string()).red());
         }
     }
 
     let _ = dialoguer::Input::<String>::new()
-        .with_prompt("按 Enter 继续")
+        .with_prompt(t!("common.continue"))
         .allow_empty(true)
         .interact()?;
 

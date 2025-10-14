@@ -1,23 +1,23 @@
+use crate::{models::*, t, DbState};
 use anyhow::Result;
 use colored::Colorize;
-use dialoguer::{Input, Select, Confirm};
-use crate::{DbState, models::*};
 use comfy_table::{Attribute, Cell, Color};
+use dialoguer::{Confirm, Input, Select};
 
 pub async fn directory_menu(db: &DbState) -> Result<()> {
     let mut last_selection = 0;
 
     loop {
         let items = vec![
-            "🔙 返回主菜单",
-            "📝 查看所有目录",
-            "➕ 添加新目录",
-            "✏️  编辑目录",
-            "🗑️  删除目录",
+            t!("common.back"),
+            t!("directory.menu.list"),
+            t!("directory.menu.add"),
+            t!("directory.menu.edit"),
+            t!("directory.menu.delete"),
         ];
 
         let selection = Select::new()
-            .with_prompt("\n目录管理")
+            .with_prompt(format!("\n{}", t!("directory.menu.title")))
             .items(&items)
             .default(last_selection)
             .interact()?;
@@ -43,25 +43,39 @@ async fn list_directories(db: &DbState) -> Result<()> {
     drop(db_lock);
 
     if directories.is_empty() {
-        println!("\n{}", "暂无目录记录".yellow());
+        println!("\n{}", t!("directory.list.no_records").yellow());
         return Ok(());
     }
 
     let mut table = super::create_table();
     table.set_header(vec![
-        Cell::new("ID").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("目录名称").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("路径").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("状态").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("存在性").add_attribute(Attribute::Bold).fg(Color::Cyan),
+        Cell::new(t!("directory.list.header_id"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("directory.list.header_name"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("directory.list.header_path"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("account.list.header_status"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("directory.list.header_exists"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
     ]);
 
     for directory in &directories {
-        let status = if directory.is_active { "🟢 活跃" } else { "⚪ 未活跃" };
-        let exists = if std::path::Path::new(&directory.path).exists() {
-            "✓ 存在"
+        let status = if directory.is_active {
+            t!("account.list.status_active")
         } else {
-            "✗ 不存在"
+            t!("account.list.status_inactive")
+        };
+        let exists = if std::path::Path::new(&directory.path).exists() {
+            t!("directory.list.exists")
+        } else {
+            t!("directory.list.not_exists")
         };
 
         table.add_row(vec![
@@ -74,10 +88,10 @@ async fn list_directories(db: &DbState) -> Result<()> {
     }
 
     println!("\n{}", table);
-    println!("共 {} 个目录", directories.len());
+    println!("{}", t!("directory.list.total").replace("{}", &directories.len().to_string()));
 
     let _ = Input::<String>::new()
-        .with_prompt("按 Enter 继续")
+        .with_prompt(t!("common.continue"))
         .allow_empty(true)
         .interact()?;
 
@@ -85,17 +99,15 @@ async fn list_directories(db: &DbState) -> Result<()> {
 }
 
 async fn add_directory(db: &DbState) -> Result<()> {
-    println!("\n{}", "添加新目录".green().bold());
+    println!("\n{}", t!("directory.add.title").green().bold());
 
-    let path: String = Input::new()
-        .with_prompt("目录路径")
-        .interact()?;
+    let path: String = Input::new().with_prompt(t!("directory.add.prompt_path")).interact()?;
 
     // 检查路径是否存在
     if !std::path::Path::new(&path).exists() {
-        println!("{}", "⚠️  警告: 该路径不存在".yellow());
+        println!("{}", t!("directory.add.warn_path_not_exists").yellow());
         if !Confirm::new()
-            .with_prompt("是否继续添加?")
+            .with_prompt(t!("common.confirm"))
             .default(false)
             .interact()?
         {
@@ -103,9 +115,7 @@ async fn add_directory(db: &DbState) -> Result<()> {
         }
     }
 
-    let name: String = Input::new()
-        .with_prompt("目录名称")
-        .interact()?;
+    let name: String = Input::new().with_prompt(t!("directory.add.prompt_name")).interact()?;
 
     let db_lock = db.lock().await;
     let request = CreateDirectoryRequest {
@@ -115,10 +125,10 @@ async fn add_directory(db: &DbState) -> Result<()> {
 
     match db_lock.create_directory(request).await {
         Ok(_) => {
-            println!("\n{}", format!("✓ 目录 '{}' 添加成功", name).green());
+            println!("\n{}", t!("directory.add.success").replace("{}", &name).green());
         }
         Err(e) => {
-            println!("\n{}", format!("✗ 添加失败: {}", e).red());
+            println!("\n{}", t!("directory.add.error").replace("{}", &e.to_string()).red());
         }
     }
 
@@ -131,19 +141,19 @@ async fn edit_directory(db: &DbState) -> Result<()> {
     drop(db_lock);
 
     if directories.is_empty() {
-        println!("\n{}", "暂无目录记录".yellow());
+        println!("\n{}", t!("directory.list.no_records").yellow());
         return Ok(());
     }
 
-    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    let mut items: Vec<String> = vec![t!("common.cancel").to_string()];
     items.extend(
         directories
             .iter()
-            .map(|d| format!("{} - {}", d.name, d.path))
+            .map(|d| format!("{} - {}", d.name, d.path)),
     );
 
     let selection = Select::new()
-        .with_prompt("选择要编辑的目录")
+        .with_prompt(t!("directory.edit.prompt"))
         .items(&items)
         .interact_opt()?;
 
@@ -155,12 +165,12 @@ async fn edit_directory(db: &DbState) -> Result<()> {
         let directory = &directories[idx];
 
         let name: String = Input::new()
-            .with_prompt("目录名称")
+            .with_prompt(t!("directory.add.prompt_name"))
             .default(directory.name.clone())
             .interact()?;
 
         let path: String = Input::new()
-            .with_prompt("目录路径")
+            .with_prompt(t!("directory.add.prompt_path"))
             .default(directory.path.clone())
             .interact()?;
 
@@ -172,10 +182,10 @@ async fn edit_directory(db: &DbState) -> Result<()> {
 
         match db_lock.update_directory(directory.id, request).await {
             Ok(_) => {
-                println!("\n{}", "✓ 目录更新成功".green());
+                println!("\n{}", t!("directory.edit.success").green());
             }
             Err(e) => {
-                println!("\n{}", format!("✗ 更新失败: {}", e).red());
+                println!("\n{}", t!("directory.edit.error").replace("{}", &e.to_string()).red());
             }
         }
     }
@@ -189,19 +199,19 @@ async fn delete_directory(db: &DbState) -> Result<()> {
     drop(db_lock);
 
     if directories.is_empty() {
-        println!("\n{}", "暂无目录记录".yellow());
+        println!("\n{}", t!("directory.list.no_records").yellow());
         return Ok(());
     }
 
-    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    let mut items: Vec<String> = vec![t!("common.cancel").to_string()];
     items.extend(
         directories
             .iter()
-            .map(|d| format!("{} - {}", d.name, d.path))
+            .map(|d| format!("{} - {}", d.name, d.path)),
     );
 
     let selection = Select::new()
-        .with_prompt("选择要删除的目录")
+        .with_prompt(t!("directory.delete.prompt"))
         .items(&items)
         .interact_opt()?;
 
@@ -213,17 +223,21 @@ async fn delete_directory(db: &DbState) -> Result<()> {
         let directory = &directories[idx];
 
         if Confirm::new()
-            .with_prompt(format!("确定要删除目录 '{}' 吗? (仅删除数据库记录，不删除实际文件)", directory.name))
+            .with_prompt(format!(
+                "{} {}",
+                t!("directory.delete.confirm").replace("{}", &directory.name),
+                t!("directory.delete.warning")
+            ))
             .default(false)
             .interact()?
         {
             let db_lock = db.lock().await;
             match db_lock.delete_directory(directory.id).await {
                 Ok(_) => {
-                    println!("\n{}", "✓ 目录删除成功".green());
+                    println!("\n{}", t!("directory.delete.success").green());
                 }
                 Err(e) => {
-                    println!("\n{}", format!("✗ 删除失败: {}", e).red());
+                    println!("\n{}", t!("directory.delete.error").replace("{}", &e.to_string()).red());
                 }
             }
         }

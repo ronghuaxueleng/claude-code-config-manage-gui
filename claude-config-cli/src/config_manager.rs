@@ -1,8 +1,8 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use anyhow::Result;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DatabaseConfig {
@@ -32,15 +32,18 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         let mut connections = HashMap::new();
-        
-        connections.insert("default".to_string(), DatabaseConfig {
-            url: "sqlite:///claude_config.db".to_string(),
-            pool_size: None,
-            max_overflow: None,
-            pool_timeout: None,
-            pool_recycle: None,
-            echo: None,
-        });
+
+        connections.insert(
+            "default".to_string(),
+            DatabaseConfig {
+                url: "sqlite:///claude_config.db".to_string(),
+                pool_size: None,
+                max_overflow: None,
+                pool_timeout: None,
+                pool_recycle: None,
+                echo: None,
+            },
+        );
 
         Self {
             connections,
@@ -66,15 +69,18 @@ impl ConfigManager {
             config: Config::default(),
             config_file: None,
         };
-        
+
         // 尝试从resources目录加载config.json
         if let Some(resource_config_path) = Self::get_resource_path("config.json") {
             if let Ok(_) = manager.load_from_file(&resource_config_path) {
-                println!("从resources目录加载配置文件: {}", resource_config_path.display());
+                println!(
+                    "从resources目录加载配置文件: {}",
+                    resource_config_path.display()
+                );
                 return manager;
             }
         }
-        
+
         // 尝试从当前目录加载config.json
         if let Ok(current_dir) = std::env::current_dir() {
             let config_path = current_dir.join("config.json");
@@ -83,10 +89,10 @@ impl ConfigManager {
                 println!("从当前目录加载配置文件: {}", config_path.display());
             }
         }
-        
+
         manager
     }
-    
+
     /// 获取resources目录中文件的路径
     pub fn get_resource_path(filename: &str) -> Option<PathBuf> {
         // 尝试多个可能的resources路径
@@ -114,18 +120,18 @@ impl ConfigManager {
                 .join("resources")
                 .join(filename),
         ];
-        
+
         for path in possible_paths {
             if path.exists() {
                 println!("找到资源文件: {}", path.display());
                 return Some(path);
             }
         }
-        
+
         println!("未找到资源文件: {}", filename);
         None
     }
-    
+
     /// 获取应用数据目录（用于存储用户数据，如数据库文件）
     /// Windows: %APPDATA%\claude-code-config-manager
     /// Linux/Mac: ~/.claude-code-config-manager
@@ -161,25 +167,24 @@ impl ConfigManager {
         println!("无法确定可执行文件路径");
         None
     }
-    
+
     pub fn load_from_file<P: AsRef<Path>>(&mut self, config_file: P) -> Result<()> {
         let content = fs::read_to_string(&config_file)?;
         let file_config: Config = serde_json::from_str(&content)?;
-        
+
         // 合并配置（简单替换，可以后续优化为深度合并）
         self.config = file_config;
         self.config_file = Some(config_file.as_ref().to_path_buf());
-        
+
         Ok(())
     }
-    
+
     pub fn get_database_config(&self, connection_name: Option<&str>) -> Option<&DatabaseConfig> {
         let conn_name = connection_name.unwrap_or(&self.config.current);
         self.config.connections.get(conn_name)
     }
-    
+
     pub fn get_default_database_config(&self) -> Option<&DatabaseConfig> {
         self.get_database_config(None)
     }
-
 }

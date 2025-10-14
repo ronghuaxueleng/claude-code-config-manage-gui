@@ -1,23 +1,23 @@
+use crate::{models::*, t, DbState};
 use anyhow::Result;
 use colored::Colorize;
-use dialoguer::{Input, Select, Confirm};
-use crate::{DbState, models::*};
 use comfy_table::{Attribute, Cell, Color};
+use dialoguer::{Confirm, Input, Select};
 
 pub async fn account_menu(db: &DbState) -> Result<()> {
     let mut last_selection = 0;
 
     loop {
         let items = vec![
-            "🔙 返回主菜单",
-            "📝 查看所有账号",
-            "➕ 添加新账号",
-            "✏️  编辑账号",
-            "🗑️  删除账号",
+            t!("common.back"),
+            t!("account.menu.list"),
+            t!("account.menu.add"),
+            t!("account.menu.edit"),
+            t!("account.menu.delete"),
         ];
 
         let selection = Select::new()
-            .with_prompt("\n账号管理")
+            .with_prompt(format!("\n{}", t!("account.menu.title")))
             .items(&items)
             .default(last_selection)
             .interact()?;
@@ -50,21 +50,35 @@ async fn list_accounts(db: &DbState) -> Result<()> {
     drop(db_lock);
 
     if response.accounts.is_empty() {
-        println!("\n{}", "暂无账号记录".yellow());
+        println!("\n{}", t!("account.list.no_records").yellow());
         return Ok(());
     }
 
     let mut table = super::create_table();
     table.set_header(vec![
-        Cell::new("ID").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("账号名称").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("Base URL").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("模型").add_attribute(Attribute::Bold).fg(Color::Cyan),
-        Cell::new("状态").add_attribute(Attribute::Bold).fg(Color::Cyan),
+        Cell::new(t!("account.list.header_id"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("account.list.header_name"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("account.list.header_base_url"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("account.list.header_model"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
+        Cell::new(t!("account.list.header_status"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
     ]);
 
     for account in &response.accounts {
-        let status = if account.is_active { "🟢 活跃" } else { "⚪ 未活跃" };
+        let status = if account.is_active {
+            t!("account.list.status_active")
+        } else {
+            t!("account.list.status_inactive")
+        };
         table.add_row(vec![
             account.id.to_string(),
             account.name.clone(),
@@ -75,10 +89,13 @@ async fn list_accounts(db: &DbState) -> Result<()> {
     }
 
     println!("\n{}", table);
-    println!("共 {} 个账号", response.accounts.len());
+    println!(
+        "{}",
+        t!("account.list.total").replace("{}", &response.accounts.len().to_string())
+    );
 
     let _ = Input::<String>::new()
-        .with_prompt("按 Enter 继续")
+        .with_prompt(t!("common.continue"))
         .allow_empty(true)
         .interact()?;
 
@@ -86,14 +103,14 @@ async fn list_accounts(db: &DbState) -> Result<()> {
 }
 
 async fn add_account(db: &DbState) -> Result<()> {
-    println!("\n{}", "添加新账号".green().bold());
+    println!("\n{}", t!("account.add.title").green().bold());
 
     let name: String = Input::new()
-        .with_prompt("账号名称")
+        .with_prompt(t!("account.add.prompt_name"))
         .interact()?;
 
     let token: String = Input::new()
-        .with_prompt("API Token")
+        .with_prompt(t!("account.add.prompt_token"))
         .interact()?;
 
     // 获取所有 Base URL
@@ -103,9 +120,9 @@ async fn add_account(db: &DbState) -> Result<()> {
 
     let base_url: String = if base_urls.is_empty() {
         // 如果没有 Base URL，让用户手动输入
-        println!("\n{}", "暂无可用的 Base URL，请手动输入".yellow());
+        println!("\n{}", t!("account.add.no_base_url").yellow());
         Input::new()
-            .with_prompt("Base URL")
+            .with_prompt(t!("account.add.prompt_base_url"))
             .default("https://api.anthropic.com".to_string())
             .interact()?
     } else {
@@ -114,7 +131,7 @@ async fn add_account(db: &DbState) -> Result<()> {
             .iter()
             .map(|u| {
                 if u.is_default {
-                    format!("{} - {} (默认)", u.name, u.url)
+                    format!("{} - {} {}", u.name, u.url, t!("account.default_indicator"))
                 } else {
                     format!("{} - {}", u.name, u.url)
                 }
@@ -122,7 +139,7 @@ async fn add_account(db: &DbState) -> Result<()> {
             .collect();
 
         let selection = Select::new()
-            .with_prompt("选择 Base URL")
+            .with_prompt(t!("account.add.select_base_url"))
             .items(&items)
             .default(0)
             .interact()?;
@@ -131,7 +148,7 @@ async fn add_account(db: &DbState) -> Result<()> {
     };
 
     let model: String = Input::new()
-        .with_prompt("模型")
+        .with_prompt(t!("account.add.prompt_model"))
         .default("claude-sonnet-4-20250514".to_string())
         .interact()?;
 
@@ -145,10 +162,16 @@ async fn add_account(db: &DbState) -> Result<()> {
 
     match db_lock.create_account(request).await {
         Ok(_) => {
-            println!("\n{}", format!("✓ 账号 '{}' 创建成功", name).green());
+            println!(
+                "\n{}",
+                t!("account.add.success").replace("{}", &name).green()
+            );
         }
         Err(e) => {
-            println!("\n{}", format!("✗ 创建失败: {}", e).red());
+            println!(
+                "\n{}",
+                t!("account.add.error").replace("{}", &e.to_string()).red()
+            );
         }
     }
 
@@ -168,19 +191,20 @@ async fn edit_account(db: &DbState) -> Result<()> {
     drop(db_lock);
 
     if response.accounts.is_empty() {
-        println!("\n{}", "暂无账号记录".yellow());
+        println!("\n{}", t!("account.list.no_records").yellow());
         return Ok(());
     }
 
-    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    let mut items: Vec<String> = vec![t!("common.cancel").to_string()];
     items.extend(
-        response.accounts
+        response
+            .accounts
             .iter()
-            .map(|a| format!("{} - {}", a.name, a.base_url))
+            .map(|a| format!("{} - {}", a.name, a.base_url)),
     );
 
     let selection = Select::new()
-        .with_prompt("选择要编辑的账号")
+        .with_prompt(t!("account.edit.prompt"))
         .items(&items)
         .interact_opt()?;
 
@@ -192,12 +216,12 @@ async fn edit_account(db: &DbState) -> Result<()> {
         let account = &response.accounts[idx];
 
         let name: String = Input::new()
-            .with_prompt("账号名称")
+            .with_prompt(t!("account.add.prompt_name"))
             .default(account.name.clone())
             .interact()?;
 
         let token: String = Input::new()
-            .with_prompt("API Token")
+            .with_prompt(t!("account.add.prompt_token"))
             .default(account.token.clone())
             .interact()?;
 
@@ -208,9 +232,9 @@ async fn edit_account(db: &DbState) -> Result<()> {
 
         let base_url: String = if base_urls.is_empty() {
             // 如果没有 Base URL，让用户手动输入
-            println!("\n{}", "暂无可用的 Base URL，请手动输入".yellow());
+            println!("\n{}", t!("account.add.no_base_url").yellow());
             Input::new()
-                .with_prompt("Base URL")
+                .with_prompt(t!("account.add.prompt_base_url"))
                 .default(account.base_url.clone())
                 .interact()?
         } else {
@@ -219,7 +243,7 @@ async fn edit_account(db: &DbState) -> Result<()> {
                 .iter()
                 .map(|u| {
                     if u.is_default {
-                        format!("{} - {} (默认)", u.name, u.url)
+                        format!("{} - {} {}", u.name, u.url, t!("account.default_indicator"))
                     } else {
                         format!("{} - {}", u.name, u.url)
                     }
@@ -233,7 +257,7 @@ async fn edit_account(db: &DbState) -> Result<()> {
                 .unwrap_or(0);
 
             let selection = Select::new()
-                .with_prompt("选择 Base URL")
+                .with_prompt(t!("account.add.select_base_url"))
                 .items(&items)
                 .default(default_index)
                 .interact()?;
@@ -242,7 +266,7 @@ async fn edit_account(db: &DbState) -> Result<()> {
         };
 
         let model: String = Input::new()
-            .with_prompt("模型")
+            .with_prompt(t!("account.add.prompt_model"))
             .default(account.model.clone())
             .interact()?;
 
@@ -256,10 +280,13 @@ async fn edit_account(db: &DbState) -> Result<()> {
 
         match db_lock.update_account(account.id, request).await {
             Ok(_) => {
-                println!("\n{}", "✓ 账号更新成功".green());
+                println!("\n{}", t!("account.edit.success").green());
             }
             Err(e) => {
-                println!("\n{}", format!("✗ 更新失败: {}", e).red());
+                println!(
+                    "\n{}",
+                    t!("account.edit.error").replace("{}", &e.to_string()).red()
+                );
             }
         }
     }
@@ -279,19 +306,20 @@ async fn delete_account(db: &DbState) -> Result<()> {
     drop(db_lock);
 
     if response.accounts.is_empty() {
-        println!("\n{}", "暂无账号记录".yellow());
+        println!("\n{}", t!("account.list.no_records").yellow());
         return Ok(());
     }
 
-    let mut items: Vec<String> = vec!["🔙 取消".to_string()];
+    let mut items: Vec<String> = vec![t!("common.cancel").to_string()];
     items.extend(
-        response.accounts
+        response
+            .accounts
             .iter()
-            .map(|a| format!("{} - {}", a.name, a.base_url))
+            .map(|a| format!("{} - {}", a.name, a.base_url)),
     );
 
     let selection = Select::new()
-        .with_prompt("选择要删除的账号")
+        .with_prompt(t!("account.delete.prompt"))
         .items(&items)
         .interact_opt()?;
 
@@ -303,17 +331,22 @@ async fn delete_account(db: &DbState) -> Result<()> {
         let account = &response.accounts[idx];
 
         if Confirm::new()
-            .with_prompt(format!("确定要删除账号 '{}' 吗?", account.name))
+            .with_prompt(t!("account.delete.confirm").replace("{}", &account.name))
             .default(false)
             .interact()?
         {
             let db_lock = db.lock().await;
             match db_lock.delete_account(account.id).await {
                 Ok(_) => {
-                    println!("\n{}", "✓ 账号删除成功".green());
+                    println!("\n{}", t!("account.delete.success").green());
                 }
                 Err(e) => {
-                    println!("\n{}", format!("✗ 删除失败: {}", e).red());
+                    println!(
+                        "\n{}",
+                        t!("account.delete.error")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    );
                 }
             }
         }
