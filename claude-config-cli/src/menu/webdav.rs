@@ -19,11 +19,14 @@ pub async fn webdav_menu(db: &DbState) -> Result<()> {
             t!("webdav.menu.delete_config"),
         ];
 
-        let selection = Select::new()
-            .with_prompt(format!("\n{}", t!("webdav.menu.title")))
+        let selection = match Select::new()
+            .with_prompt(format!("\n{} (ESC {})", t!("webdav.menu.title"), t!("common.to_back")))
             .items(&items)
             .default(last_selection)
-            .interact()?;
+            .interact_opt()? {
+                Some(sel) => sel,
+                None => break, // 用户按了ESC，返回上一级
+            };
 
         last_selection = selection;
 
@@ -111,14 +114,47 @@ async fn list_configs(db: &DbState) -> Result<()> {
 
 async fn add_config(db: &DbState) -> Result<()> {
     println!("\n{}", t!("webdav.add.title").green().bold());
+    println!("{}", t!("common.input_cancel_hint").yellow());
 
-    let name: String = Input::new().with_prompt(t!("webdav.add.prompt_name")).interact()?;
+    let name: String = Input::new()
+        .with_prompt(t!("webdav.add.prompt_name"))
+        .allow_empty(true)
+        .interact_text()?;
 
-    let url: String = Input::new().with_prompt(t!("webdav.add.prompt_url")).interact()?;
+    if name.trim().is_empty() || name.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
-    let username: String = Input::new().with_prompt(t!("webdav.add.prompt_username")).interact()?;
+    let url: String = Input::new()
+        .with_prompt(t!("webdav.add.prompt_url"))
+        .allow_empty(true)
+        .interact_text()?;
 
-    let password: String = Input::new().with_prompt(t!("webdav.add.prompt_password")).interact()?;
+    if url.trim().is_empty() || url.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
+
+    let username: String = Input::new()
+        .with_prompt(t!("webdav.add.prompt_username"))
+        .allow_empty(true)
+        .interact_text()?;
+
+    if username.trim().is_empty() || username.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
+
+    let password: String = Input::new()
+        .with_prompt(t!("webdav.add.prompt_password"))
+        .allow_empty(true)
+        .interact_text()?;
+
+    if password.trim().is_empty() || password.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
     // 使用固定的默认值，不再询问用户
     let remote_path = "/claude-config";

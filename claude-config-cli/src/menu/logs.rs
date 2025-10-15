@@ -14,11 +14,14 @@ pub async fn logs_menu() -> Result<()> {
             t!("logs.menu.open_dir"),
         ];
 
-        let selection = Select::new()
-            .with_prompt(format!("\n{}", t!("logs.menu.title")))
+        let selection = match Select::new()
+            .with_prompt(format!("\n{} (ESC {})", t!("logs.menu.title"), t!("common.to_back")))
             .items(&items)
             .default(last_selection)
-            .interact()?;
+            .interact_opt()? {
+                Some(sel) => sel,
+                None => break, // 用户按了ESC，返回上一级
+            };
 
         last_selection = selection;
 

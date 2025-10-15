@@ -10,6 +10,7 @@ pub enum Language {
 }
 
 impl Language {
+    #[allow(dead_code)]
     pub fn code(&self) -> &'static str {
         match self {
             Language::ZhCN => "zh-CN",
@@ -17,6 +18,7 @@ impl Language {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_code(code: &str) -> Option<Self> {
         match code {
             "zh-CN" | "zh" => Some(Language::ZhCN),
@@ -99,6 +101,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("menu.main.logs", "📝 查看日志");
     zh_cn.insert("menu.main.remove_root", "🔓 删除限制代码");
     zh_cn.insert("menu.main.settings", "⚙️  设置");
+    zh_cn.insert("menu.main.language", "🌐 English");
     zh_cn.insert("menu.main.exit", "❌ 退出程序");
 
     // 设置菜单
@@ -119,6 +122,9 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("common.confirm", "是否继续？");
     zh_cn.insert("common.loading", "加载中...");
     zh_cn.insert("common.select_operation", "请选择操作");
+    zh_cn.insert("common.to_exit", "按ESC退出");
+    zh_cn.insert("common.to_back", "按ESC返回");
+    zh_cn.insert("common.input_cancel_hint", "提示: 直接按Enter（不输入任何内容）可取消");
 
     // 数据库
     zh_cn.insert("db.init", "正在初始化数据库...");
@@ -368,6 +374,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("menu.main.logs", "📝 View Logs");
     en_us.insert("menu.main.remove_root", "🔓 Remove Root Check");
     en_us.insert("menu.main.settings", "⚙️  Settings");
+    en_us.insert("menu.main.language", "🌐 中文");
     en_us.insert("menu.main.exit", "❌ Exit");
 
     // Settings menu
@@ -388,6 +395,9 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("common.confirm", "Do you want to continue?");
     en_us.insert("common.loading", "Loading...");
     en_us.insert("common.select_operation", "Please select an operation");
+    en_us.insert("common.to_exit", "press ESC to exit");
+    en_us.insert("common.to_back", "press ESC to go back");
+    en_us.insert("common.input_cancel_hint", "Hint: Press Enter without typing anything to cancel");
 
     // Database
     en_us.insert("db.init", "Initializing database...");

@@ -64,7 +64,14 @@ async fn main() -> Result<()> {
 
     // 主菜单循环
     loop {
-        let selection = show_main_menu()?;
+        let selection = match show_main_menu()? {
+            Some(sel) => sel,
+            None => {
+                // 用户按了ESC，退出程序
+                println!("\n{}", i18n::translate("app.exit_message").green().bold());
+                break;
+            }
+        };
 
         match selection {
             0 => {
@@ -92,6 +99,18 @@ async fn main() -> Result<()> {
                 menu::settings::settings_menu().await?;
             }
             8 => {
+                // 切换语言
+                let new_lang = match i18n::current_language() {
+                    i18n::Language::ZhCN => i18n::Language::EnUS,
+                    i18n::Language::EnUS => i18n::Language::ZhCN,
+                };
+                i18n::set_language(new_lang);
+
+                // 清屏并重新显示欢迎信息
+                let _ = term.clear_screen();
+                print_banner();
+            }
+            9 => {
                 println!("\n{}", i18n::translate("app.exit_message").green().bold());
                 break;
             }
@@ -137,7 +156,7 @@ fn print_banner() {
     println!();
 }
 
-fn show_main_menu() -> Result<usize> {
+fn show_main_menu() -> Result<Option<usize>> {
     let items = vec![
         i18n::translate("menu.main.account"),
         i18n::translate("menu.main.directory"),
@@ -147,14 +166,15 @@ fn show_main_menu() -> Result<usize> {
         i18n::translate("menu.main.logs"),
         i18n::translate("menu.main.remove_root"),
         i18n::translate("menu.main.settings"),
+        i18n::translate("menu.main.language"),
         i18n::translate("menu.main.exit"),
     ];
 
     let selection = Select::new()
-        .with_prompt(format!("\n{}", i18n::translate("menu.main.title")))
+        .with_prompt(format!("\n{} (ESC {})", i18n::translate("menu.main.title"), i18n::translate("common.to_exit")))
         .items(&items)
         .default(0)
-        .interact()?;
+        .interact_opt()?;
 
     Ok(selection)
 }

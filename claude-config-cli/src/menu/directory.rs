@@ -16,11 +16,14 @@ pub async fn directory_menu(db: &DbState) -> Result<()> {
             t!("directory.menu.delete"),
         ];
 
-        let selection = Select::new()
-            .with_prompt(format!("\n{}", t!("directory.menu.title")))
+        let selection = match Select::new()
+            .with_prompt(format!("\n{} (ESC {})", t!("directory.menu.title"), t!("common.to_back")))
             .items(&items)
             .default(last_selection)
-            .interact()?;
+            .interact_opt()? {
+                Some(sel) => sel,
+                None => break, // 用户按了ESC，返回上一级
+            };
 
         last_selection = selection;
 
@@ -100,8 +103,17 @@ async fn list_directories(db: &DbState) -> Result<()> {
 
 async fn add_directory(db: &DbState) -> Result<()> {
     println!("\n{}", t!("directory.add.title").green().bold());
+    println!("{}", t!("common.input_cancel_hint").yellow());
 
-    let path: String = Input::new().with_prompt(t!("directory.add.prompt_path")).interact()?;
+    let path: String = Input::new()
+        .with_prompt(t!("directory.add.prompt_path"))
+        .allow_empty(true)
+        .interact_text()?;
+
+    if path.trim().is_empty() || path.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
     // 检查路径是否存在
     if !std::path::Path::new(&path).exists() {
@@ -115,7 +127,15 @@ async fn add_directory(db: &DbState) -> Result<()> {
         }
     }
 
-    let name: String = Input::new().with_prompt(t!("directory.add.prompt_name")).interact()?;
+    let name: String = Input::new()
+        .with_prompt(t!("directory.add.prompt_name"))
+        .allow_empty(true)
+        .interact_text()?;
+
+    if name.trim().is_empty() || name.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
     let db_lock = db.lock().await;
     let request = CreateDirectoryRequest {
@@ -164,15 +184,31 @@ async fn edit_directory(db: &DbState) -> Result<()> {
         let idx = idx - 1;
         let directory = &directories[idx];
 
+        println!("{}", t!("common.input_cancel_hint").yellow());
+
         let name: String = Input::new()
             .with_prompt(t!("directory.add.prompt_name"))
             .default(directory.name.clone())
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
+
+        let name = if name.trim().is_empty() {
+            directory.name.clone()
+        } else {
+            name
+        };
 
         let path: String = Input::new()
             .with_prompt(t!("directory.add.prompt_path"))
             .default(directory.path.clone())
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
+
+        let path = if path.trim().is_empty() {
+            directory.path.clone()
+        } else {
+            path
+        };
 
         let db_lock = db.lock().await;
         let request = UpdateDirectoryRequest {

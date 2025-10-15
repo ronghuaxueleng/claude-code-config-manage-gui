@@ -16,11 +16,14 @@ pub async fn base_url_menu(db: &DbState) -> Result<()> {
             t!("url.menu.delete"),
         ];
 
-        let selection = Select::new()
-            .with_prompt(format!("\n{}", t!("url.menu.title")))
+        let selection = match Select::new()
+            .with_prompt(format!("\n{} (ESC {})", t!("url.menu.title"), t!("common.to_back")))
             .items(&items)
             .default(last_selection)
-            .interact()?;
+            .interact_opt()? {
+                Some(sel) => sel,
+                None => break, // 用户按了ESC，返回上一级
+            };
 
         last_selection = selection;
 
@@ -95,18 +98,33 @@ async fn list_base_urls(db: &DbState) -> Result<()> {
 
 async fn add_base_url(db: &DbState) -> Result<()> {
     println!("\n{}", t!("url.add.title").green().bold());
+    println!("{}", t!("common.input_cancel_hint").yellow());
 
-    let name: String = Input::new().with_prompt(t!("url.add.prompt_name")).interact()?;
+    let name: String = Input::new()
+        .with_prompt(t!("url.add.prompt_name"))
+        .allow_empty(true)
+        .interact_text()?;
+
+    if name.trim().is_empty() || name.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
     let url: String = Input::new()
         .with_prompt(t!("url.add.prompt_url"))
         .default("https://api.anthropic.com".to_string())
-        .interact()?;
+        .allow_empty(true)
+        .interact_text()?;
+
+    if url.trim().is_empty() || url.trim().eq_ignore_ascii_case("q") {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
     let description: String = Input::new()
         .with_prompt(t!("url.add.prompt_description"))
         .allow_empty(true)
-        .interact()?;
+        .interact_text()?;
 
     let is_default = Confirm::new()
         .with_prompt(t!("url.add.prompt_default"))
@@ -162,21 +180,37 @@ async fn edit_base_url(db: &DbState) -> Result<()> {
         let idx = idx - 1;
         let base_url = &base_urls[idx];
 
+        println!("{}", t!("common.input_cancel_hint").yellow());
+
         let name: String = Input::new()
             .with_prompt(t!("url.add.prompt_name"))
             .default(base_url.name.clone())
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
+
+        let name = if name.trim().is_empty() {
+            base_url.name.clone()
+        } else {
+            name
+        };
 
         let url: String = Input::new()
             .with_prompt(t!("url.add.prompt_url"))
             .default(base_url.url.clone())
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
+
+        let url = if url.trim().is_empty() {
+            base_url.url.clone()
+        } else {
+            url
+        };
 
         let description: String = Input::new()
             .with_prompt(t!("url.add.prompt_description"))
             .default(base_url.description.clone().unwrap_or_default())
             .allow_empty(true)
-            .interact()?;
+            .interact_text()?;
 
         let is_default = Confirm::new()
             .with_prompt(t!("url.add.prompt_default"))

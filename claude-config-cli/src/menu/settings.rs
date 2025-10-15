@@ -40,11 +40,14 @@ pub async fn settings_menu() -> Result<()> {
             i18n::translate("menu.settings.back"),
         ];
 
-        let selection = Select::new()
-            .with_prompt(format!("\n{}", i18n::translate("common.select_operation")))
+        let selection = match Select::new()
+            .with_prompt(format!("\n{} (ESC {})", i18n::translate("common.select_operation"), i18n::translate("common.to_back")))
             .items(&items)
             .default(0)
-            .interact()?;
+            .interact_opt()? {
+                Some(sel) => sel,
+                None => break, // 用户按了ESC，返回上一级
+            };
 
         match selection {
             0 => {

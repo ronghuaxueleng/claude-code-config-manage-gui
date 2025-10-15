@@ -257,6 +257,7 @@ const translations = {
         'error.select_database': '请选择数据库连接',
         'error.test_before_switch': '请先测试数据库连接成功后再切换',
         'error.language_switch': '语言切换失败',
+        'error.save_claude_check_db': '请检查:\n1. 数据库连接是否正常\n2. 数据库表结构是否完整\n3. 查看浏览器控制台获取详细错误信息',
 
         // 成功消息
         'success.account_added': '账号添加成功',
@@ -741,6 +742,7 @@ const translations = {
         'error.select_database': 'Please select a database connection',
         'error.test_before_switch': 'Please test the database connection successfully before switching',
         'error.language_switch': 'Failed to switch language',
+        'error.save_claude_check_db': 'Please check:\n1. Database connection is working properly\n2. Database table structure is complete\n3. View browser console for detailed error information',
 
         // Success messages
         'success.account_added': 'Account added successfully',

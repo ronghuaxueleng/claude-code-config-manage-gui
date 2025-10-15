@@ -16,11 +16,14 @@ pub async fn account_menu(db: &DbState) -> Result<()> {
             t!("account.menu.delete"),
         ];
 
-        let selection = Select::new()
-            .with_prompt(format!("\n{}", t!("account.menu.title")))
+        let selection = match Select::new()
+            .with_prompt(format!("\n{} (ESC {})", t!("account.menu.title"), t!("common.to_back")))
             .items(&items)
             .default(last_selection)
-            .interact()?;
+            .interact_opt()? {
+                Some(sel) => sel,
+                None => break, // 用户按了ESC，返回上一级
+            };
 
         last_selection = selection;
 
@@ -104,14 +107,27 @@ async fn list_accounts(db: &DbState) -> Result<()> {
 
 async fn add_account(db: &DbState) -> Result<()> {
     println!("\n{}", t!("account.add.title").green().bold());
+    println!("{}", t!("common.input_cancel_hint").yellow());
 
     let name: String = Input::new()
         .with_prompt(t!("account.add.prompt_name"))
-        .interact()?;
+        .allow_empty(true)
+        .interact_text()?;
+
+    if name.trim().is_empty() {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
     let token: String = Input::new()
         .with_prompt(t!("account.add.prompt_token"))
-        .interact()?;
+        .allow_empty(true)
+        .interact_text()?;
+
+    if token.trim().is_empty() {
+        println!("\n{}", t!("common.cancel").yellow());
+        return Ok(());
+    }
 
     // 获取所有 Base URL
     let db_lock = db.lock().await;
@@ -215,15 +231,31 @@ async fn edit_account(db: &DbState) -> Result<()> {
         let idx = idx - 1;
         let account = &response.accounts[idx];
 
+        println!("{}", t!("common.input_cancel_hint").yellow());
+
         let name: String = Input::new()
             .with_prompt(t!("account.add.prompt_name"))
             .default(account.name.clone())
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
+
+        let name = if name.trim().is_empty() {
+            account.name.clone()
+        } else {
+            name
+        };
 
         let token: String = Input::new()
             .with_prompt(t!("account.add.prompt_token"))
             .default(account.token.clone())
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
+
+        let token = if token.trim().is_empty() {
+            account.token.clone()
+        } else {
+            token
+        };
 
         // 获取所有 Base URL
         let db_lock = db.lock().await;
@@ -233,10 +265,17 @@ async fn edit_account(db: &DbState) -> Result<()> {
         let base_url: String = if base_urls.is_empty() {
             // 如果没有 Base URL，让用户手动输入
             println!("\n{}", t!("account.add.no_base_url").yellow());
-            Input::new()
+            let input_url: String = Input::new()
                 .with_prompt(t!("account.add.prompt_base_url"))
                 .default(account.base_url.clone())
-                .interact()?
+                .allow_empty(true)
+                .interact_text()?;
+
+            if input_url.trim().is_empty() {
+                account.base_url.clone()
+            } else {
+                input_url
+            }
         } else {
             // 从列表选择 Base URL
             let items: Vec<String> = base_urls
@@ -268,7 +307,14 @@ async fn edit_account(db: &DbState) -> Result<()> {
         let model: String = Input::new()
             .with_prompt(t!("account.add.prompt_model"))
             .default(account.model.clone())
-            .interact()?;
+            .allow_empty(true)
+            .interact_text()?;
+
+        let model = if model.trim().is_empty() {
+            account.model.clone()
+        } else {
+            model
+        };
 
         let db_lock = db.lock().await;
         let request = UpdateAccountRequest {
