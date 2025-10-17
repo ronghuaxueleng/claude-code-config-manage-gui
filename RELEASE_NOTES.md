@@ -40,11 +40,11 @@
 
 | 平台 | 文件 | 说明 |
 |------|------|------|
-| 🪟 **Windows** | `claude-config-manager_1.4.0_x64_zh-CN.msi` | Windows 安装包（推荐） |
-| 🪟 **Windows** | `claude-config-manager_1.4.0_x64-setup.exe` | NSIS 安装程序 |
-| 🐧 **Linux** | `claude-config-manager_1.4.0_amd64.deb` | Debian/Ubuntu 包 |
-| 🐧 **Linux** | `claude-config-manager_1.4.0_amd64.AppImage` | 通用 AppImage |
-| 🍎 **macOS** | `claude-config-manager_1.4.0_x64.dmg` | macOS 安装镜像 |
+| 🪟 **Windows** | `claude-code-config-manager_1.4.0_x64_zh-CN.msi` | Windows 安装包（推荐） |
+| 🪟 **Windows** | `claude-code-config-manager_1.4.0_x64-setup.exe` | NSIS 安装程序 |
+| 🐧 **Linux** | `claude-code-config-manager_1.4.0_amd64.deb` | Debian/Ubuntu 包 |
+| 🐧 **Linux** | `claude-code-config-manager_1.4.0_amd64.AppImage` | 通用 AppImage |
+| 🍎 **macOS** | `claude-code-config-manager_1.4.0_aarch64.dmg` | macOS 安装镜像 (Apple Silicon) |
 
 **特点**:
 - 🎨 现代化的图形界面
@@ -84,7 +84,7 @@
 **Linux (Debian/Ubuntu):**
 ```bash
 # 下载 .deb 文件后
-sudo dpkg -i claude-config-manager_1.4.0_amd64.deb
+sudo dpkg -i claude-code-config-manager_1.4.0_amd64.deb
 
 # 如有依赖问题，运行
 sudo apt-get install -f
@@ -93,8 +93,8 @@ sudo apt-get install -f
 **Linux (AppImage):**
 ```bash
 # 下载 .AppImage 文件后
-chmod +x claude-config-manager_1.4.0_amd64.AppImage
-./claude-config-manager_1.4.0_amd64.AppImage
+chmod +x claude-code-config-manager_1.4.0_amd64.AppImage
+./claude-code-config-manager_1.4.0_amd64.AppImage
 ```
 
 **macOS:**

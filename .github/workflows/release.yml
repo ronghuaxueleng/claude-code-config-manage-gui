@@ -108,7 +108,7 @@ jobs:
             target: x86_64-unknown-linux-gnu
             bundles: deb,appimage
           - platform: macos-latest
-            target: x86_64-apple-darwin
+            target: aarch64-apple-darwin
             bundles: dmg
 
     runs-on: ${{ matrix.platform }}
@@ -239,8 +239,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/dmg/claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64.dmg
-          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64.dmg
+          asset_path: ./src-tauri/target/release/bundle/dmg/claude-code-config-manager_${{ needs.create-release.outputs.version }}_aarch64.dmg
+          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_aarch64.dmg
           asset_content_type: application/x-apple-diskimage
 
   build-cli:
