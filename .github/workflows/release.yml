@@ -1,9 +1,22 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 (例如: 1.4.0)'
+        required: true
+        type: string
+      create_tag:
+        description: '是否自动创建 Git 标签'
+        required: true
+        type: boolean
+        default: true
+      prerelease:
+        description: '是否为预发布版本'
+        required: true
+        type: boolean
+        default: false
 
 # 声明工作流所需权限
 permissions:
@@ -17,14 +30,25 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      version: ${{ steps.get_version.outputs.version }}
+      version: ${{ inputs.version }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Get version from tag
-        id: get_version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "错误: 版本号格式不正确，应为 x.y.z 格式"
+            exit 1
+          fi
+
+      - name: Create Git Tag
+        if: ${{ inputs.create_tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+          git push origin "v${{ inputs.version }}"
 
       - name: Create Release
         id: create_release
@@ -32,11 +56,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref_name }}
+          tag_name: v${{ inputs.version }}
+          release_name: Release v${{ inputs.version }}
           body_path: RELEASE_NOTES.md
           draft: false
-          prerelease: false
+          prerelease: ${{ inputs.prerelease }}
 
   build-gui:
     needs: create-release
