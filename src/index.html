@@ -424,14 +424,6 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label" data-i18n="claude.model">指定模型</label>
-                                    <input type="text" class="form-control" id="anthropicModel" data-i18n-placeholder="claude.model_placeholder">
-                                    <div class="form-text" data-i18n="claude.model_help">
-                                        指定使用的Claude模型 (ANTHROPIC_MODEL)
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
                                     <label class="form-label" data-i18n="claude.fast_model">快速模型</label>
                                     <input type="text" class="form-control" id="smallFastModel" data-i18n-placeholder="claude.fast_model_placeholder">
                                     <div class="form-text" data-i18n="claude.fast_model_help">
@@ -632,6 +624,12 @@
                                        data-i18n-placeholder="accounts.base_url_placeholder">
                             </div>
                             <div class="form-text" data-i18n="accounts.base_url_help">可以从预设URL中选择，或手动输入自定义URL</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="accountModel" class="form-label" data-i18n="accounts.model">模型</label>
+                            <input type="text" class="form-control" id="accountModel"
+                                   data-i18n-placeholder="accounts.model_placeholder">
+                            <div class="form-text" data-i18n="accounts.model_help">指定此账号使用的Claude模型，留空则使用默认模型</div>
                         </div>
                     </form>
                 </div>

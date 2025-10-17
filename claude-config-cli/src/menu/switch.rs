@@ -11,6 +11,7 @@ fn write_claude_settings(
     claude_settings_json: &str,
     account_token: &str,
     account_base_url: &str,
+    account_model: &str,
     skip_permissions: bool,
 ) -> Result<()> {
     use serde_json::Value;
@@ -71,6 +72,14 @@ fn write_claude_settings(
         "ANTHROPIC_BASE_URL".to_string(),
         Value::String(account_base_url.to_string()),
     );
+
+    // 添加模型配置（如果账号设置了模型）
+    if !account_model.is_empty() {
+        env_obj.insert(
+            "ANTHROPIC_MODEL".to_string(),
+            Value::String(account_model.to_string()),
+        );
+    }
 
     // 创建 .claude 目录
     let claude_dir = Path::new(directory_path).join(".claude");
@@ -212,6 +221,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                         &claude_settings_json,
                         &account.token,
                         &account.base_url,
+                        &account.model,
                         skip_permissions,
                     ) {
                         Ok(_) => {

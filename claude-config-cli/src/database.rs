@@ -77,15 +77,15 @@ impl Database {
 
         let db = Self { pool };
 
-        // 初始化数据库结构
+        // 初始化数据库结构（包括迁移）
         println!("正在初始化数据库结构...");
-        db.initialize().await.map_err(|e| {
-            error!("回退策略数据库初始化失败: {}", e);
-            println!("数据库初始化失败: {}", e);
+        db.migrate().await.map_err(|e| {
+            error!("回退策略数据库迁移和初始化失败: {}", e);
+            println!("数据库迁移和初始化失败: {}", e);
             e
         })?;
 
-        info!("回退策略数据库初始化完成");
+        info!("回退策略数据库迁移和初始化完成");
         println!("数据库初始化完成！应用现在应该可以正常工作了。");
         Ok(db)
     }
@@ -264,11 +264,11 @@ impl Database {
 
         let db = Self { pool };
 
-        info!("开始数据库初始化");
-        match db.initialize().await {
-            Ok(_) => info!("数据库初始化完成"),
+        info!("开始数据库迁移和初始化");
+        match db.migrate().await {
+            Ok(_) => info!("数据库迁移和初始化完成"),
             Err(e) => {
-                error!("数据库初始化失败: {}", e);
+                error!("数据库迁移和初始化失败: {}", e);
                 return Err(e);
             }
         }
@@ -292,7 +292,7 @@ impl Database {
                 name TEXT NOT NULL UNIQUE,
                 token TEXT NOT NULL,
                 base_url TEXT NOT NULL,
-                model TEXT NOT NULL DEFAULT 'claude-sonnet-4-20250514',
+                model TEXT NOT NULL DEFAULT '',
                 is_active BOOLEAN NOT NULL DEFAULT FALSE,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -452,6 +452,35 @@ impl Database {
             }
         }
 
+        Ok(())
+    }
+
+    /// 迁移数据库，确保所有表都存在
+    pub async fn migrate(&self) -> Result<(), SqlxError> {
+        info!("开始数据库迁移检查");
+
+        // 检查 accounts 表是否存在 model 字段
+        let has_model_field: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'model'"
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        if has_model_field == 0 {
+            // 添加 model 字段
+            info!("检测到 accounts 表缺少 model 字段，开始添加...");
+            sqlx::query("ALTER TABLE accounts ADD COLUMN model TEXT NOT NULL DEFAULT ''")
+                .execute(&self.pool)
+                .await?;
+            info!("已成功添加 model 字段到 accounts 表");
+        } else {
+            info!("accounts 表已包含 model 字段，无需添加");
+        }
+
+        // 重新运行所有表创建语句（使用 IF NOT EXISTS，不会影响现有表）
+        self.initialize().await?;
+
+        info!("数据库迁移完成");
         Ok(())
     }
 

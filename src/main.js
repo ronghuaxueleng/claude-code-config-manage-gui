@@ -269,6 +269,7 @@ async function renderAccounts() {
                     </div>
                     <div class="small token-preview">${account.token.substring(0, 20)}...</div>
                     <div class="small">${account.base_url}</div>
+                    ${account.model ? '<div class="small text-muted"><i class="fas fa-microchip me-1"></i>' + window.i18n.t('accounts.model') + ': ' + account.model + '</div>' : ''}
                 </div>
                 <div class="account-actions">
                     <button class="btn btn-sm btn-outline-primary" onclick="editAccount(${account.id})">${window.i18n.t('text.edit')}</button>
@@ -514,6 +515,7 @@ async function saveAccount() {
     const name = document.getElementById('accountName').value.trim();
     const token = document.getElementById('accountToken').value.trim();
     const base_url = document.getElementById('accountBaseUrl').value.trim();
+    const model = document.getElementById('accountModel').value.trim();
 
     if (!name || !token || !base_url) {
         showError(window.i18n.t('validation.required_fields'));
@@ -533,15 +535,15 @@ async function saveAccount() {
         showError(window.i18n.t('validation.url_protocol'));
         return;
     }
-    
+
     try {
-        const result = await tauriCreateAccount(name, token, base_url, 'claude-sonnet-4-20250514');
-        
+        const result = await tauriCreateAccount(name, token, base_url, model);
+
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('accountModal'));
         modal.hide();
         document.getElementById('accountForm').reset();
-        
+
         // Reload accounts list and base_url options
         await loadAccounts(currentAccountPage);
         await loadAccountBaseUrlOptions();
@@ -627,10 +629,27 @@ async function editAccount(accountId) {
         document.getElementById('accountName').value = account.name;
         document.getElementById('accountToken').value = account.token;
         document.getElementById('accountBaseUrl').value = account.base_url;
+        document.getElementById('accountModel').value = account.model || '';
+
+        // 设置Base URL下拉框的值
+        const baseUrlSelect = document.getElementById('accountBaseUrlSelect');
+        if (baseUrlSelect) {
+            // 检查账号的base_url是否在下拉框选项中
+            const selectOptions = Array.from(baseUrlSelect.options);
+            const matchingOption = selectOptions.find(option => option.value === account.base_url);
+
+            if (matchingOption) {
+                // 如果找到匹配项，设置下拉框的值
+                baseUrlSelect.value = account.base_url;
+            } else {
+                // 如果不在预设URL中，设置为空（自定义URL）
+                baseUrlSelect.value = '';
+            }
+        }
 
         // Change modal title
         document.querySelector('#accountModal .modal-title').textContent = window.i18n.t('modal.edit_account');
-        
+
         // Change save button behavior
         const saveBtn = document.getElementById('saveAccount');
         // 移除所有现有的事件监听器
@@ -642,11 +661,11 @@ async function editAccount(accountId) {
         saveBtn.addEventListener('click', updateAccountHandler);
         // 保存处理函数引用，以便后续清理
         saveBtn._updateHandler = updateAccountHandler;
-        
+
         // Show modal
         const modal = new bootstrap.Modal(document.getElementById('accountModal'));
         modal.show();
-        
+
     } catch (error) {
         showError(window.i18n.t('error.edit_account') + ': ' + getErrorMessage(error));
     }
@@ -657,6 +676,7 @@ async function updateAccount(accountId) {
     const name = document.getElementById('accountName').value.trim();
     const token = document.getElementById('accountToken').value.trim();
     const base_url = document.getElementById('accountBaseUrl').value.trim();
+    const model = document.getElementById('accountModel').value.trim();
 
     if (!name || !token || !base_url) {
         showError(window.i18n.t('validation.required_fields'));
@@ -676,17 +696,17 @@ async function updateAccount(accountId) {
         showError(window.i18n.t('validation.url_protocol'));
         return;
     }
-    
+
     try {
-        const result = await tauriUpdateAccount(accountId, { name, token, base_url, model: 'claude-sonnet-4-20250514' });
-        
+        const result = await tauriUpdateAccount(accountId, { name, token, base_url, model });
+
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('accountModal'));
         modal.hide();
-        
+
         // Reset form and modal state
         resetAccountModal();
-        
+
         // Reload accounts list and base_url options
         await loadAccounts(currentAccountPage);
         await loadAccountBaseUrlOptions();
@@ -1295,6 +1315,7 @@ async function renderAssociationAccountsList() {
                     </h6>
                     <p class="mb-1"><small class="text-muted">${account.base_url}</small></p>
                     <small class="text-muted">Token: ${account.token.substring(0, 20)}...</small>
+                    ${account.model ? '<div class="mt-1"><small class="text-muted"><i class="fas fa-microchip me-1"></i>' + window.i18n.t('accounts.model') + ': ' + account.model + '</small></div>' : ''}
                     ${account.associated_directories.length > 0 ? `
                         <div class="mt-2">
                             <small class="text-info">
@@ -1352,7 +1373,7 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
         showError(window.i18n.t('error.select_directory_first'));
         return;
     }
-    
+
     // 验证选择的目录是否存在
     try {
         const directory = associationDirectories.find(dir => dir.id == currentDirectoryForAssociation);
@@ -1374,27 +1395,37 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
         console.warn(window.i18n.t('error.verify_directory') + ':', error);
         // 继续执行，不阻止操作
     }
-    
+
     try {
         // 获取Claude配置
         const claudeSettings = await getClaudeSettingsForSwitch();
-        
+
+        // 获取当前账号信息，包括model字段
+        const account = associationAccounts.find(acc => acc.id == accountId);
+        if (account && account.model) {
+            // 如果账号设置了model，将其添加到Claude配置的环境变量中
+            if (!claudeSettings.env) {
+                claudeSettings.env = {};
+            }
+            claudeSettings.env.ANTHROPIC_MODEL = account.model;
+        }
+
         const result = await tauriSwitchAccountWithClaudeSettings(
-            parseInt(accountId), 
+            parseInt(accountId),
             parseInt(currentDirectoryForAssociation),
             isSandbox,
             claudeSettings
         );
-        
+
         showSuccess(result);
-        
+
         // Reload data
         await loadAssociationAccounts();
         await onDirectorySelectionChange(currentDirectoryForAssociation);
-        
+
         // Reset selector
         document.getElementById('associationAccountSelect').value = '';
-        
+
     } catch (error) {
         showError(window.i18n.t('error.switch_account') + ': ' + getErrorMessage(error));
     }
@@ -2301,7 +2332,6 @@ async function loadCurrentClaudeSettings() {
             claudeSettingsData.env.DISABLE_PROMPT_CACHING === 1 || claudeSettingsData.env.DISABLE_PROMPT_CACHING === '1';
 
         // 更新文本型环境变量
-        document.getElementById('anthropicModel').value = claudeSettingsData.env.ANTHROPIC_MODEL || '';
         document.getElementById('smallFastModel').value = claudeSettingsData.env.ANTHROPIC_SMALL_FAST_MODEL || '';
 
         // 更新数值型环境变量
@@ -2446,7 +2476,6 @@ function renderCustomEnvVars() {
         'IS_SANDBOX',
         'DISABLE_AUTOUPDATER',
         'DISABLE_PROMPT_CACHING',
-        'ANTHROPIC_MODEL',
         'ANTHROPIC_SMALL_FAST_MODEL',
         'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
         'MAX_THINKING_TOKENS',
@@ -2531,17 +2560,6 @@ function setupClaudeSettingsEventListeners() {
     // 禁用提示缓存变更
     document.getElementById('disablePromptCaching').addEventListener('change', function() {
         claudeSettingsData.env.DISABLE_PROMPT_CACHING = this.checked ? 1 : 0;
-        updatePreview();
-    });
-
-    // 指定模型变更
-    document.getElementById('anthropicModel').addEventListener('input', function() {
-        const value = this.value.trim();
-        if (value) {
-            claudeSettingsData.env.ANTHROPIC_MODEL = value;
-        } else {
-            delete claudeSettingsData.env.ANTHROPIC_MODEL;
-        }
         updatePreview();
     });
 
@@ -2662,7 +2680,6 @@ function addCustomEnvVar() {
         'IS_SANDBOX',
         'DISABLE_AUTOUPDATER',
         'DISABLE_PROMPT_CACHING',
-        'ANTHROPIC_MODEL',
         'ANTHROPIC_SMALL_FAST_MODEL',
         'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
         'MAX_THINKING_TOKENS',

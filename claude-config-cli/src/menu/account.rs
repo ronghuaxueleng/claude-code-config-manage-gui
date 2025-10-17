@@ -165,8 +165,8 @@ async fn add_account(db: &DbState) -> Result<()> {
 
     let model: String = Input::new()
         .with_prompt(t!("account.add.prompt_model"))
-        .default("claude-sonnet-4-20250514".to_string())
-        .interact()?;
+        .allow_empty(true)
+        .interact_text()?;
 
     let db_lock = db.lock().await;
     let request = CreateAccountRequest {

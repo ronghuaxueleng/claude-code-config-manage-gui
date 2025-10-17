@@ -54,6 +54,8 @@ const translations = {
         'accounts.base_url_manual': '或手动输入URL',
         'accounts.base_url_help': '可以从预设URL中选择，或手动输入自定义URL',
         'accounts.model': '模型',
+        'accounts.model_placeholder': '例如: claude-sonnet-4-20250514',
+        'accounts.model_help': '指定此账号使用的Claude模型，留空则使用默认模型',
 
         // 目录管理
         'directories.title': '目录管理',
@@ -539,6 +541,8 @@ const translations = {
         'accounts.base_url_manual': 'Or enter URL manually',
         'accounts.base_url_help': 'Select from preset URLs or enter custom URL',
         'accounts.model': 'Model',
+        'accounts.model_placeholder': 'e.g., claude-sonnet-4-20250514',
+        'accounts.model_help': 'Specify the Claude model for this account, leave empty to use default',
 
         // Directories
         'directories.title': 'Directory Management',
