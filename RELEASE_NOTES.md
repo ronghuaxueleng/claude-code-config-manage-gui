@@ -1,43 +1,36 @@
-# Claude Code 配置管理器 v1.3.0
+# Claude Code 配置管理器 v1.4.0
 
 > 🎉 一款基于 Tauri 和 Rust 构建的现代化 Claude Code 配置管理工具，为开发者提供便捷的 API 配置管理解决方案。
 
 ## ✨ 本版本更新
 
 ### 新增功能
-- ☁️ **WebDAV 云同步**: 支持配置数据云端备份和多设备同步
-  - 兼容坚果云、NextCloud、ownCloud 等 WebDAV 服务
-  - 支持完全覆盖模式，避免冲突
-  - 自动同步功能（可配置间隔）
-  - 详细的同步日志记录
-
-- 🔓 **删除 Root 限制**（CLI 版本）: 一键移除 Claude Code 的 Root Check 限制
-  - 自动查找 claude 命令位置
-  - 创建包装脚本，无侵入式修改
-  - 脚本内容编译时嵌入，无需外部文件
-  - 自动处理跨平台换行符兼容性
-
-- 🚀 **脚本自动执行**: 切换账号时自动执行环境配置脚本
-  - 支持 WSL 环境（Windows）
-  - Unix 系统原生支持
-  - 静默失败，不影响核心功能
+- 🔄 **数据库自动迁移**: 智能检测并自动迁移旧版本数据库
+  - 自动检测 accounts 表结构
+  - 自动添加缺失的 model 字段
+  - 零停机迁移，完全兼容旧版本
+  - 无需手动操作，启动即自动完成
 
 ### 改进优化
-- 📝 **日志系统增强**: 分级日志记录，便于问题排查
-- 🗄️ **数据库优化**:
-  - 自动创建 WebDAV 相关表结构
-  - 改进数据库迁移机制
-  - 支持多重回退策略
-- 🔧 **错误处理改进**:
-  - 优化 WSL 命令检测
-  - 静默处理非关键错误
-  - 更详细的错误信息
+- 🎯 **账号模型字段优化**:
+  - 移除 model 字段的默认值，改为空字符串
+  - 用户可按需为每个账号指定特定模型
+  - 灵活配置，更符合实际使用场景
+
+- 🔧 **界面体验改进**:
+  - 修复编辑账号时 Base URL 预设下拉框不回填的问题
+  - 正确显示当前账号的 Base URL 选项
+  - 改进用户交互流程
+
+- 🌍 **多语言支持完善**:
+  - 优化 CLI 和 GUI 的多语言翻译
+  - 改进语言切换体验
+  - 更加一致的界面文案
 
 ### Bug 修复
-- ✅ 修复数据库初始化失败导致的退出问题
-- ✅ 修复 WebDAV 配置提示过多的问题
-- ✅ 修复 Root Check 脚本 CRLF 行尾问题
-- ✅ 修复 Linux 下的权限检查问题
+- ✅ 修复编辑账号时 Base URL 下拉框值不正确的问题
+- ✅ 修复旧版本用户升级后可能遇到的字段缺失问题
+- ✅ 优化数据库初始化和迁移流程
 
 ## 📦 下载
 
@@ -47,17 +40,18 @@
 
 | 平台 | 文件 | 说明 |
 |------|------|------|
-| 🪟 **Windows** | `claude-config-manager_1.3.0_x64_zh-CN.msi` | Windows 安装包（推荐） |
-| 🪟 **Windows** | `claude-config-manager_1.3.0_x64-setup.exe` | NSIS 安装程序 |
-| 🐧 **Linux** | `claude-config-manager_1.3.0_amd64.deb` | Debian/Ubuntu 包 |
-| 🐧 **Linux** | `claude-config-manager_1.3.0_amd64.AppImage` | 通用 AppImage |
-| 🍎 **macOS** | `claude-config-manager_1.3.0_x64.dmg` | macOS 安装镜像 |
+| 🪟 **Windows** | `claude-config-manager_1.4.0_x64_zh-CN.msi` | Windows 安装包（推荐） |
+| 🪟 **Windows** | `claude-config-manager_1.4.0_x64-setup.exe` | NSIS 安装程序 |
+| 🐧 **Linux** | `claude-config-manager_1.4.0_amd64.deb` | Debian/Ubuntu 包 |
+| 🐧 **Linux** | `claude-config-manager_1.4.0_amd64.AppImage` | 通用 AppImage |
+| 🍎 **macOS** | `claude-config-manager_1.4.0_x64.dmg` | macOS 安装镜像 |
 
 **特点**:
 - 🎨 现代化的图形界面
 - ⚡ 启动时间 ~0.5s
 - 💾 内存占用 ~15MB
 - 📊 实时数据可视化
+- 🔄 自动数据库迁移
 
 ### CLI 版本（命令行）
 
@@ -65,9 +59,9 @@
 
 | 平台 | 文件 | 说明 |
 |------|------|------|
-| 🪟 **Windows** | `claude-config-cli-1.3.0-Windows-x86_64.zip` | Windows 可执行文件 |
-| 🐧 **Linux** | `claude-config-cli-1.3.0-Linux-x86_64.tar.gz` | Linux 可执行文件 |
-| 🍎 **macOS** | `claude-config-cli-1.3.0-Darwin-x86_64.tar.gz` | macOS 可执行文件 |
+| 🪟 **Windows** | `claude-config-cli-1.4.0-Windows-x86_64.zip` | Windows 可执行文件 |
+| 🐧 **Linux** | `claude-config-cli-1.4.0-Linux-x86_64.tar.gz` | Linux 可执行文件 |
+| 🍎 **macOS** | `claude-config-cli-1.4.0-Darwin-x86_64.tar.gz` | macOS 可执行文件 |
 
 **特点**:
 - 🚀 启动时间 ~0.1s
@@ -75,6 +69,7 @@
 - 🔧 完美适配 SSH 远程使用
 - 🤖 易于自动化脚本集成
 - 🔓 支持删除 Root 限制
+- 🔄 自动数据库迁移
 
 ## 📝 安装说明
 
@@ -89,7 +84,7 @@
 **Linux (Debian/Ubuntu):**
 ```bash
 # 下载 .deb 文件后
-sudo dpkg -i claude-config-manager_1.3.0_amd64.deb
+sudo dpkg -i claude-config-manager_1.4.0_amd64.deb
 
 # 如有依赖问题，运行
 sudo apt-get install -f
@@ -98,8 +93,8 @@ sudo apt-get install -f
 **Linux (AppImage):**
 ```bash
 # 下载 .AppImage 文件后
-chmod +x claude-config-manager_1.3.0_amd64.AppImage
-./claude-config-manager_1.3.0_amd64.AppImage
+chmod +x claude-config-manager_1.4.0_amd64.AppImage
+./claude-config-manager_1.4.0_amd64.AppImage
 ```
 
 **macOS:**
@@ -121,7 +116,7 @@ chmod +x claude-config-manager_1.3.0_amd64.AppImage
 **Linux/macOS:**
 ```bash
 # 解压 tar.gz 文件
-tar -xzf claude-config-cli-1.3.0-*.tar.gz
+tar -xzf claude-config-cli-1.4.0-*.tar.gz
 
 # 安装到系统（可选）
 sudo cp claude-config-* /usr/local/bin/claude-config
@@ -130,6 +125,22 @@ sudo chmod +x /usr/local/bin/claude-config
 # 运行
 claude-config
 ```
+
+## 🔄 升级说明
+
+### 从 v1.3.0 升级
+
+**好消息！** 本版本支持自动迁移，无需任何手动操作：
+
+1. 直接安装 v1.4.0 版本（会覆盖旧版本）
+2. 首次启动时会自动检测并迁移数据库
+3. 所有数据完全保留，无需备份
+4. 迁移完成后即可正常使用
+
+**迁移内容**:
+- ✅ 自动添加 model 字段到 accounts 表
+- ✅ 保留所有现有账号和配置数据
+- ✅ 更新数据库默认值设置
 
 ## 🚀 快速开始
 
@@ -146,6 +157,7 @@ claude-config
 - 🔐 **多账号管理** - 管理多个 Claude API 账号
 - 📁 **目录管理** - 管理多个项目目录
 - ⚡ **一键切换** - 快速切换不同项目的配置
+- 🎯 **模型配置** - 为每个账号指定特定的 Claude 模型
 - 🌐 **URL 管理** - 管理不同的 API 端点
 - 🗄️ **数据库管理** - SQLite/MySQL 双数据库支持
 - ☁️ **WebDAV 同步** - 云端备份和多设备同步
