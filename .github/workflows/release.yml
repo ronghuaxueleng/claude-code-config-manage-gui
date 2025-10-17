@@ -172,6 +172,11 @@ jobs:
       - name: Build Tauri app
         run: npm run build
 
+      - name: List build artifacts (Debug)
+        run: |
+          echo "=== Listing bundle directory ==="
+          ls -R src-tauri/target/release/bundle/ || echo "Bundle directory not found"
+
       - name: Upload Release Assets (Windows - NSIS)
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-release-asset@v1
