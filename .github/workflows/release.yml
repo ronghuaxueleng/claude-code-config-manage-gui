@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*'
 
+# 声明工作流所需权限
+permissions:
+  contents: write  # 允许创建 Release 和上传资产
+
 env:
   CARGO_TERM_COLOR: always
 
