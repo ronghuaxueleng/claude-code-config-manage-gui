@@ -199,17 +199,6 @@ jobs:
           asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64_zh-CN.msi
           asset_content_type: application/x-msi
 
-      - name: Upload Release Assets (Windows - MSI en-US)
-        if: matrix.platform == 'windows-latest'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/msi/claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64_en-US.msi
-          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64_en-US.msi
-          asset_content_type: application/x-msi
-
       - name: Upload Release Assets (Linux - DEB)
         if: matrix.platform == 'ubuntu-22.04'
         uses: actions/upload-release-asset@v1
