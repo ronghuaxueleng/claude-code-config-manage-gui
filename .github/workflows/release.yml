@@ -184,8 +184,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/nsis/claude-config-manager_${{ needs.create-release.outputs.version }}_x64-setup.exe
-          asset_name: claude-config-manager_${{ needs.create-release.outputs.version }}_x64-setup.exe
+          asset_path: ./src-tauri/target/release/bundle/nsis/claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64-setup.exe
+          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64-setup.exe
           asset_content_type: application/x-msdownload
 
       - name: Upload Release Assets (Windows - MSI zh-CN)
@@ -195,8 +195,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/msi/claude-config-manager_${{ needs.create-release.outputs.version }}_x64_zh-CN.msi
-          asset_name: claude-config-manager_${{ needs.create-release.outputs.version }}_x64_zh-CN.msi
+          asset_path: ./src-tauri/target/release/bundle/msi/claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64_zh-CN.msi
+          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64_zh-CN.msi
           asset_content_type: application/x-msi
 
       - name: Upload Release Assets (Windows - MSI en-US)
@@ -206,8 +206,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/msi/claude-config-manager_${{ needs.create-release.outputs.version }}_x64_en-US.msi
-          asset_name: claude-config-manager_${{ needs.create-release.outputs.version }}_x64_en-US.msi
+          asset_path: ./src-tauri/target/release/bundle/msi/claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64_en-US.msi
+          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64_en-US.msi
           asset_content_type: application/x-msi
 
       - name: Upload Release Assets (Linux - DEB)
@@ -217,8 +217,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/deb/claude-config-manager_${{ needs.create-release.outputs.version }}_amd64.deb
-          asset_name: claude-config-manager_${{ needs.create-release.outputs.version }}_amd64.deb
+          asset_path: ./src-tauri/target/release/bundle/deb/claude-code-config-manager_${{ needs.create-release.outputs.version }}_amd64.deb
+          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_amd64.deb
           asset_content_type: application/vnd.debian.binary-package
 
       - name: Upload Release Assets (Linux - AppImage)
@@ -228,8 +228,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/appimage/claude-config-manager_${{ needs.create-release.outputs.version }}_amd64.AppImage
-          asset_name: claude-config-manager_${{ needs.create-release.outputs.version }}_amd64.AppImage
+          asset_path: ./src-tauri/target/release/bundle/appimage/claude-code-config-manager_${{ needs.create-release.outputs.version }}_amd64.AppImage
+          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_amd64.AppImage
           asset_content_type: application/x-executable
 
       - name: Upload Release Assets (macOS - DMG)
@@ -239,8 +239,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./src-tauri/target/release/bundle/dmg/claude-config-manager_${{ needs.create-release.outputs.version }}_x64.dmg
-          asset_name: claude-config-manager_${{ needs.create-release.outputs.version }}_x64.dmg
+          asset_path: ./src-tauri/target/release/bundle/dmg/claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64.dmg
+          asset_name: claude-code-config-manager_${{ needs.create-release.outputs.version }}_x64.dmg
           asset_content_type: application/x-apple-diskimage
 
   build-cli:
