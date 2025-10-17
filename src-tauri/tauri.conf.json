@@ -25,7 +25,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "wix"],
+    "targets": "all",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -40,16 +40,7 @@
     ],
     "windows": {
       "wix": {
-        "language": ["zh-CN", "en-US"],
-        "template": null,
-        "fragmentPaths": [],
-        "componentRefs": [],
-        "featureRefs": [],
-        "mergeRefs": [],
-        "skipWebviewInstall": false,
-        "enableElevatedUpdateInstall": true,
-        "bannerPath": null,
-        "dialogImagePath": null
+        "language": "zh-CN"
       },
       "nsis": {
         "languages": ["SimpChinese", "English"],
