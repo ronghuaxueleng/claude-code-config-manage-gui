@@ -12,6 +12,7 @@ fn write_claude_settings(
     account_token: &str,
     account_base_url: &str,
     account_model: &str,
+    account_name: &str,
     skip_permissions: bool,
 ) -> Result<()> {
     use serde_json::Value;
@@ -72,6 +73,10 @@ fn write_claude_settings(
         "ANTHROPIC_BASE_URL".to_string(),
         Value::String(account_base_url.to_string()),
     );
+    env_obj.insert(
+        "USER_NAME".to_string(),
+        Value::String(account_name.to_string()),
+    );
 
     // 添加模型配置（如果账号设置了模型）
     if !account_model.is_empty() {
@@ -81,6 +86,16 @@ fn write_claude_settings(
         );
     }
 
+    // 添加 statusLine 配置
+    settings_obj.insert(
+        "statusLine".to_string(),
+        serde_json::json!({
+            "type": "command",
+            "command": "node \".claude/show-status.mjs\"",
+            "padding": 0
+        }),
+    );
+
     // 创建 .claude 目录
     let claude_dir = Path::new(directory_path).join(".claude");
     fs::create_dir_all(&claude_dir)?;
@@ -89,6 +104,13 @@ fn write_claude_settings(
     let settings_file = claude_dir.join("settings.local.json");
     let settings_json = serde_json::to_string_pretty(&claude_settings)?;
     fs::write(&settings_file, settings_json)?;
+
+    // Copy show-status.mjs to .claude directory
+    let status_script_content = include_str!("../../resources/config/show-status.mjs");
+    let status_script_file = claude_dir.join("show-status.mjs");
+    if let Err(e) = fs::write(&status_script_file, status_script_content) {
+        eprintln!("警告: 复制 show-status.mjs 失败: {}，但不影响主要功能", e);
+    }
 
     Ok(())
 }
@@ -222,6 +244,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                         &account.token,
                         &account.base_url,
                         &account.model,
+                        &account.name,
                         skip_permissions,
                     ) {
                         Ok(_) => {

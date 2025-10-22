@@ -409,6 +409,19 @@ async fn switch_account(
                 tracing::warn!("复制 remove-root-check.sh 失败: {}，但不影响主要功能", e);
             }
         }
+
+        // Copy show-status.mjs to .claude directory
+        let status_script_content = include_str!("../resources/config/show-status.mjs");
+        let status_script_file = claude_dir.join("show-status.mjs");
+
+        match std::fs::write(&status_script_file, status_script_content) {
+            Ok(_) => {
+                tracing::info!("show-status.mjs 已复制到: {}", status_script_file.display());
+            }
+            Err(e) => {
+                tracing::warn!("复制 show-status.mjs 失败: {}，但不影响主要功能", e);
+            }
+        }
     }
 
     Ok(message)
@@ -1231,12 +1244,20 @@ async fn switch_account_with_claude_settings(
     }
     
     let env_obj = settings_obj.get_mut("env").unwrap().as_object_mut().unwrap();
-    
+
     // Add account-specific environment variables using cloned values
     env_obj.insert("ANTHROPIC_API_KEY".to_string(), serde_json::Value::String(account_token.clone()));
     env_obj.insert("ANTHROPIC_AUTH_TOKEN".to_string(), serde_json::Value::String(account_token));
     env_obj.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(account_base_url));
-    
+    env_obj.insert("USER_NAME".to_string(), serde_json::Value::String(account.name.clone()));
+
+    // Add statusLine configuration
+    settings_obj.insert("statusLine".to_string(), serde_json::json!({
+        "type": "command",
+        "command": "node \".claude/show-status.mjs\"",
+        "padding": 0
+    }));
+
     let settings_file = claude_dir.join("settings.local.json");
     let settings_json = serde_json::to_string_pretty(&merged_settings)
         .map_err(|e| format!("序列化Claude设置失败: {}", e))?;
@@ -1348,6 +1369,19 @@ async fn switch_account_with_claude_settings(
         }
         Err(e) => {
             tracing::warn!("复制 remove-root-check.sh 失败: {}，但不影响主要功能", e);
+        }
+    }
+
+    // Copy show-status.mjs to .claude directory
+    let status_script_content = include_str!("../resources/config/show-status.mjs");
+    let status_script_file = claude_dir.join("show-status.mjs");
+
+    match std::fs::write(&status_script_file, status_script_content) {
+        Ok(_) => {
+            tracing::info!("show-status.mjs 已复制到: {}", status_script_file.display());
+        }
+        Err(e) => {
+            tracing::warn!("复制 show-status.mjs 失败: {}，但不影响主要功能", e);
         }
     }
 
