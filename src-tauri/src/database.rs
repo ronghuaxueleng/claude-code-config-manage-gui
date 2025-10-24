@@ -284,6 +284,7 @@ impl Database {
                 name TEXT NOT NULL UNIQUE,
                 url TEXT NOT NULL UNIQUE,
                 description TEXT,
+                api_key TEXT NOT NULL DEFAULT 'ANTHROPIC_API_KEY',
                 is_default BOOLEAN NOT NULL DEFAULT FALSE,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -399,6 +400,24 @@ impl Database {
             info!("accounts 表已包含 model 字段，无需添加");
         }
 
+        // 检查 base_urls 表是否存在 api_key 字段
+        let has_api_key_field: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pragma_table_info('base_urls') WHERE name = 'api_key'"
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        if has_api_key_field == 0 {
+            // 添加 api_key 字段
+            info!("检测到 base_urls 表缺少 api_key 字段，开始添加...");
+            sqlx::query("ALTER TABLE base_urls ADD COLUMN api_key TEXT NOT NULL DEFAULT 'ANTHROPIC_API_KEY'")
+                .execute(&self.pool)
+                .await?;
+            info!("已成功添加 api_key 字段到 base_urls 表");
+        } else {
+            info!("base_urls 表已包含 api_key 字段，无需添加");
+        }
+
         // 重新运行所有表创建语句（使用 IF NOT EXISTS，不会影响现有表）
         self.initialize().await?;
 
@@ -413,18 +432,19 @@ impl Database {
 
         if count == 0 {
             let default_urls = vec![
-                ("Anthropic官方", "https://api.anthropic.com", "Anthropic官方API地址", true),
+                ("Anthropic官方", "https://api.anthropic.com", "Anthropic官方API地址", "ANTHROPIC_API_KEY", true),
                 // 只保留官方API端点，移除网页版
             ];
 
-            for (name, url, description, is_default) in default_urls {
+            for (name, url, description, api_key, is_default) in default_urls {
                 sqlx::query(
-                    "INSERT INTO base_urls (name, url, description, is_default, created_at, updated_at) 
-                     VALUES (?, ?, ?, ?, ?, ?)"
+                    "INSERT INTO base_urls (name, url, description, api_key, is_default, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)"
                 )
                 .bind(name)
                 .bind(url)
                 .bind(description)
+                .bind(api_key)
                 .bind(is_default)
                 .bind(Utc::now())
                 .bind(Utc::now())
@@ -761,6 +781,7 @@ impl Database {
     pub async fn create_base_url(&self, request: CreateBaseUrlRequest) -> Result<BaseUrl, SqlxError> {
         let now = Utc::now();
         let is_default = request.is_default.unwrap_or(false);
+        let api_key = request.api_key.unwrap_or_else(|| "ANTHROPIC_API_KEY".to_string());
 
         // If setting as default, unset other defaults
         if is_default {
@@ -770,12 +791,13 @@ impl Database {
         }
 
         let result = sqlx::query(
-            "INSERT INTO base_urls (name, url, description, is_default, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO base_urls (name, url, description, api_key, is_default, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
         )
         .bind(&request.name)
         .bind(&request.url)
         .bind(&request.description)
+        .bind(&api_key)
         .bind(is_default)
         .bind(now)
         .bind(now)
@@ -814,6 +836,9 @@ impl Database {
         if let Some(_description) = &request.description {
             updates.push("description = ?");
         }
+        if let Some(_api_key) = &request.api_key {
+            updates.push("api_key = ?");
+        }
         if let Some(_is_default) = request.is_default {
             updates.push("is_default = ?");
         }
@@ -835,6 +860,9 @@ impl Database {
         }
         if let Some(description) = &request.description {
             q = q.bind(description);
+        }
+        if let Some(api_key) = &request.api_key {
+            q = q.bind(api_key);
         }
         if let Some(is_default) = request.is_default {
             q = q.bind(is_default);

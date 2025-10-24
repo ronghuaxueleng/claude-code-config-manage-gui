@@ -64,6 +64,9 @@ async fn list_base_urls(db: &DbState) -> Result<()> {
         Cell::new(t!("url.list.header_description"))
             .add_attribute(Attribute::Bold)
             .fg(Color::Cyan),
+        Cell::new(t!("url.list.header_api_key"))
+            .add_attribute(Attribute::Bold)
+            .fg(Color::Cyan),
         Cell::new(t!("url.list.header_default"))
             .add_attribute(Attribute::Bold)
             .fg(Color::Cyan),
@@ -81,6 +84,7 @@ async fn list_base_urls(db: &DbState) -> Result<()> {
             base_url.name.clone(),
             base_url.url.clone(),
             description.to_string(),
+            base_url.api_key.clone(),
             is_default.to_string(),
         ]);
     }
@@ -126,6 +130,18 @@ async fn add_base_url(db: &DbState) -> Result<()> {
         .allow_empty(true)
         .interact_text()?;
 
+    let api_key: String = Input::new()
+        .with_prompt(t!("url.add.prompt_api_key"))
+        .default("ANTHROPIC_API_KEY".to_string())
+        .allow_empty(true)
+        .interact_text()?;
+
+    let api_key = if api_key.trim().is_empty() {
+        "ANTHROPIC_API_KEY".to_string()
+    } else {
+        api_key
+    };
+
     let is_default = Confirm::new()
         .with_prompt(t!("url.add.prompt_default"))
         .default(false)
@@ -140,6 +156,7 @@ async fn add_base_url(db: &DbState) -> Result<()> {
         } else {
             Some(description)
         },
+        api_key: Some(api_key),
         is_default: Some(is_default),
     };
 
@@ -212,6 +229,18 @@ async fn edit_base_url(db: &DbState) -> Result<()> {
             .allow_empty(true)
             .interact_text()?;
 
+        let api_key: String = Input::new()
+            .with_prompt(t!("url.add.prompt_api_key"))
+            .default(base_url.api_key.clone())
+            .allow_empty(true)
+            .interact_text()?;
+
+        let api_key = if api_key.trim().is_empty() {
+            "ANTHROPIC_API_KEY".to_string()
+        } else {
+            api_key
+        };
+
         let is_default = Confirm::new()
             .with_prompt(t!("url.add.prompt_default"))
             .default(base_url.is_default)
@@ -226,6 +255,7 @@ async fn edit_base_url(db: &DbState) -> Result<()> {
             } else {
                 Some(description)
             },
+            api_key: Some(api_key),
             is_default: Some(is_default),
         };
 

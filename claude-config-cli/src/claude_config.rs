@@ -102,6 +102,7 @@ impl ClaudeConfigManager {
         &self,
         token: String,
         base_url: String,
+        api_key_name: String,
         is_sandbox: bool,
     ) -> Result<bool> {
         let mut settings = self.read_settings()?;
@@ -111,10 +112,11 @@ impl ClaudeConfigManager {
         }
 
         let mut env_config = json!({
-            "ANTHROPIC_API_KEY": token,
-            "ANTHROPIC_AUTH_TOKEN": token,
             "ANTHROPIC_BASE_URL": base_url,
         });
+
+        // 根据 api_key_name 参数决定使用哪个环境变量名
+        env_config[&api_key_name] = json!(token);
 
         // 添加可选的环境变量
         if is_sandbox {

@@ -129,12 +129,19 @@ async function tauriGetBaseUrls() {
     return await invoke('get_base_urls');
 }
 
-async function tauriCreateBaseUrl(name, url, description, is_default) {
-    return await invoke('create_base_url', { name, url, description, is_default });
+async function tauriCreateBaseUrl(name, url, description, api_key, is_default) {
+    return await invoke('create_base_url', { name, url, description, apiKey: api_key, isDefault: is_default });
 }
 
 async function tauriUpdateBaseUrl(id, params) {
-    return await invoke('update_base_url', { id, ...params });
+    // 将参数名转换为驼峰式以匹配 Tauri 命令
+    const requestParams = { id };
+    if (params.name !== undefined) requestParams.name = params.name;
+    if (params.url !== undefined) requestParams.url = params.url;
+    if (params.description !== undefined) requestParams.description = params.description;
+    if (params.api_key !== undefined) requestParams.apiKey = params.api_key;
+    if (params.is_default !== undefined) requestParams.isDefault = params.is_default;
+    return await invoke('update_base_url', requestParams);
 }
 
 async function tauriDeleteBaseUrl(id) {
@@ -1690,12 +1697,12 @@ async function loadBaseUrls() {
 // Render base URLs list
 function renderBaseUrls() {
     const container = document.getElementById('urlsList');
-    
+
     if (baseUrls.length === 0) {
         container.innerHTML = '<div class="text-muted">' + window.i18n.t('text.no_urls') + '</div>';
         return;
     }
-    
+
     container.innerHTML = baseUrls.map(url => `
         <div class="list-group-item">
             <div class="url-item">
@@ -1705,6 +1712,7 @@ function renderBaseUrls() {
                     </div>
                     <div class="small text-muted">${url.url}</div>
                     ${url.description ? `<div class="small">${url.description}</div>` : ''}
+                    ${url.api_key ? `<div class="small text-info"><i class="fas fa-key me-1"></i>${window.i18n.t('urls.api_key')}: ${url.api_key}</div>` : ''}
                 </div>
                 <div class="url-actions">
                     <button class="btn btn-sm btn-outline-primary" onclick="editBaseUrl(${url.id})">${window.i18n.t('text.edit')}</button>
@@ -1736,6 +1744,7 @@ async function saveBaseUrl() {
     const name = document.getElementById('urlName').value.trim();
     const url = document.getElementById('urlAddress').value.trim();
     const description = document.getElementById('urlDescription').value;
+    const apiKey = document.getElementById('urlApiKey').value.trim();
     const isDefault = document.getElementById('urlIsDefault').checked;
 
     if (!name || !url) {
@@ -1756,15 +1765,15 @@ async function saveBaseUrl() {
         showError(window.i18n.t('validation.url_must_http'));
         return;
     }
-    
+
     try {
-        await tauriCreateBaseUrl(name, url, description, isDefault);
-        
+        await tauriCreateBaseUrl(name, url, description, apiKey, isDefault);
+
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('urlModal'));
         modal.hide();
         document.getElementById('urlForm').reset();
-        
+
         // Reload URL list
         await loadBaseUrls();
         showSuccess(window.i18n.t('success.url_added'));
@@ -1789,11 +1798,12 @@ async function editBaseUrl(urlId) {
             showError(window.i18n.t('error.url_not_found'));
             return;
         }
-        
+
         // Fill form
         document.getElementById('urlName').value = url.name;
         document.getElementById('urlAddress').value = url.url;
         document.getElementById('urlDescription').value = url.description || '';
+        document.getElementById('urlApiKey').value = url.api_key || 'ANTHROPIC_API_KEY';
         document.getElementById('urlIsDefault').checked = url.is_default;
         
         // Change modal title
@@ -1829,13 +1839,14 @@ async function updateBaseUrl(urlId) {
     const name = document.getElementById('urlName').value.trim();
     const url = document.getElementById('urlAddress').value.trim();
     const description = document.getElementById('urlDescription').value;
+    const apiKey = document.getElementById('urlApiKey').value.trim();
     const isDefault = document.getElementById('urlIsDefault').checked;
-    
+
     if (!name || !url) {
         showError(window.i18n.t('validation.required_fields'));
         return;
     }
-    
+
     // 验证URL格式
     try {
         new URL(url);
@@ -1849,9 +1860,9 @@ async function updateBaseUrl(urlId) {
         showError(window.i18n.t('validation.url_must_http'));
         return;
     }
-    
+
     try {
-        await tauriUpdateBaseUrl(urlId, { name, url, description, is_default: isDefault });
+        await tauriUpdateBaseUrl(urlId, { name, url, description, api_key: apiKey, is_default: isDefault });
         
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('urlModal'));

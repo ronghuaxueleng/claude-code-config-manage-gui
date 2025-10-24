@@ -451,6 +451,10 @@ async fn download_config(db: &DbState) -> Result<()> {
                                     .get("description")
                                     .and_then(|v| v.as_str())
                                     .map(|s| s.to_string());
+                                let api_key = base_url_data
+                                    .get("api_key")
+                                    .and_then(|v| v.as_str())
+                                    .map(|s| s.to_string());
                                 let is_default =
                                     base_url_data.get("is_default").and_then(|v| v.as_bool());
 
@@ -458,6 +462,7 @@ async fn download_config(db: &DbState) -> Result<()> {
                                     name: name.to_string(),
                                     url: url.to_string(),
                                     description,
+                                    api_key,
                                     is_default,
                                 };
 

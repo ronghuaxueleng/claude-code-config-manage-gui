@@ -240,19 +240,22 @@ async fn get_base_urls(db: State<'_, DbState>) -> Result<Vec<BaseUrl>, String> {
 }
 
 #[tauri::command]
+#[allow(non_snake_case)]
 async fn create_base_url(
     db: State<'_, DbState>,
     name: String,
     url: String,
     description: Option<String>,
-    is_default: Option<bool>,
+    apiKey: Option<String>,
+    isDefault: Option<bool>,
 ) -> Result<BaseUrl, String> {
     let db = db.lock().await;
     let request = CreateBaseUrlRequest {
         name,
         url,
         description,
-        is_default,
+        api_key: apiKey,
+        is_default: isDefault,
     };
     
     db.create_base_url(request)
@@ -270,20 +273,23 @@ async fn create_base_url(
 }
 
 #[tauri::command]
+#[allow(non_snake_case)]
 async fn update_base_url(
     db: State<'_, DbState>,
     id: i64,
     name: Option<String>,
     url: Option<String>,
     description: Option<String>,
-    is_default: Option<bool>,
+    apiKey: Option<String>,
+    isDefault: Option<bool>,
 ) -> Result<BaseUrl, String> {
     let db = db.lock().await;
     let request = UpdateBaseUrlRequest {
         name,
         url,
         description,
-        is_default,
+        api_key: apiKey,
+        is_default: isDefault,
     };
     
     db.update_base_url(id, request)
@@ -363,7 +369,20 @@ async fn switch_account(
         tracing::error!("获取目录信息失败: {}", e);
         e.to_string()
     })?;
-    
+
+    // 获取所有 BaseUrl 列表
+    let base_urls = db_lock.get_base_urls().await.map_err(|e| {
+        tracing::error!("获取 BaseUrl 列表失败: {}", e);
+        e.to_string()
+    })?;
+
+    // 查找与 account.base_url 匹配的 BaseUrl，获取其 api_key
+    let api_key_name = base_urls
+        .iter()
+        .find(|bu| bu.url == account.base_url)
+        .map(|bu| bu.api_key.clone())
+        .unwrap_or_else(|| "ANTHROPIC_API_KEY".to_string());
+
     drop(db_lock); // Release the lock before doing file operations
 
     // Update Claude configuration file
@@ -372,6 +391,7 @@ async fn switch_account(
         .update_env_config_with_options(
             account.token,
             account.base_url,
+            api_key_name,
             isSandbox.unwrap_or(true)
         )
         .map_err(|e| e.to_string())?;
@@ -1055,6 +1075,9 @@ async fn download_config_from_webdav(
                 let description = base_url_data.get("description")
                     .and_then(|v| v.as_str())
                     .map(|s| s.to_string());
+                let api_key = base_url_data.get("api_key")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
                 let is_default = base_url_data.get("is_default")
                     .and_then(|v| v.as_bool());
 
@@ -1062,6 +1085,7 @@ async fn download_config_from_webdav(
                     name: name.to_string(),
                     url: url.to_string(),
                     description,
+                    api_key,
                     is_default,
                 };
 
@@ -1182,7 +1206,7 @@ async fn switch_account_with_claude_settings(
 ) -> Result<String, String> {
     tracing::info!("切换账号并写入Claude设置: accountId={}, directoryId={}, isSandbox={:?}", accountId, directoryId, isSandbox);
     let db_lock = db.lock().await;
-    
+
     // Switch in database
     let request = SwitchAccountRequest {
         account_id: accountId,
@@ -1198,7 +1222,7 @@ async fn switch_account_with_claude_settings(
             return Err(format!("数据库切换失败: {}", e));
         }
     };
-    
+
     // Get account and directory info
     let account = db_lock.get_account(accountId).await.map_err(|e| {
         tracing::error!("获取账号信息失败: {}", e);
@@ -1208,46 +1232,59 @@ async fn switch_account_with_claude_settings(
         tracing::error!("获取目录信息失败: {}", e);
         e.to_string()
     })?;
-    
+
+    // 获取所有 BaseUrl 列表
+    let base_urls = db_lock.get_base_urls().await.map_err(|e| {
+        tracing::error!("获取 BaseUrl 列表失败: {}", e);
+        e.to_string()
+    })?;
+
+    // 查找与 account.base_url 匹配的 BaseUrl，获取其 api_key
+    let api_key_name = base_urls
+        .iter()
+        .find(|bu| bu.url == account.base_url)
+        .map(|bu| bu.api_key.clone())
+        .unwrap_or_else(|| "ANTHROPIC_API_KEY".to_string());
+
     drop(db_lock); // Release the lock before doing file operations
-    
+
     // Clone account information before using it
     let account_token = account.token.clone();
     let account_base_url = account.base_url.clone();
-    
+
     // Update Claude configuration file with environment setup
     let config_manager = ClaudeConfigManager::new(directory.path.clone());
     config_manager
         .update_env_config_with_options(
-            account.token, 
+            account.token,
             account.base_url,
+            api_key_name.clone(),
             isSandbox.unwrap_or(true)
         )
         .map_err(|e| e.to_string())?;
-    
+
     // Write Claude settings to .claude/settings.local.json with merged environment variables
     let claude_dir = std::path::Path::new(&directory.path).join(".claude");
     std::fs::create_dir_all(&claude_dir)
         .map_err(|e| format!("创建.claude目录失败: {}", e))?;
-    
+
     // Merge Claude settings with account environment variables
     let mut merged_settings = claudeSettings.clone();
-    
+
     // Ensure env section exists
     if !merged_settings.is_object() {
         merged_settings = serde_json::json!({});
     }
     let settings_obj = merged_settings.as_object_mut().unwrap();
-    
+
     if !settings_obj.contains_key("env") {
         settings_obj.insert("env".to_string(), serde_json::json!({}));
     }
-    
+
     let env_obj = settings_obj.get_mut("env").unwrap().as_object_mut().unwrap();
 
-    // Add account-specific environment variables using cloned values
-    env_obj.insert("ANTHROPIC_API_KEY".to_string(), serde_json::Value::String(account_token.clone()));
-    env_obj.insert("ANTHROPIC_AUTH_TOKEN".to_string(), serde_json::Value::String(account_token));
+    // Add account-specific environment variables - 根据 api_key_name 参数决定使用哪个环境变量名
+    env_obj.insert(api_key_name.clone(), serde_json::Value::String(account_token.clone()));
     env_obj.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(account_base_url));
     env_obj.insert("USER_NAME".to_string(), serde_json::Value::String(account.name.clone()));
 

@@ -207,6 +207,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("url.list.header_name", "名称");
     zh_cn.insert("url.list.header_url", "URL");
     zh_cn.insert("url.list.header_description", "描述");
+    zh_cn.insert("url.list.header_api_key", "API Key 环境变量");
     zh_cn.insert("url.list.header_default", "默认");
     zh_cn.insert("url.list.default_yes", "是");
     zh_cn.insert("url.list.default_no", "否");
@@ -215,6 +216,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("url.add.prompt_name", "名称");
     zh_cn.insert("url.add.prompt_url", "URL");
     zh_cn.insert("url.add.prompt_description", "描述（可选）");
+    zh_cn.insert("url.add.prompt_api_key", "API Key 环境变量名（默认: ANTHROPIC_API_KEY）");
     zh_cn.insert("url.add.prompt_default", "设为默认?");
     zh_cn.insert("url.add.success", "✓ URL '{}' 创建成功");
     zh_cn.insert("url.add.error", "✗ 创建失败: {}");
@@ -501,6 +503,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("url.list.header_name", "Name");
     en_us.insert("url.list.header_url", "URL");
     en_us.insert("url.list.header_description", "Description");
+    en_us.insert("url.list.header_api_key", "API Key Env Var");
     en_us.insert("url.list.header_default", "Default");
     en_us.insert("url.list.default_yes", "Yes");
     en_us.insert("url.list.default_no", "No");
@@ -509,6 +512,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("url.add.prompt_name", "Name");
     en_us.insert("url.add.prompt_url", "URL");
     en_us.insert("url.add.prompt_description", "Description (Optional)");
+    en_us.insert("url.add.prompt_api_key", "API Key Environment Variable (Default: ANTHROPIC_API_KEY)");
     en_us.insert("url.add.prompt_default", "Set as default?");
     en_us.insert("url.add.success", "✓ URL '{}' created successfully");
     en_us.insert("url.add.error", "✗ Creation failed: {}");

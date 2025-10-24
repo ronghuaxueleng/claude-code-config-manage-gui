@@ -94,6 +94,9 @@ const translations = {
         'urls.address_placeholder': 'https://api.anthropic.com',
         'urls.description': '描述',
         'urls.description_placeholder': '可选的描述信息',
+        'urls.api_key': 'API Key 环境变量名',
+        'urls.api_key_placeholder': '例如: ANTHROPIC_API_KEY 或 CLAUDE_API_KEY',
+        'urls.api_key_help': '设置环境变量中 API Key 的变量名，默认为 ANTHROPIC_API_KEY',
         'urls.is_default': '设为默认URL',
         'urls.set_default': '设为默认URL',
 
@@ -581,6 +584,9 @@ const translations = {
         'urls.address_placeholder': 'https://api.anthropic.com',
         'urls.description': 'Description',
         'urls.description_placeholder': 'Optional description',
+        'urls.api_key': 'API Key Environment Variable',
+        'urls.api_key_placeholder': 'e.g., ANTHROPIC_API_KEY or CLAUDE_API_KEY',
+        'urls.api_key_help': 'Set the environment variable name for API Key, defaults to ANTHROPIC_API_KEY',
         'urls.is_default': 'Set as Default URL',
         'urls.set_default': 'Set as Default URL',
 

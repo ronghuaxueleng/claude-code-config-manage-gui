@@ -100,22 +100,24 @@ impl ClaudeConfigManager {
     }
 
     pub fn update_env_config_with_options(
-        &self, 
-        token: String, 
-        base_url: String, 
+        &self,
+        token: String,
+        base_url: String,
+        api_key_name: String,
         is_sandbox: bool
     ) -> Result<bool> {
         let mut settings = self.read_settings()?;
-        
+
         if !settings.is_object() {
             settings = json!({});
         }
 
         let mut env_config = json!({
-            "ANTHROPIC_API_KEY": token,
-            "ANTHROPIC_AUTH_TOKEN": token,
             "ANTHROPIC_BASE_URL": base_url,
         });
+
+        // 根据 api_key_name 参数决定使用哪个环境变量名
+        env_config[&api_key_name] = json!(token);
 
         // 添加可选的环境变量
         if is_sandbox {
@@ -123,12 +125,12 @@ impl ClaudeConfigManager {
         }
 
         settings["env"] = env_config;
-        
+
         self.write_settings(&settings)?;
-        
+
         // 复制 CLAUDE.local.md 文件
         self.copy_claude_local_md()?;
-        
+
         Ok(true)
     }
 

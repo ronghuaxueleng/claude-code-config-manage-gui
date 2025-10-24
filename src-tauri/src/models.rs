@@ -58,6 +58,7 @@ pub struct BaseUrl {
     pub name: String,
     pub url: String,
     pub description: Option<String>,
+    pub api_key: String,
     pub is_default: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -68,6 +69,7 @@ pub struct CreateBaseUrlRequest {
     pub name: String,
     pub url: String,
     pub description: Option<String>,
+    pub api_key: Option<String>,
     pub is_default: Option<bool>,
 }
 
@@ -76,6 +78,7 @@ pub struct UpdateBaseUrlRequest {
     pub name: Option<String>,
     pub url: Option<String>,
     pub description: Option<String>,
+    pub api_key: Option<String>,
     pub is_default: Option<bool>,
 }
 

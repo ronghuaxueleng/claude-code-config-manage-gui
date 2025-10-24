@@ -13,6 +13,7 @@ fn write_claude_settings(
     account_base_url: &str,
     account_model: &str,
     account_name: &str,
+    api_key_name: &str,
     skip_permissions: bool,
 ) -> Result<()> {
     use serde_json::Value;
@@ -60,13 +61,9 @@ fn write_claude_settings(
         .as_object_mut()
         .unwrap();
 
-    // 添加账号相关的环境变量
+    // 添加账号相关的环境变量 - 根据 api_key_name 参数决定使用哪个环境变量名
     env_obj.insert(
-        "ANTHROPIC_API_KEY".to_string(),
-        Value::String(account_token.to_string()),
-    );
-    env_obj.insert(
-        "ANTHROPIC_AUTH_TOKEN".to_string(),
+        api_key_name.to_string(),
         Value::String(account_token.to_string()),
     );
     env_obj.insert(
@@ -204,6 +201,16 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
 
     match db_lock.switch_account(request).await {
         Ok(_) => {
+            // 获取所有 BaseUrl 列表
+            let base_urls = db_lock.get_base_urls().await?;
+
+            // 查找与 account.base_url 匹配的 BaseUrl，获取其 api_key
+            let api_key_name = base_urls
+                .iter()
+                .find(|bu| bu.url == account.base_url)
+                .map(|bu| bu.api_key.clone())
+                .unwrap_or_else(|| "ANTHROPIC_API_KEY".to_string());
+
             // 获取 Claude 配置
             let claude_settings_json = match db_lock.get_claude_settings().await {
                 Ok(json) => json,
@@ -234,6 +241,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
             match config_manager.update_env_config_with_options(
                 account.token.clone(),
                 account.base_url.clone(),
+                api_key_name.clone(),
                 is_sandbox,
             ) {
                 Ok(_) => {
@@ -245,6 +253,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                         &account.base_url,
                         &account.model,
                         &account.name,
+                        &api_key_name,
                         skip_permissions,
                     ) {
                         Ok(_) => {

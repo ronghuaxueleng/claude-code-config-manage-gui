@@ -699,6 +699,13 @@
                             <input type="text" class="form-control" id="urlDescription"
                                    data-i18n-placeholder="urls.description_placeholder">
                         </div>
+                        <div class="mb-3">
+                            <label for="urlApiKey" class="form-label" data-i18n="urls.api_key">环境变量API KEY</label>
+                            <input type="text" class="form-control" id="urlApiKey"
+                                   value="ANTHROPIC_API_KEY"
+                                   data-i18n-placeholder="urls.api_key_placeholder">
+                            <div class="form-text" data-i18n="urls.api_key_help">设置环境变量中API KEY的变量名，默认为ANTHROPIC_API_KEY。你也可以输入自定义值。</div>
+                        </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="urlIsDefault">
                             <label class="form-check-label" for="urlIsDefault" data-i18n="urls.is_default">
