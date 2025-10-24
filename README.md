@@ -2,13 +2,12 @@
 
 🚀 一款基于 Tauri 框架构建的现代化 Claude Code 配置管理桌面应用程序，为开发者提供便捷的 Claude API 配置管理解决方案。
 
-> **✨ 最新更新 (v1.2.0)**
-> - ☁️ **新增 WebDAV 云同步**: 支持配置数据云端备份和多设备同步
-> - 🔄 **自动同步功能**: 可设置定时自动同步，实时备份配置
-> - 🚀 **脚本自动执行**: 切换账号时自动执行环境配置脚本
-> - 🔧 **改进错误处理**: 优化 WSL 命令检测，静默处理非关键错误
-> - 📝 **日志系统增强**: 分级日志记录，便于问题排查
-> - 🗄️ **数据库迁移优化**: 支持自动创建 WebDAV 相关表结构
+> **✨ 最新更新 (v1.5.0)**
+> - 🔑 **自定义 API Key 环境变量名**: 支持为不同的 Base URL 配置不同的 API Key 环境变量名
+> - 🐛 **Bug 修复**: 修复 GUI 版本 URL 更新时 api_key 不生效的问题
+> - 🌍 **国际化增强**: API Key 字段添加完整的中英文翻译支持
+> - 📦 **数据库优化**: base_urls 表新增 api_key 字段，默认值为 ANTHROPIC_API_KEY
+> - 🔄 **同步支持**: WebDAV 同步功能完整支持 API Key 配置的导入/导出
 
 ## ✨ 核心功能
 
@@ -32,6 +31,7 @@
 
 ### 🌐 API 端点管理
 - **多端点支持**: 管理不同的 Claude API 端点 URL
+- **自定义 API Key**: 为每个端点配置独立的环境变量名（如 ANTHROPIC_API_KEY、CLAUDE_API_KEY 等）
 - **预设模板**: 提供常用 API 端点的快速配置模板
 - **默认配置**: 支持设置默认 API 端点
 - **连接测试**: 内置 API 连接测试功能
@@ -241,6 +241,7 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
 | 功能特性 | 详细说明 |
 |----------|----------|
 | **🌍 多端点支持** | 管理官方和第三方 API 端点 |
+| **🔑 自定义 API Key** | 为每个端点配置独立的环境变量名（ANTHROPIC_API_KEY、CLAUDE_API_KEY 等） |
 | **⭐ 默认配置** | 设置常用端点为默认选项 |
 | **🧪 连接测试** | 内置 API 连接状态测试 |
 | **📝 描述标签** | 为每个端点添加描述和标签 |
@@ -286,8 +287,8 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
 | 命令 | 功能描述 | 参数 | 返回值 |
 |------|----------|------|---------|
 | `get_base_urls` | 获取 URL 列表 | - | URL 列表 |
-| `create_base_url` | 创建新 URL | `name`, `url`, `description`, `is_default` | 创建结果 |
-| `update_base_url` | 更新 URL 信息 | `id`, `name`, `url`, `description`, `is_default` | 更新结果 |
+| `create_base_url` | 创建新 URL | `name`, `url`, `description`, `apiKey`, `isDefault` | 创建结果 |
+| `update_base_url` | 更新 URL 信息 | `id`, `name`, `url`, `description`, `apiKey`, `isDefault` | 更新结果 |
 | `delete_base_url` | 删除 URL | `id` | 删除结果 |
 
 ### ⚡ 配置切换 API
@@ -358,11 +359,14 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
 
 | 变量名 | 作用 | 示例值 |
 |--------|------|--------|
-| `ANTHROPIC_API_KEY` | Claude API 密钥 | `sk-ant-xxx...` |
+| `ANTHROPIC_API_KEY` | Claude API 密钥（默认） | `sk-ant-xxx...` |
+| `CLAUDE_API_KEY` | Claude API 密钥（自定义名称） | `sk-ant-xxx...` |
 | `ANTHROPIC_AUTH_TOKEN` | 认证令牌 (同 API 密钥) | `sk-ant-xxx...` |
 | `ANTHROPIC_BASE_URL` | API 基础地址 | `https://api.anthropic.com` |
 | `IS_SANDBOX` | 沙盒模式 | `"1"` (启用) / `"0"` (禁用) |
 | `DISABLE_AUTOUPDATER` | 禁用自动更新 | `1` (禁用) / `0` (启用) |
+
+> **💡 提示**: v1.5.0 开始支持为不同的 Base URL 配置不同的 API Key 环境变量名。例如，官方 API 使用 `ANTHROPIC_API_KEY`，第三方 API 可使用 `CLAUDE_API_KEY` 等自定义名称。
 
 ## 🗄️ 数据存储架构
 
@@ -376,7 +380,7 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
 |------|------|----------|
 | **accounts** | 账号信息 | `id`, `name`, `token`, `base_url`, `model`, `is_active` |
 | **directories** | 目录信息 | `id`, `name`, `path`, `is_active` |
-| **base_urls** | API 端点 | `id`, `name`, `url`, `description`, `is_default` |
+| **base_urls** | API 端点 | `id`, `name`, `url`, `description`, `api_key`, `is_default` |
 | **account_directories** | 关联关系 | `account_id`, `directory_id`, `created_at` |
 | **claude_settings** | Claude 配置 | `id`, `settings_json`, `created_at` |
 | **webdav_configs** | WebDAV 配置 | `id`, `name`, `url`, `username`, `password`, `remote_path`, `auto_sync`, `sync_interval`, `is_active` |
