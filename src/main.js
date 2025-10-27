@@ -733,7 +733,7 @@ async function updateAccount(accountId) {
 function resetAccountModal() {
     document.getElementById('accountForm').reset();
     document.querySelector('#accountModal .modal-title').textContent = window.i18n.t('modal.add_account');
-    
+
     // Reset save button behavior
     const saveBtn = document.getElementById('saveAccount');
     // 移除可能存在的更新账号处理函数
@@ -745,6 +745,9 @@ function resetAccountModal() {
     saveBtn.removeEventListener('click', saveAccount);
     saveBtn.addEventListener('click', saveAccount);
     saveBtn.onclick = null; // 清除onclick属性
+
+    // 确保默认URL被选中
+    updateBaseUrlSelect();
 }
 
 // Prompt delete account - shows confirmation first
@@ -2103,12 +2106,18 @@ window.addEventListener("DOMContentLoaded", () => {
     accountModal.addEventListener('hidden.bs.modal', function () {
         resetAccountModal();
     });
-    
+
+    // 监听账号模态框显示事件，确保默认URL被选中
+    accountModal.addEventListener('show.bs.modal', function () {
+        // 确保在模态框显示时更新Base URL选择
+        updateBaseUrlSelect();
+    });
+
     const directoryModal = document.getElementById('directoryModal');
     directoryModal.addEventListener('hidden.bs.modal', function () {
         resetDirectoryModal();
     });
-    
+
     const urlModal = document.getElementById('urlModal');
     urlModal.addEventListener('hidden.bs.modal', function () {
         resetUrlModal();
