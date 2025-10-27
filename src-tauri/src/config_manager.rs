@@ -100,7 +100,15 @@ impl ConfigManager {
                 .parent()?
                 .join("resources")
                 .join(filename),
-            // Tauri打包后的路径
+            // macOS App Bundle: Contents/MacOS/executable -> Contents/Resources/resources/
+            std::env::current_exe()
+                .ok()?
+                .parent()?
+                .parent()?
+                .join("Resources")
+                .join("resources")
+                .join(filename),
+            // Tauri打包后的路径 (旧版本兼容)
             std::env::current_exe()
                 .ok()?
                 .parent()?
@@ -127,19 +135,45 @@ impl ConfigManager {
     }
     
     /// 获取应用数据目录（用于存储用户数据，如数据库文件）
-    /// Windows: %APPDATA%\claude-code-config-manager
-    /// Linux/Mac: ~/.claude-code-config-manager
+    /// Windows: %APPDATA%\claude-config-manager
+    /// Linux/Mac: ~/.claude-config-manager
     #[allow(dead_code)]
     pub fn get_app_data_dir() -> Option<PathBuf> {
-        let home_dir = std::env::var("APPDATA")
-            .or_else(|_| std::env::var("HOME"))
-            .or_else(|_| std::env::var("USERPROFILE"))
-            .ok()?;
+        // 跨平台的应用数据目录获取
+        #[cfg(target_os = "windows")]
+        {
+            // Windows: 使用 APPDATA 目录，不加点前缀
+            if let Ok(appdata) = std::env::var("APPDATA") {
+                let app_data_dir = PathBuf::from(appdata).join("claude-config-manager");
+                println!("Windows应用数据目录: {}", app_data_dir.display());
+                return Some(app_data_dir);
+            }
+        }
 
-        let app_data_dir = PathBuf::from(home_dir).join(".claude-code-config-manager");
+        #[cfg(not(target_os = "windows"))]
+        {
+            // Linux/macOS: 使用 HOME 目录，加点前缀
+            if let Ok(home) = std::env::var("HOME") {
+                let app_data_dir = PathBuf::from(home).join(".claude-config-manager");
+                println!("Unix应用数据目录: {}", app_data_dir.display());
+                return Some(app_data_dir);
+            }
+        }
 
-        println!("应用数据目录: {}", app_data_dir.display());
-        Some(app_data_dir)
+        // 回退方案：使用 USERPROFILE (Windows) 或 HOME
+        if let Ok(user_dir) = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")) {
+            #[cfg(target_os = "windows")]
+            let app_data_dir = PathBuf::from(user_dir).join("claude-config-manager");
+
+            #[cfg(not(target_os = "windows"))]
+            let app_data_dir = PathBuf::from(user_dir).join(".claude-config-manager");
+
+            println!("回退应用数据目录: {}", app_data_dir.display());
+            return Some(app_data_dir);
+        }
+
+        println!("无法确定应用数据目录");
+        None
     }
 
     /// 获取resources目录的路径（用于存储数据库等数据文件）
