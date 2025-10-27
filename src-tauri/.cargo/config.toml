@@ -1,6 +1,13 @@
 [source.crates-io]
 replace-with = 'ustc'
 
+# 当中国科学技术大学无法下载时，使用这套配置
+#replace-with = 'rsproxy-sparse'
+
+#[source.rsproxy-sparse]
+#registry = "sparse+https://rsproxy.cn/index/"
+
+
 # 中国科学技术大学
 [source.ustc]
 registry = "https://mirrors.ustc.edu.cn/crates.io-index"
