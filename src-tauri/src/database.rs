@@ -106,25 +106,161 @@ impl Database {
             let db_filename = database_url.replace("sqlite:///", "");
             info!("提取的数据库文件名: {}", db_filename);
 
-            // 使用程序目录下的 resources 目录存储数据库
-            let final_db_path = if let Some(resources_dir) = ConfigManager::get_resource_dir() {
-                info!("使用resources目录作为数据库位置: {}", resources_dir.display());
+            // 使用用户数据目录存储数据库（确保重装应用后数据不丢失）
+            let final_db_path = if let Some(user_data_dir) = ConfigManager::get_app_data_dir() {
+                info!("使用用户数据目录作为数据库位置: {}", user_data_dir.display());
 
-                // 确保 resources 目录存在
-                if !resources_dir.exists() {
-                    info!("创建 resources 目录: {}", resources_dir.display());
-                    std::fs::create_dir_all(&resources_dir)
-                        .map_err(|e| SqlxError::Configuration(format!("创建resources目录失败: {}", e).into()))?;
+                // 确保用户数据目录存在
+                if !user_data_dir.exists() {
+                    info!("创建用户数据目录: {}", user_data_dir.display());
+                    std::fs::create_dir_all(&user_data_dir)
+                        .map_err(|e| SqlxError::Configuration(format!("创建用户数据目录失败: {}", e).into()))?;
                 }
 
-                resources_dir.join(&db_filename)
+                user_data_dir.join(&db_filename)
             } else {
-                // 如果无法获取 resources 目录，使用当前目录
-                warn!("无法获取resources目录，使用当前目录");
+                // 如果无法获取用户数据目录，使用当前目录
+                warn!("无法获取用户数据目录，使用当前目录");
                 let current_dir = std::env::current_dir()
                     .map_err(|e| SqlxError::Configuration(format!("获取当前目录失败: {}", e).into()))?;
                 current_dir.join(&db_filename)
             };
+
+            // 数据迁移：检查旧的数据库位置
+            if !final_db_path.exists() {
+                let mut migrated = false;
+
+                // 1. 检查应用内resources目录（旧版本的错误位置）
+                if let Some(old_resources_dir) = ConfigManager::get_resource_dir() {
+                    let old_db_path = old_resources_dir.join(&db_filename);
+                    if old_db_path.exists() {
+                        info!("发现旧版本数据库位置（应用内），开始迁移: {} -> {}", old_db_path.display(), final_db_path.display());
+                        match std::fs::copy(&old_db_path, &final_db_path) {
+                            Ok(_) => {
+                                info!("数据库迁移成功！");
+                                let _ = std::fs::remove_file(&old_db_path);
+                                info!("已清理旧数据库文件");
+                                migrated = true;
+                            }
+                            Err(e) => {
+                                warn!("数据库迁移失败: {}", e);
+                            }
+                        }
+                    }
+                }
+
+                // 2. 检查Windows平台可能的错误路径
+                if !migrated {
+                    #[cfg(target_os = "windows")]
+                    {
+                        // Windows可能的错误路径列表
+                        let mut possible_old_paths = Vec::new();
+
+                        // 错误路径1: %APPDATA%\.claude-config-manager (带点前缀的错误实现)
+                        if let Ok(appdata) = std::env::var("APPDATA") {
+                            possible_old_paths.push((
+                                PathBuf::from(appdata).join(".claude-config-manager").join(&db_filename),
+                                "APPDATA错误路径"
+                            ));
+                        }
+
+                        // 错误路径2: %USERPROFILE%\.claude-config-manager (回退逻辑可能导致)
+                        if let Ok(userprofile) = std::env::var("USERPROFILE") {
+                            possible_old_paths.push((
+                                PathBuf::from(userprofile).join(".claude-config-manager").join(&db_filename),
+                                "USERPROFILE错误路径"
+                            ));
+                        }
+
+                        // 错误路径3: %USERPROFILE%\claude-config-manager (可能的其他变体)
+                        if let Ok(userprofile) = std::env::var("USERPROFILE") {
+                            possible_old_paths.push((
+                                PathBuf::from(userprofile).join("claude-config-manager").join(&db_filename),
+                                "USERPROFILE变体路径"
+                            ));
+                        }
+
+                        // 尝试从这些路径迁移数据（安全迁移）
+                        for (old_path, path_type) in possible_old_paths {
+                            if old_path.exists() && old_path != final_db_path {
+                                // 检查文件大小，确保不是空文件
+                                if let Ok(metadata) = std::fs::metadata(&old_path) {
+                                    if metadata.len() == 0 {
+                                        warn!("跳过空的数据库文件: {}", old_path.display());
+                                        continue;
+                                    }
+
+                                    info!("发现Windows {}数据库 ({}字节)，开始迁移: {} -> {}",
+                                          path_type, metadata.len(), old_path.display(), final_db_path.display());
+
+                                    // 安全迁移：先复制，再验证，最后删除
+                                    match std::fs::copy(&old_path, &final_db_path) {
+                                        Ok(bytes_copied) => {
+                                            // 验证复制的完整性
+                                            if bytes_copied == metadata.len() {
+                                                // 再次验证目标文件存在且大小正确
+                                                if let Ok(new_metadata) = std::fs::metadata(&final_db_path) {
+                                                    if new_metadata.len() == metadata.len() {
+                                                        info!("Windows {}数据库迁移成功！({} 字节)", path_type, bytes_copied);
+
+                                                        // 安全地删除旧文件（只有在新文件验证通过后）
+                                                        match std::fs::remove_file(&old_path) {
+                                                            Ok(_) => {
+                                                                info!("已安全删除旧数据库文件: {}", old_path.display());
+
+                                                                // 尝试删除空目录（如果完全为空的话）
+                                                                if let Some(parent) = old_path.parent() {
+                                                                    if let Ok(entries) = std::fs::read_dir(parent) {
+                                                                        let entry_count = entries.count();
+                                                                        if entry_count == 0 {
+                                                                            if let Ok(_) = std::fs::remove_dir(parent) {
+                                                                                info!("已清理空的旧目录: {}", parent.display());
+                                                                            }
+                                                                        } else {
+                                                                            info!("旧目录不为空 ({} 项)，保留: {}", entry_count, parent.display());
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                            Err(e) => {
+                                                                warn!("删除旧数据库文件失败（但迁移成功）: {} - {}", old_path.display(), e);
+                                                            }
+                                                        }
+
+                                                        migrated = true;
+                                                        break; // 找到并迁移了一个，就停止
+                                                    } else {
+                                                        error!("迁移后文件大小不匹配！原:{} 新:{}", metadata.len(), new_metadata.len());
+                                                        // 删除可能损坏的文件
+                                                        let _ = std::fs::remove_file(&final_db_path);
+                                                    }
+                                                } else {
+                                                    error!("迁移后无法验证目标文件");
+                                                    let _ = std::fs::remove_file(&final_db_path);
+                                                }
+                                            } else {
+                                                error!("复制的字节数不匹配！期望:{} 实际:{}", metadata.len(), bytes_copied);
+                                                let _ = std::fs::remove_file(&final_db_path);
+                                            }
+                                        }
+                                        Err(e) => {
+                                            warn!("Windows {}数据库迁移失败: {}", path_type, e);
+                                        }
+                                    }
+                                } else {
+                                    warn!("无法读取旧数据库文件信息: {}", old_path.display());
+                                }
+                            }
+                        }
+                    }
+
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        // Unix: 检查是否存在其他可能的错误路径（如果有的话）
+                        // 当前Unix路径应该是正确的，但为了完整性保留此代码块
+                    }
+                }
+            }
 
             // 检查数据库文件状态
             match std::fs::metadata(&final_db_path) {
