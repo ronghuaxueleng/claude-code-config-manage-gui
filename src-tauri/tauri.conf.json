@@ -25,7 +25,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": [
+      "dmg"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -36,14 +38,18 @@
     "resources": [
       "resources/config.json",
       "resources/config/CLAUDE.local.md",
-      "resources/config/remove-root-check.sh"
+      "resources/config/remove-root-check.sh",
+      "resources/config/show-status.mjs"
     ],
     "windows": {
       "wix": {
         "language": "zh-CN"
       },
       "nsis": {
-        "languages": ["SimpChinese", "English"],
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
         "displayLanguageSelector": true,
         "installerIcon": "icons/icon.ico",
         "installMode": "both",

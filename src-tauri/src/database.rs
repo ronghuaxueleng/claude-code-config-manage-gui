@@ -380,46 +380,62 @@ impl Database {
 
     /// 迁移数据库，确保所有表都存在
     pub async fn migrate(&self) -> Result<(), SqlxError> {
-        info!("开始数据库迁移检查");
+        info!("开始数据库迁移和初始化");
+
+        // 首先运行初始化，确保所有表都存在（使用 IF NOT EXISTS，不会影响现有表）
+        self.initialize().await?;
+
+        // 然后检查并添加可能缺失的字段（针对已有数据库的升级）
 
         // 检查 accounts 表是否存在 model 字段
-        let has_model_field: i64 = sqlx::query_scalar(
+        let has_model_field_result = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'model'"
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await;
 
-        if has_model_field == 0 {
-            // 添加 model 字段
-            info!("检测到 accounts 表缺少 model 字段，开始添加...");
-            sqlx::query("ALTER TABLE accounts ADD COLUMN model TEXT NOT NULL DEFAULT ''")
-                .execute(&self.pool)
-                .await?;
-            info!("已成功添加 model 字段到 accounts 表");
-        } else {
-            info!("accounts 表已包含 model 字段，无需添加");
+        match has_model_field_result {
+            Ok(count) => {
+                if count == 0 {
+                    // 添加 model 字段
+                    info!("检测到 accounts 表缺少 model 字段，开始添加...");
+                    sqlx::query("ALTER TABLE accounts ADD COLUMN model TEXT NOT NULL DEFAULT ''")
+                        .execute(&self.pool)
+                        .await?;
+                    info!("已成功添加 model 字段到 accounts 表");
+                } else {
+                    info!("accounts 表已包含 model 字段，无需添加");
+                }
+            }
+            Err(e) => {
+                warn!("检查 accounts 表 model 字段时出错，表可能不存在: {}", e);
+            }
         }
 
         // 检查 base_urls 表是否存在 api_key 字段
-        let has_api_key_field: i64 = sqlx::query_scalar(
+        let has_api_key_field_result = sqlx::query_scalar::<_, i64>(
             "SELECT COUNT(*) FROM pragma_table_info('base_urls') WHERE name = 'api_key'"
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await;
 
-        if has_api_key_field == 0 {
-            // 添加 api_key 字段
-            info!("检测到 base_urls 表缺少 api_key 字段，开始添加...");
-            sqlx::query("ALTER TABLE base_urls ADD COLUMN api_key TEXT NOT NULL DEFAULT 'ANTHROPIC_API_KEY'")
-                .execute(&self.pool)
-                .await?;
-            info!("已成功添加 api_key 字段到 base_urls 表");
-        } else {
-            info!("base_urls 表已包含 api_key 字段，无需添加");
+        match has_api_key_field_result {
+            Ok(count) => {
+                if count == 0 {
+                    // 添加 api_key 字段
+                    info!("检测到 base_urls 表缺少 api_key 字段，开始添加...");
+                    sqlx::query("ALTER TABLE base_urls ADD COLUMN api_key TEXT NOT NULL DEFAULT 'ANTHROPIC_API_KEY'")
+                        .execute(&self.pool)
+                        .await?;
+                    info!("已成功添加 api_key 字段到 base_urls 表");
+                } else {
+                    info!("base_urls 表已包含 api_key 字段，无需添加");
+                }
+            }
+            Err(e) => {
+                warn!("检查 base_urls 表 api_key 字段时出错，表可能不存在: {}", e);
+            }
         }
-
-        // 重新运行所有表创建语句（使用 IF NOT EXISTS，不会影响现有表）
-        self.initialize().await?;
 
         info!("数据库迁移完成");
         Ok(())

@@ -172,46 +172,26 @@ impl ClaudeConfigManager {
     }
     
     fn copy_claude_local_md(&self) -> Result<()> {
-        use std::env;
-        
-        let exe_dir = env::current_exe()?.parent().unwrap().to_path_buf();
-        
-        let possible_source_paths = vec![
-            // 开发环境路径
-            exe_dir.join("../../../config/CLAUDE.local.md"),
-            exe_dir.join("../../../../config/CLAUDE.local.md"),
-            exe_dir.join("../../../../../config/CLAUDE.local.md"),
-            // 打包后的资源路径 - Tauri v2
-            exe_dir.join("resources/config/CLAUDE.local.md"),
-            exe_dir.join("../resources/config/CLAUDE.local.md"),
-            exe_dir.join("../../resources/config/CLAUDE.local.md"),
-        ];
-        
-        let mut source_file = None;
-        for path in possible_source_paths {
-            if path.exists() {
-                source_file = Some(path);
-                break;
-            }
-        }
-        
-        let source_file = source_file.ok_or_else(|| {
-            anyhow::anyhow!("找不到源文件 CLAUDE.local.md，已搜索的路径: {:?}", 
-                exe_dir.join("../../../config/CLAUDE.local.md"))
-        })?;
-        
+        use crate::config_manager::ConfigManager;
+
+        // 使用 ConfigManager 的资源路径解析方法
+        let source_file = ConfigManager::get_resource_path("config/CLAUDE.local.md")
+            .ok_or_else(|| {
+                anyhow::anyhow!("找不到源文件 CLAUDE.local.md，请确保文件存在于 resources/config/ 目录中")
+            })?;
+
         // 目标文件路径
         let target_file = Path::new(&self.directory_path).join("CLAUDE.local.md");
-        
+
         // 复制文件
         fs::copy(&source_file, &target_file)?;
-        
+
         tracing::info!(
-            "成功复制 CLAUDE.local.md 从 {} 到 {}", 
-            source_file.display(), 
+            "成功复制 CLAUDE.local.md 从 {} 到 {}",
+            source_file.display(),
             target_file.display()
         );
-        
+
         Ok(())
     }
 }
