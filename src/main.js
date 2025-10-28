@@ -541,11 +541,12 @@ async function saveAccount() {
 
     if (customEnvVarsJson) {
         try {
-            customEnvVars = JSON.parse(customEnvVarsJson);
+            const parsedEnvVars = JSON.parse(customEnvVarsJson);
             // 验证解析后的是一个对象
-            if (typeof customEnvVars !== 'object' || Array.isArray(customEnvVars) || customEnvVars === null) {
+            if (typeof parsedEnvVars !== 'object' || Array.isArray(parsedEnvVars) || parsedEnvVars === null) {
                 throw new Error('环境变量必须是一个JSON对象');
             }
+            customEnvVars = parsedEnvVars;
         } catch (e) {
             showError('自定义环境变量JSON格式错误: ' + e.message);
             return;
@@ -671,7 +672,7 @@ async function editAccount(accountId) {
 
         // 设置Base URL下拉框的值
         const baseUrlSelect = document.getElementById('accountBaseUrlSelect');
-        if (baseUrlSelect) {
+        if (baseUrlSelect && baseUrls.length > 0) {
             // 检查账号的base_url是否在下拉框选项中
             const selectOptions = Array.from(baseUrlSelect.options);
             const matchingOption = selectOptions.find(option => option.value === account.base_url);
@@ -763,11 +764,12 @@ async function updateAccount(accountId) {
 
     if (customEnvVarsJson) {
         try {
-            customEnvVars = JSON.parse(customEnvVarsJson);
+            const parsedEnvVars = JSON.parse(customEnvVarsJson);
             // 验证解析后的是一个对象
-            if (typeof customEnvVars !== 'object' || Array.isArray(customEnvVars) || customEnvVars === null) {
+            if (typeof parsedEnvVars !== 'object' || Array.isArray(parsedEnvVars) || parsedEnvVars === null) {
                 throw new Error('环境变量必须是一个JSON对象');
             }
+            customEnvVars = parsedEnvVars;
         } catch (e) {
             showError('自定义环境变量JSON格式错误: ' + e.message);
             return;
@@ -1925,11 +1927,8 @@ async function saveBaseUrl() {
                 throw new Error('环境变量必须是一个JSON对象');
             }
 
-            // 将所有值转换为字符串格式（后端期望 HashMap<String, String>）
-            defaultEnvVars = {};
-            Object.entries(parsedEnvVars).forEach(([key, value]) => {
-                defaultEnvVars[key] = String(value);
-            });
+            // 保留原始数据类型
+            defaultEnvVars = parsedEnvVars;
         } catch (e) {
             showError('默认环境变量JSON格式错误: ' + e.message);
             return;
@@ -2061,11 +2060,8 @@ async function updateBaseUrl(urlId) {
                 throw new Error('环境变量必须是一个JSON对象');
             }
 
-            // 将所有值转换为字符串格式（后端期望 HashMap<String, String>）
-            defaultEnvVars = {};
-            Object.entries(parsedEnvVars).forEach(([key, value]) => {
-                defaultEnvVars[key] = String(value);
-            });
+            // 保留原始数据类型
+            defaultEnvVars = parsedEnvVars;
         } catch (e) {
             showError('默认环境变量JSON格式错误: ' + e.message);
             return;
@@ -2308,6 +2304,7 @@ window.addEventListener("DOMContentLoaded", () => {
     document.getElementById('saveAccount').addEventListener('click', saveAccount);
     document.getElementById('saveDirectory').addEventListener('click', saveDirectory);
     // URL按钮事件在resetUrlModal中绑定，避免重复绑定
+
     
     // URL selector change event
     const urlSelect = document.getElementById('accountBaseUrlSelect');
@@ -2328,11 +2325,6 @@ window.addEventListener("DOMContentLoaded", () => {
         resetAccountModal();
     });
 
-    // 监听账号模态框显示事件，确保默认URL被选中
-    accountModal.addEventListener('show.bs.modal', function () {
-        // 确保在模态框显示时更新Base URL选择
-        updateBaseUrlSelect();
-    });
 
     const directoryModal = document.getElementById('directoryModal');
     directoryModal.addEventListener('hidden.bs.modal', function () {

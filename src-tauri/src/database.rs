@@ -777,8 +777,18 @@ impl Database {
         if let Some(_model) = &request.model {
             updates.push("model = ?");
         }
-        if let Some(_custom_env_vars) = &request.custom_env_vars {
-            updates.push("custom_env_vars = ?");
+        // 检查自定义环境变量，如果为空对象则跳过更新
+        if let Some(custom_env_vars) = &request.custom_env_vars {
+            // 将 serde_json::Value 转换为字符串以检查是否为空
+            if let Ok(json_str) = serde_json::to_string(custom_env_vars) {
+                // 只有非空对象才添加更新
+                if json_str.trim() != "{}" {
+                    updates.push("custom_env_vars = ?");
+                }
+            } else {
+                // JSON序列化失败，跳过更新
+                tracing::warn!("自定义环境变量序列化失败，跳过更新");
+            }
         }
 
         if updates.is_empty() {
@@ -802,10 +812,15 @@ impl Database {
         if let Some(model) = &request.model {
             q = q.bind(model);
         }
+        // 只有非空环境变量才绑定参数
         if let Some(custom_env_vars) = &request.custom_env_vars {
-            let custom_env_vars_json = serde_json::to_string(custom_env_vars)
-                .unwrap_or_else(|_| "{}".to_string());
-            q = q.bind(custom_env_vars_json);
+            if let Ok(json_str) = serde_json::to_string(custom_env_vars) {
+                if json_str.trim() != "{}" {
+                    let custom_env_vars_json = serde_json::to_string(custom_env_vars)
+                        .unwrap_or_else(|_| "{}".to_string());
+                    q = q.bind(custom_env_vars_json);
+                }
+            }
         }
 
         q = q.bind(now).bind(id);
@@ -1071,8 +1086,18 @@ impl Database {
         if let Some(_is_default) = request.is_default {
             updates.push("is_default = ?");
         }
-        if let Some(_default_env_vars) = &request.default_env_vars {
-            updates.push("default_env_vars = ?");
+        // 检查默认环境变量，如果为空对象则跳过更新
+        if let Some(default_env_vars) = &request.default_env_vars {
+            // 将 serde_json::Value 转换为字符串以检查是否为空
+            if let Ok(json_str) = serde_json::to_string(default_env_vars) {
+                // 只有非空对象才添加更新
+                if json_str.trim() != "{}" {
+                    updates.push("default_env_vars = ?");
+                }
+            } else {
+                // JSON序列化失败，跳过更新
+                tracing::warn!("默认环境变量序列化失败，跳过更新");
+            }
         }
 
         if updates.is_empty() {
@@ -1099,10 +1124,15 @@ impl Database {
         if let Some(is_default) = request.is_default {
             q = q.bind(is_default);
         }
+        // 只有非空环境变量才绑定参数
         if let Some(default_env_vars) = &request.default_env_vars {
-            let default_env_vars_json = serde_json::to_string(default_env_vars)
-                .unwrap_or_else(|_| "{}".to_string());
-            q = q.bind(default_env_vars_json);
+            if let Ok(json_str) = serde_json::to_string(default_env_vars) {
+                if json_str.trim() != "{}" {
+                    let default_env_vars_json = serde_json::to_string(default_env_vars)
+                        .unwrap_or_else(|_| "{}".to_string());
+                    q = q.bind(default_env_vars_json);
+                }
+            }
         }
 
         q = q.bind(now).bind(id);

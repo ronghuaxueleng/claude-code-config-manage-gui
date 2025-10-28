@@ -43,7 +43,7 @@ async fn create_account(
     token: String,
     baseUrl: String,
     model: String,
-    customEnvVars: Option<std::collections::HashMap<String, String>>,
+    customEnvVars: Option<serde_json::Value>,
 ) -> Result<Account, String> {
     tracing::info!("创建账号: name={}, baseUrl={}, model={}", name, baseUrl, model);
 
@@ -82,7 +82,7 @@ async fn update_account(
     token: Option<String>,
     baseUrl: Option<String>,
     model: Option<String>,
-    customEnvVars: Option<std::collections::HashMap<String, String>>,
+    customEnvVars: Option<serde_json::Value>,
 ) -> Result<Account, String> {
     let db = db.lock().await;
     let request = UpdateAccountRequest {
@@ -252,7 +252,7 @@ async fn create_base_url(
     description: Option<String>,
     apiKey: Option<String>,
     isDefault: Option<bool>,
-    defaultEnvVars: Option<std::collections::HashMap<String, String>>,
+    defaultEnvVars: Option<serde_json::Value>,
 ) -> Result<BaseUrl, String> {
     let db = db.lock().await;
     let request = CreateBaseUrlRequest {
@@ -288,7 +288,7 @@ async fn update_base_url(
     description: Option<String>,
     apiKey: Option<String>,
     isDefault: Option<bool>,
-    defaultEnvVars: Option<std::collections::HashMap<String, String>>,
+    defaultEnvVars: Option<serde_json::Value>,
 ) -> Result<BaseUrl, String> {
     let db = db.lock().await;
     let request = UpdateBaseUrlRequest {
@@ -390,12 +390,12 @@ async fn switch_account(
         .find(|bu| bu.url == account.base_url)
         .map(|bu| {
             let default_env_vars = bu.get_default_env_vars();
-            (bu.api_key.clone(), Some(default_env_vars))
+            (bu.api_key.clone(), default_env_vars)
         })
         .unwrap_or_else(|| ("ANTHROPIC_API_KEY".to_string(), None));
 
     // 获取账号的自定义环境变量
-    let account_custom_env_vars = Some(account.get_custom_env_vars());
+    let account_custom_env_vars = account.get_custom_env_vars();
 
     drop(db_lock); // Release the lock before doing file operations
 
@@ -1264,12 +1264,12 @@ async fn switch_account_with_claude_settings(
         .find(|bu| bu.url == account.base_url)
         .map(|bu| {
             let default_env_vars = bu.get_default_env_vars();
-            (bu.api_key.clone(), Some(default_env_vars))
+            (bu.api_key.clone(), default_env_vars)
         })
         .unwrap_or_else(|| ("ANTHROPIC_API_KEY".to_string(), None));
 
     // 获取账号的自定义环境变量
-    let account_custom_env_vars = Some(account.get_custom_env_vars());
+    let account_custom_env_vars = account.get_custom_env_vars();
 
     drop(db_lock); // Release the lock before doing file operations
 

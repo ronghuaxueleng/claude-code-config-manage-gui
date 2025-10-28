@@ -22,7 +22,7 @@ pub struct CreateAccountRequest {
     pub token: String,
     pub base_url: String,
     pub model: String,
-    pub custom_env_vars: Option<HashMap<String, String>>, // 自定义环境变量
+    pub custom_env_vars: Option<serde_json::Value>, // 自定义环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -31,7 +31,7 @@ pub struct UpdateAccountRequest {
     pub token: Option<String>,
     pub base_url: Option<String>,
     pub model: Option<String>,
-    pub custom_env_vars: Option<HashMap<String, String>>, // 自定义环境变量
+    pub custom_env_vars: Option<serde_json::Value>, // 自定义环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
@@ -76,7 +76,7 @@ pub struct CreateBaseUrlRequest {
     pub description: Option<String>,
     pub api_key: Option<String>,
     pub is_default: Option<bool>,
-    pub default_env_vars: Option<HashMap<String, String>>, // 默认环境变量
+    pub default_env_vars: Option<serde_json::Value>, // 默认环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -86,7 +86,7 @@ pub struct UpdateBaseUrlRequest {
     pub description: Option<String>,
     pub api_key: Option<String>,
     pub is_default: Option<bool>,
-    pub default_env_vars: Option<HashMap<String, String>>, // 默认环境变量
+    pub default_env_vars: Option<serde_json::Value>, // 默认环境变量
 }
 
 
@@ -195,15 +195,35 @@ pub struct CreateSyncLogRequest {
 // 环境变量辅助方法
 impl Account {
     /// 获取解析后的自定义环境变量
-    pub fn get_custom_env_vars(&self) -> HashMap<String, String> {
-        serde_json::from_str(&self.custom_env_vars).unwrap_or_default()
+    /// 返回Option是为了区分"无环境变量"和"解析失败"
+    pub fn get_custom_env_vars(&self) -> Option<HashMap<String, String>> {
+        // 如果为空字符串，返回None
+        if self.custom_env_vars.trim().is_empty() {
+            return None;
+        }
+        // 尝试解析，失败时返回None
+        match serde_json::from_str::<HashMap<String, String>>(&self.custom_env_vars) {
+            Ok(map) if map.is_empty() => None,  // 空对象也返回None
+            Ok(map) => Some(map),
+            Err(_) => None,
+        }
     }
 }
 
 impl BaseUrl {
     /// 获取解析后的默认环境变量
-    pub fn get_default_env_vars(&self) -> HashMap<String, String> {
-        serde_json::from_str(&self.default_env_vars).unwrap_or_default()
+    /// 返回Option是为了区分"无环境变量"和"解析失败"
+    pub fn get_default_env_vars(&self) -> Option<HashMap<String, String>> {
+        // 如果为空字符串，返回None
+        if self.default_env_vars.trim().is_empty() {
+            return None;
+        }
+        // 尝试解析，失败时返回None
+        match serde_json::from_str::<HashMap<String, String>>(&self.default_env_vars) {
+            Ok(map) if map.is_empty() => None,  // 空对象也返回None
+            Ok(map) => Some(map),
+            Err(_) => None,
+        }
     }
 }
 
