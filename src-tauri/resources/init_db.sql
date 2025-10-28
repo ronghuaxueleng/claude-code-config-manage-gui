@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     base_url TEXT NOT NULL,
     model TEXT NOT NULL DEFAULT '',
     is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    custom_env_vars TEXT NOT NULL DEFAULT '{}',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -31,6 +32,7 @@ CREATE TABLE IF NOT EXISTS base_urls (
     description TEXT,
     api_key TEXT NOT NULL DEFAULT 'ANTHROPIC_API_KEY',
     is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    default_env_vars TEXT NOT NULL DEFAULT '{}',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -46,11 +48,11 @@ CREATE TABLE IF NOT EXISTS account_directories (
     UNIQUE(account_id, directory_id)
 );
 
--- Insert default base URLs
-INSERT OR IGNORE INTO base_urls (name, url, description, is_default) VALUES
-    ('Anthropic Official', 'https://api.anthropic.com', 'Official Anthropic API endpoint', 1),
-    ('Claude API', 'https://api.claude.ai', 'Claude API endpoint', 0),
-    ('Local Development', 'http://localhost:8000', 'Local development server', 0);
+-- Insert default base URLs with default environment variables
+INSERT OR IGNORE INTO base_urls (name, url, description, is_default, default_env_vars) VALUES
+    ('Anthropic Official', 'https://api.anthropic.com', 'Official Anthropic API endpoint', 1, '{"DISABLE_AUTOUPDATER": "1", "ANTHROPIC_LOG_LEVEL": "info"}'),
+    ('Claude API', 'https://api.claude.ai', 'Claude API endpoint', 0, '{"DISABLE_AUTOUPDATER": "1", "CLAUDE_LOG_LEVEL": "debug"}'),
+    ('Local Development', 'http://localhost:8000', 'Local development server', 0, '{"DISABLE_AUTOUPDATER": "1", "DEBUG": "true", "LOG_LEVEL": "debug"}');
 
 -- Insert sample data (optional - commented out)
 -- INSERT OR IGNORE INTO accounts (name, token, base_url) VALUES

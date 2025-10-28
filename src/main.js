@@ -75,12 +75,13 @@ async function tauriGetAccounts(params = {}) {
     return await invoke('get_accounts', { request: params });
 }
 
-async function tauriCreateAccount(name, token, base_url, model) {
-    return await invoke('create_account', { 
-        name, 
-        token, 
-        baseUrl: base_url, 
-        model 
+async function tauriCreateAccount(name, token, base_url, model, customEnvVars = null) {
+    return await invoke('create_account', {
+        name,
+        token,
+        baseUrl: base_url,
+        model,
+        customEnvVars
     });
 }
 
@@ -90,6 +91,8 @@ async function tauriUpdateAccount(id, params) {
     Object.keys(params).forEach(key => {
         if (key === 'base_url') {
             requestParams['baseUrl'] = params[key];
+        } else if (key === 'custom_env_vars') {
+            requestParams['customEnvVars'] = params[key];
         } else {
             requestParams[key] = params[key];
         }
@@ -129,8 +132,15 @@ async function tauriGetBaseUrls() {
     return await invoke('get_base_urls');
 }
 
-async function tauriCreateBaseUrl(name, url, description, api_key, is_default) {
-    return await invoke('create_base_url', { name, url, description, apiKey: api_key, isDefault: is_default });
+async function tauriCreateBaseUrl(name, url, description, api_key, is_default, defaultEnvVars = null) {
+    return await invoke('create_base_url', {
+        name,
+        url,
+        description,
+        apiKey: api_key,
+        isDefault: is_default,
+        defaultEnvVars
+    });
 }
 
 async function tauriUpdateBaseUrl(id, params) {
@@ -141,6 +151,7 @@ async function tauriUpdateBaseUrl(id, params) {
     if (params.description !== undefined) requestParams.description = params.description;
     if (params.api_key !== undefined) requestParams.apiKey = params.api_key;
     if (params.is_default !== undefined) requestParams.isDefault = params.is_default;
+    if (params.default_env_vars !== undefined) requestParams.defaultEnvVars = params.default_env_vars;
     return await invoke('update_base_url', requestParams);
 }
 
@@ -524,6 +535,23 @@ async function saveAccount() {
     const base_url = document.getElementById('accountBaseUrl').value.trim();
     const model = document.getElementById('accountModel').value.trim();
 
+    // 获取和验证自定义环境变量JSON
+    const customEnvVarsJson = document.getElementById('accountCustomEnvVarsJson').value.trim();
+    let customEnvVars = {};
+
+    if (customEnvVarsJson) {
+        try {
+            customEnvVars = JSON.parse(customEnvVarsJson);
+            // 验证解析后的是一个对象
+            if (typeof customEnvVars !== 'object' || Array.isArray(customEnvVars) || customEnvVars === null) {
+                throw new Error('环境变量必须是一个JSON对象');
+            }
+        } catch (e) {
+            showError('自定义环境变量JSON格式错误: ' + e.message);
+            return;
+        }
+    }
+
     if (!name || !token || !base_url) {
         showError(window.i18n.t('validation.required_fields'));
         return;
@@ -544,12 +572,15 @@ async function saveAccount() {
     }
 
     try {
-        const result = await tauriCreateAccount(name, token, base_url, model);
+        const result = await tauriCreateAccount(name, token, base_url, model, customEnvVars);
 
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('accountModal'));
         modal.hide();
         document.getElementById('accountForm').reset();
+
+        // 重置环境变量输入框
+        document.getElementById('accountCustomEnvVarsJson').value = '';
 
         // Reload accounts list and base_url options
         await loadAccounts(currentAccountPage);
@@ -654,6 +685,28 @@ async function editAccount(accountId) {
             }
         }
 
+        // 加载自定义环境变量到JSON文本框
+        try {
+            // 只显示账号的自定义环境变量，不合并URL默认环境变量
+            let accountCustomEnvVars = {};
+            if (account.custom_env_vars) {
+                if (typeof account.custom_env_vars === 'string') {
+                    accountCustomEnvVars = JSON.parse(account.custom_env_vars);
+                } else {
+                    accountCustomEnvVars = account.custom_env_vars;
+                }
+            }
+
+            // 设置JSON文本框 - 只显示账号的自定义环境变量
+            document.getElementById('accountCustomEnvVarsJson').value =
+                Object.keys(accountCustomEnvVars).length > 0 ?
+                    JSON.stringify(accountCustomEnvVars, null, 2) : '{}';
+
+        } catch (error) {
+            console.error('解析账号自定义环境变量失败:', error);
+            document.getElementById('accountCustomEnvVarsJson').value = '{}';
+        }
+
         // Change modal title
         document.querySelector('#accountModal .modal-title').textContent = window.i18n.t('modal.edit_account');
 
@@ -704,8 +757,31 @@ async function updateAccount(accountId) {
         return;
     }
 
+    // 获取和验证自定义环境变量JSON
+    const customEnvVarsJson = document.getElementById('accountCustomEnvVarsJson').value.trim();
+    let customEnvVars = {};
+
+    if (customEnvVarsJson) {
+        try {
+            customEnvVars = JSON.parse(customEnvVarsJson);
+            // 验证解析后的是一个对象
+            if (typeof customEnvVars !== 'object' || Array.isArray(customEnvVars) || customEnvVars === null) {
+                throw new Error('环境变量必须是一个JSON对象');
+            }
+        } catch (e) {
+            showError('自定义环境变量JSON格式错误: ' + e.message);
+            return;
+        }
+    }
+
     try {
-        const result = await tauriUpdateAccount(accountId, { name, token, base_url, model });
+        const result = await tauriUpdateAccount(accountId, {
+            name,
+            token,
+            base_url,
+            model,
+            custom_env_vars: customEnvVars
+        });
 
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('accountModal'));
@@ -748,6 +824,38 @@ function resetAccountModal() {
 
     // 确保默认URL被选中
     updateBaseUrlSelect();
+
+    // 重置环境变量输入框
+    document.getElementById('accountCustomEnvVarsJson').value = '';
+}
+
+// 根据选中的URL更新账号环境变量JSON显示
+function updateAccountEnvVarsFromUrl(selectedUrl) {
+    try {
+        // 找到选中的URL对应的baseUrl对象
+        const selectedBaseUrl = baseUrls.find(url => url.url === selectedUrl);
+
+        let envVarsToShow = {};
+
+        if (selectedBaseUrl && selectedBaseUrl.default_env_vars) {
+            try {
+                // 直接使用URL的默认环境变量，不合并
+                envVarsToShow = JSON.parse(selectedBaseUrl.default_env_vars);
+            } catch (e) {
+                console.warn('解析URL默认环境变量失败:', e);
+                envVarsToShow = {};
+            }
+        }
+
+        // 更新JSON文本框 - 直接显示URL的默认环境变量
+        document.getElementById('accountCustomEnvVarsJson').value =
+            Object.keys(envVarsToShow).length > 0 ?
+                JSON.stringify(envVarsToShow, null, 2) : '{}';
+
+    } catch (error) {
+        console.error('更新账号环境变量失败:', error);
+        showError('更新环境变量失败: ' + getErrorMessage(error));
+    }
 }
 
 // Prompt delete account - shows confirmation first
@@ -1410,15 +1518,48 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
         // 获取Claude配置
         const claudeSettings = await getClaudeSettingsForSwitch();
 
-        // 获取当前账号信息，包括model字段
+        // 获取当前账号信息，合并账号的model和自定义环境变量到Claude配置中
         const account = associationAccounts.find(acc => acc.id == accountId);
-        if (account && account.model) {
-            // 如果账号设置了model，将其添加到Claude配置的环境变量中
+        console.log('准备切换的账号信息:', account);
+        console.log('切换前的Claude配置:', claudeSettings);
+
+        if (account) {
+            // 确保env对象存在
             if (!claudeSettings.env) {
                 claudeSettings.env = {};
             }
-            claudeSettings.env.ANTHROPIC_MODEL = account.model;
+
+            // 如果账号设置了model，将其添加到Claude配置的环境变量中
+            if (account.model) {
+                claudeSettings.env.ANTHROPIC_MODEL = account.model;
+                console.log('添加账号model到Claude配置:', account.model);
+            }
+
+            // 合并账号的自定义环境变量到Claude配置中
+            if (account.custom_env_vars) {
+                try {
+                    let accountCustomEnvVars = {};
+                    if (typeof account.custom_env_vars === 'string') {
+                        accountCustomEnvVars = JSON.parse(account.custom_env_vars);
+                    } else {
+                        accountCustomEnvVars = account.custom_env_vars;
+                    }
+
+                    console.log('账号的自定义环境变量:', accountCustomEnvVars);
+
+                    // 将账号的自定义环境变量合并到Claude配置中
+                    // 这样后端就能收到完整的环境变量配置
+                    Object.assign(claudeSettings.env, accountCustomEnvVars);
+                    console.log('合并后的Claude配置env:', claudeSettings.env);
+                } catch (error) {
+                    console.error('解析账号自定义环境变量失败:', error);
+                }
+            } else {
+                console.log('账号没有自定义环境变量');
+            }
         }
+
+        console.log('最终发送给后端的Claude配置:', claudeSettings);
 
         const result = await tauriSwitchAccountWithClaudeSettings(
             parseInt(accountId),
@@ -1738,6 +1879,9 @@ function updateBaseUrlSelect() {
         if (defaultUrl) {
             select.value = defaultUrl.url;
             document.getElementById('accountBaseUrl').value = defaultUrl.url;
+
+            // 同时更新环境变量显示默认URL的环境变量
+            updateAccountEnvVarsFromUrl(defaultUrl.url);
         }
     }
 }
@@ -1769,8 +1913,31 @@ async function saveBaseUrl() {
         return;
     }
 
+    // 获取和验证默认环境变量JSON
+    const defaultEnvVarsJson = document.getElementById('urlDefaultEnvVarsJson').value.trim();
+    let defaultEnvVars = {};
+
+    if (defaultEnvVarsJson) {
+        try {
+            const parsedEnvVars = JSON.parse(defaultEnvVarsJson);
+            // 验证解析后的是一个对象
+            if (typeof parsedEnvVars !== 'object' || Array.isArray(parsedEnvVars) || parsedEnvVars === null) {
+                throw new Error('环境变量必须是一个JSON对象');
+            }
+
+            // 将所有值转换为字符串格式（后端期望 HashMap<String, String>）
+            defaultEnvVars = {};
+            Object.entries(parsedEnvVars).forEach(([key, value]) => {
+                defaultEnvVars[key] = String(value);
+            });
+        } catch (e) {
+            showError('默认环境变量JSON格式错误: ' + e.message);
+            return;
+        }
+    }
+
     try {
-        await tauriCreateBaseUrl(name, url, description, apiKey, isDefault);
+        await tauriCreateBaseUrl(name, url, description, apiKey, isDefault, defaultEnvVars);
 
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('urlModal'));
@@ -1808,7 +1975,25 @@ async function editBaseUrl(urlId) {
         document.getElementById('urlDescription').value = url.description || '';
         document.getElementById('urlApiKey').value = url.api_key || 'ANTHROPIC_API_KEY';
         document.getElementById('urlIsDefault').checked = url.is_default;
-        
+
+        // 加载默认环境变量到JSON文本框
+        try {
+            let envVarsJson = '{}';
+            if (url.default_env_vars) {
+                // 如果是字符串，验证JSON格式
+                if (typeof url.default_env_vars === 'string') {
+                    const envVarsData = JSON.parse(url.default_env_vars);
+                    envVarsJson = JSON.stringify(envVarsData, null, 2);
+                } else {
+                    envVarsJson = JSON.stringify(url.default_env_vars, null, 2);
+                }
+            }
+            document.getElementById('urlDefaultEnvVarsJson').value = envVarsJson;
+        } catch (error) {
+            console.error('解析URL默认环境变量失败:', error);
+            document.getElementById('urlDefaultEnvVarsJson').value = '{}';
+        }
+
         // Change modal title
         document.querySelector('#urlModal .modal-title').textContent = window.i18n.t('modal.edit_url');
         
@@ -1864,8 +2049,38 @@ async function updateBaseUrl(urlId) {
         return;
     }
 
+    // 获取和验证默认环境变量JSON
+    const defaultEnvVarsJson = document.getElementById('urlDefaultEnvVarsJson').value.trim();
+    let defaultEnvVars = {};
+
+    if (defaultEnvVarsJson) {
+        try {
+            const parsedEnvVars = JSON.parse(defaultEnvVarsJson);
+            // 验证解析后的是一个对象
+            if (typeof parsedEnvVars !== 'object' || Array.isArray(parsedEnvVars) || parsedEnvVars === null) {
+                throw new Error('环境变量必须是一个JSON对象');
+            }
+
+            // 将所有值转换为字符串格式（后端期望 HashMap<String, String>）
+            defaultEnvVars = {};
+            Object.entries(parsedEnvVars).forEach(([key, value]) => {
+                defaultEnvVars[key] = String(value);
+            });
+        } catch (e) {
+            showError('默认环境变量JSON格式错误: ' + e.message);
+            return;
+        }
+    }
+
     try {
-        await tauriUpdateBaseUrl(urlId, { name, url, description, api_key: apiKey, is_default: isDefault });
+        await tauriUpdateBaseUrl(urlId, {
+            name,
+            url,
+            description,
+            api_key: apiKey,
+            is_default: isDefault,
+            default_env_vars: defaultEnvVars
+        });
         
         // Close modal and reset form
         const modal = bootstrap.Modal.getInstance(document.getElementById('urlModal'));
@@ -1906,6 +2121,9 @@ function resetUrlModal() {
     saveBtn.removeEventListener('click', saveBaseUrl);
     saveBtn.addEventListener('click', saveBaseUrl);
     saveBtn.onclick = null; // 清除onclick属性
+
+    // 重置环境变量输入框
+    document.getElementById('urlDefaultEnvVarsJson').value = '';
 }
 
 // Prompt delete base URL - shows confirmation first
@@ -2097,6 +2315,9 @@ window.addEventListener("DOMContentLoaded", () => {
         urlSelect.addEventListener('change', function() {
             if (this.value) {
                 document.getElementById('accountBaseUrl').value = this.value;
+
+                // 更新JSON环境变量 - 显示选中URL的默认环境变量
+                updateAccountEnvVarsFromUrl(this.value);
             }
         });
     }
@@ -3516,3 +3737,4 @@ window.addEventListener('languageChanged', async (event) => {
         await window.loadSyncLogs();
     }
 });
+

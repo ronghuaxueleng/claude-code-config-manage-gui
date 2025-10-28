@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use chrono::{DateTime, Utc};
+use std::collections::HashMap;
 
 #[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
 pub struct Account {
@@ -10,6 +11,7 @@ pub struct Account {
     pub base_url: String,
     pub model: String,
     pub is_active: bool,
+    pub custom_env_vars: String, // JSON 字符串存储自定义环境变量
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -20,6 +22,7 @@ pub struct CreateAccountRequest {
     pub token: String,
     pub base_url: String,
     pub model: String,
+    pub custom_env_vars: Option<HashMap<String, String>>, // 自定义环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,6 +31,7 @@ pub struct UpdateAccountRequest {
     pub token: Option<String>,
     pub base_url: Option<String>,
     pub model: Option<String>,
+    pub custom_env_vars: Option<HashMap<String, String>>, // 自定义环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
@@ -60,6 +64,7 @@ pub struct BaseUrl {
     pub description: Option<String>,
     pub api_key: String,
     pub is_default: bool,
+    pub default_env_vars: String, // JSON 字符串存储默认环境变量
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -71,6 +76,7 @@ pub struct CreateBaseUrlRequest {
     pub description: Option<String>,
     pub api_key: Option<String>,
     pub is_default: Option<bool>,
+    pub default_env_vars: Option<HashMap<String, String>>, // 默认环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -80,15 +86,9 @@ pub struct UpdateBaseUrlRequest {
     pub description: Option<String>,
     pub api_key: Option<String>,
     pub is_default: Option<bool>,
+    pub default_env_vars: Option<HashMap<String, String>>, // 默认环境变量
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct AccountDirectory {
-    pub id: i64,
-    pub account_id: i64,
-    pub directory_id: i64,
-    pub created_at: DateTime<Utc>,
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SwitchAccountRequest {
@@ -172,28 +172,6 @@ pub struct WebDavConfig {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CreateWebDavConfigRequest {
-    pub name: String,
-    pub url: String,
-    pub username: String,
-    pub password: String,
-    pub remote_path: Option<String>,
-    pub auto_sync: Option<bool>,
-    pub sync_interval: Option<i64>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UpdateWebDavConfigRequest {
-    pub name: Option<String>,
-    pub url: Option<String>,
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub remote_path: Option<String>,
-    pub auto_sync: Option<bool>,
-    pub sync_interval: Option<i64>,
-    pub is_active: Option<bool>,
-}
 
 // 同步日志模型
 #[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
@@ -212,4 +190,45 @@ pub struct CreateSyncLogRequest {
     pub sync_type: String,
     pub status: String,
     pub message: Option<String>,
+}
+
+// 环境变量辅助方法
+impl Account {
+    /// 获取解析后的自定义环境变量
+    pub fn get_custom_env_vars(&self) -> HashMap<String, String> {
+        serde_json::from_str(&self.custom_env_vars).unwrap_or_default()
+    }
+}
+
+impl BaseUrl {
+    /// 获取解析后的默认环境变量
+    pub fn get_default_env_vars(&self) -> HashMap<String, String> {
+        serde_json::from_str(&self.default_env_vars).unwrap_or_default()
+    }
+}
+
+// 环境变量值类型推断
+pub fn parse_env_value(value: &str) -> serde_json::Value {
+    use serde_json::json;
+
+    // 1. 尝试解析为布尔值
+    if value.eq_ignore_ascii_case("true") {
+        return json!(true);
+    }
+    if value.eq_ignore_ascii_case("false") {
+        return json!(false);
+    }
+
+    // 2. 尝试解析为整数
+    if let Ok(num) = value.parse::<i64>() {
+        return json!(num);
+    }
+
+    // 3. 尝试解析为浮点数
+    if let Ok(float) = value.parse::<f64>() {
+        return json!(float);
+    }
+
+    // 4. 默认作为字符串
+    json!(value)
 }

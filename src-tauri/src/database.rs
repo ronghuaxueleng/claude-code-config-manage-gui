@@ -388,6 +388,7 @@ impl Database {
                 base_url TEXT NOT NULL,
                 model TEXT NOT NULL DEFAULT '',
                 is_active BOOLEAN NOT NULL DEFAULT FALSE,
+                custom_env_vars TEXT DEFAULT '{}',
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -422,6 +423,7 @@ impl Database {
                 description TEXT,
                 api_key TEXT NOT NULL DEFAULT 'ANTHROPIC_API_KEY',
                 is_default BOOLEAN NOT NULL DEFAULT FALSE,
+                default_env_vars TEXT DEFAULT '{}',
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -573,6 +575,56 @@ impl Database {
             }
         }
 
+        // 检查 accounts 表是否存在 custom_env_vars 字段
+        let has_custom_env_vars_field_result = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'custom_env_vars'"
+        )
+        .fetch_one(&self.pool)
+        .await;
+
+        match has_custom_env_vars_field_result {
+            Ok(count) => {
+                if count == 0 {
+                    // 添加 custom_env_vars 字段
+                    info!("检测到 accounts 表缺少 custom_env_vars 字段，开始添加...");
+                    sqlx::query("ALTER TABLE accounts ADD COLUMN custom_env_vars TEXT DEFAULT '{}'")
+                        .execute(&self.pool)
+                        .await?;
+                    info!("已成功添加 custom_env_vars 字段到 accounts 表");
+                } else {
+                    info!("accounts 表已包含 custom_env_vars 字段，无需添加");
+                }
+            }
+            Err(e) => {
+                warn!("检查 accounts 表 custom_env_vars 字段时出错，表可能不存在: {}", e);
+            }
+        }
+
+        // 检查 base_urls 表是否存在 default_env_vars 字段
+        let has_default_env_vars_field_result = sqlx::query_scalar::<_, i64>(
+            "SELECT COUNT(*) FROM pragma_table_info('base_urls') WHERE name = 'default_env_vars'"
+        )
+        .fetch_one(&self.pool)
+        .await;
+
+        match has_default_env_vars_field_result {
+            Ok(count) => {
+                if count == 0 {
+                    // 添加 default_env_vars 字段
+                    info!("检测到 base_urls 表缺少 default_env_vars 字段，开始添加...");
+                    sqlx::query("ALTER TABLE base_urls ADD COLUMN default_env_vars TEXT DEFAULT '{}'")
+                        .execute(&self.pool)
+                        .await?;
+                    info!("已成功添加 default_env_vars 字段到 base_urls 表");
+                } else {
+                    info!("base_urls 表已包含 default_env_vars 字段，无需添加");
+                }
+            }
+            Err(e) => {
+                warn!("检查 base_urls 表 default_env_vars 字段时出错，表可能不存在: {}", e);
+            }
+        }
+
         info!("数据库迁移完成");
         Ok(())
     }
@@ -679,14 +731,23 @@ impl Database {
 
     pub async fn create_account(&self, request: CreateAccountRequest) -> Result<Account, SqlxError> {
         let now = Utc::now();
+
+        // 处理自定义环境变量
+        let custom_env_vars_json = if let Some(env_vars) = request.custom_env_vars {
+            serde_json::to_string(&env_vars).unwrap_or_else(|_| "{}".to_string())
+        } else {
+            "{}".to_string()
+        };
+
         let result = sqlx::query(
-            "INSERT INTO accounts (name, token, base_url, model, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO accounts (name, token, base_url, model, custom_env_vars, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
         )
         .bind(&request.name)
         .bind(&request.token)
         .bind(&request.base_url)
         .bind(&request.model)
+        .bind(&custom_env_vars_json)
         .bind(now)
         .bind(now)
         .execute(&self.pool)
@@ -716,6 +777,9 @@ impl Database {
         if let Some(_model) = &request.model {
             updates.push("model = ?");
         }
+        if let Some(_custom_env_vars) = &request.custom_env_vars {
+            updates.push("custom_env_vars = ?");
+        }
 
         if updates.is_empty() {
             return self.get_account(id).await;
@@ -725,7 +789,7 @@ impl Database {
         let query = format!("UPDATE accounts SET {} WHERE id = ?", updates.join(", "));
 
         let mut q = sqlx::query(&query);
-        
+
         if let Some(name) = &request.name {
             q = q.bind(name);
         }
@@ -738,7 +802,12 @@ impl Database {
         if let Some(model) = &request.model {
             q = q.bind(model);
         }
-        
+        if let Some(custom_env_vars) = &request.custom_env_vars {
+            let custom_env_vars_json = serde_json::to_string(custom_env_vars)
+                .unwrap_or_else(|_| "{}".to_string());
+            q = q.bind(custom_env_vars_json);
+        }
+
         q = q.bind(now).bind(id);
         q.execute(&self.pool).await?;
 
@@ -935,6 +1004,13 @@ impl Database {
         let is_default = request.is_default.unwrap_or(false);
         let api_key = request.api_key.unwrap_or_else(|| "ANTHROPIC_API_KEY".to_string());
 
+        // 处理默认环境变量
+        let default_env_vars_json = if let Some(env_vars) = request.default_env_vars {
+            serde_json::to_string(&env_vars).unwrap_or_else(|_| "{}".to_string())
+        } else {
+            "{}".to_string()
+        };
+
         // If setting as default, unset other defaults
         if is_default {
             sqlx::query("UPDATE base_urls SET is_default = FALSE")
@@ -943,14 +1019,15 @@ impl Database {
         }
 
         let result = sqlx::query(
-            "INSERT INTO base_urls (name, url, description, api_key, is_default, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)"
+            "INSERT INTO base_urls (name, url, description, api_key, is_default, default_env_vars, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
         )
         .bind(&request.name)
         .bind(&request.url)
         .bind(&request.description)
         .bind(&api_key)
         .bind(is_default)
+        .bind(&default_env_vars_json)
         .bind(now)
         .bind(now)
         .execute(&self.pool)
@@ -994,6 +1071,9 @@ impl Database {
         if let Some(_is_default) = request.is_default {
             updates.push("is_default = ?");
         }
+        if let Some(_default_env_vars) = &request.default_env_vars {
+            updates.push("default_env_vars = ?");
+        }
 
         if updates.is_empty() {
             return self.get_base_url(id).await;
@@ -1018,6 +1098,11 @@ impl Database {
         }
         if let Some(is_default) = request.is_default {
             q = q.bind(is_default);
+        }
+        if let Some(default_env_vars) = &request.default_env_vars {
+            let default_env_vars_json = serde_json::to_string(default_env_vars)
+                .unwrap_or_else(|_| "{}".to_string());
+            q = q.bind(default_env_vars_json);
         }
 
         q = q.bind(now).bind(id);

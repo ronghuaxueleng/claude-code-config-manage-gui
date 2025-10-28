@@ -4,6 +4,85 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
 }
 
+/* Environment Variables Input Styles */
+.env-vars-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    margin-bottom: 1rem;
+}
+
+.env-var-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.env-var-row:last-child {
+    margin-bottom: 0;
+}
+
+.env-var-input {
+    flex: 1;
+    min-width: 120px;
+}
+
+.env-var-key {
+    font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+}
+
+.env-var-value {
+    font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    font-size: 0.875rem;
+}
+
+.env-var-type-indicator {
+    font-size: 0.75rem;
+    background-color: #6c757d;
+    color: white;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    min-width: 40px;
+    text-align: center;
+}
+
+.env-var-type-string { background-color: #0d6efd; }
+.env-var-type-number { background-color: #198754; }
+.env-var-type-boolean { background-color: #dc3545; }
+
+.env-vars-empty {
+    text-align: center;
+    color: #6c757d;
+    font-style: italic;
+    padding: 1rem;
+}
+
+.env-vars-inherited {
+    background-color: #e3f2fd;
+    border-color: #1976d2;
+}
+
+.env-vars-inherited .form-label {
+    color: #1976d2;
+}
+
+.env-var-inherited {
+    opacity: 0.7;
+}
+
+.env-var-inherited .form-control {
+    background-color: #f0f8ff;
+}
+
+.env-vars-help {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
 /* Navbar Styles */
 .navbar-brand {
     font-weight: bold;
