@@ -631,6 +631,19 @@
                                    data-i18n-placeholder="accounts.model_placeholder">
                             <div class="form-text" data-i18n="accounts.model_help">指定此账号使用的Claude模型，留空则使用默认模型</div>
                         </div>
+
+                        <!-- 自定义环境变量配置 -->
+                        <div class="mb-3">
+                            <label for="accountCustomEnvVarsJson" class="form-label">
+                                <i class="fas fa-cog me-1"></i>自定义环境变量 (JSON格式)
+                            </label>
+                            <textarea class="form-control" id="accountCustomEnvVarsJson" rows="4"
+                                      placeholder='{"VAR_NAME": "value", "ENABLE_FEATURE": true, "PORT": 3000}'></textarea>
+                            <div class="form-text">
+                                请输入JSON格式的环境变量配置。支持字符串、数字和布尔值类型。例如: {"VAR_NAME": "value", "DEBUG": true, "PORT": 3000}
+                            </div>
+                        </div>
+
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -712,6 +725,19 @@
                                 设为默认URL
                             </label>
                         </div>
+
+                        <!-- 默认环境变量配置 -->
+                        <div class="mb-3">
+                            <label for="urlDefaultEnvVarsJson" class="form-label">
+                                <i class="fas fa-cog me-1"></i>默认环境变量 (JSON格式)
+                            </label>
+                            <textarea class="form-control" id="urlDefaultEnvVarsJson" rows="4"
+                                      placeholder='{"ANTHROPIC_MODEL": "claude-3-5-sonnet-20241022", "TIMEOUT": 30000}'></textarea>
+                            <div class="form-text">
+                                为此URL配置默认的环境变量，这些变量将自动应用到使用此URL的所有账号中。请输入JSON格式，例如: {"MODEL": "value", "TIMEOUT": 30000}
+                            </div>
+                        </div>
+
                     </form>
                 </div>
                 <div class="modal-footer">

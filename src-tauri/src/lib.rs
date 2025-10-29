@@ -43,15 +43,17 @@ async fn create_account(
     token: String,
     baseUrl: String,
     model: String,
+    customEnvVars: Option<serde_json::Value>,
 ) -> Result<Account, String> {
     tracing::info!("创建账号: name={}, baseUrl={}, model={}", name, baseUrl, model);
-    
+
     let db = db.lock().await;
     let request = CreateAccountRequest {
         name,
         token,
         base_url: baseUrl,
         model,
+        custom_env_vars: customEnvVars,
     };
     
     match db.create_account(request).await {
@@ -80,6 +82,7 @@ async fn update_account(
     token: Option<String>,
     baseUrl: Option<String>,
     model: Option<String>,
+    customEnvVars: Option<serde_json::Value>,
 ) -> Result<Account, String> {
     let db = db.lock().await;
     let request = UpdateAccountRequest {
@@ -87,6 +90,7 @@ async fn update_account(
         token,
         base_url: baseUrl,
         model,
+        custom_env_vars: customEnvVars,
     };
     
     db.update_account(id, request)
@@ -248,6 +252,7 @@ async fn create_base_url(
     description: Option<String>,
     apiKey: Option<String>,
     isDefault: Option<bool>,
+    defaultEnvVars: Option<serde_json::Value>,
 ) -> Result<BaseUrl, String> {
     let db = db.lock().await;
     let request = CreateBaseUrlRequest {
@@ -256,6 +261,7 @@ async fn create_base_url(
         description,
         api_key: apiKey,
         is_default: isDefault,
+        default_env_vars: defaultEnvVars,
     };
     
     db.create_base_url(request)
@@ -282,6 +288,7 @@ async fn update_base_url(
     description: Option<String>,
     apiKey: Option<String>,
     isDefault: Option<bool>,
+    defaultEnvVars: Option<serde_json::Value>,
 ) -> Result<BaseUrl, String> {
     let db = db.lock().await;
     let request = UpdateBaseUrlRequest {
@@ -290,6 +297,7 @@ async fn update_base_url(
         description,
         api_key: apiKey,
         is_default: isDefault,
+        default_env_vars: defaultEnvVars,
     };
     
     db.update_base_url(id, request)
@@ -376,23 +384,31 @@ async fn switch_account(
         e.to_string()
     })?;
 
-    // 查找与 account.base_url 匹配的 BaseUrl，获取其 api_key
-    let api_key_name = base_urls
+    // 查找与 account.base_url 匹配的 BaseUrl，获取其 api_key 和默认环境变量
+    let (api_key_name, base_url_default_env_vars) = base_urls
         .iter()
         .find(|bu| bu.url == account.base_url)
-        .map(|bu| bu.api_key.clone())
-        .unwrap_or_else(|| "ANTHROPIC_API_KEY".to_string());
+        .map(|bu| {
+            let default_env_vars = bu.get_default_env_vars();
+            (bu.api_key.clone(), default_env_vars)
+        })
+        .unwrap_or_else(|| ("ANTHROPIC_API_KEY".to_string(), None));
+
+    // 获取账号的自定义环境变量
+    let account_custom_env_vars = account.get_custom_env_vars();
 
     drop(db_lock); // Release the lock before doing file operations
 
-    // Update Claude configuration file
+    // Update Claude configuration file with extended environment variables
     let config_manager = ClaudeConfigManager::new(directory.path.clone());
     config_manager
-        .update_env_config_with_options(
+        .update_env_config_with_extended_options(
             account.token,
             account.base_url,
             api_key_name,
-            isSandbox.unwrap_or(true)
+            isSandbox.unwrap_or(true),
+            base_url_default_env_vars,
+            account_custom_env_vars,
         )
         .map_err(|e| e.to_string())?;
 
@@ -1050,6 +1066,7 @@ async fn download_config_from_webdav(
                     token: token.to_string(),
                     base_url: base_url.to_string(),
                     model: model.to_string(),
+                    custom_env_vars: None,
                 };
 
                 if let Ok(_) = db_lock.create_account(request).await {
@@ -1087,6 +1104,7 @@ async fn download_config_from_webdav(
                     description,
                     api_key,
                     is_default,
+                    default_env_vars: None,
                 };
 
                 if let Ok(_) = db_lock.create_base_url(request).await {
@@ -1205,6 +1223,7 @@ async fn switch_account_with_claude_settings(
     claudeSettings: serde_json::Value,
 ) -> Result<String, String> {
     tracing::info!("切换账号并写入Claude设置: accountId={}, directoryId={}, isSandbox={:?}", accountId, directoryId, isSandbox);
+    tracing::info!("接收到的Claude配置: {}", serde_json::to_string_pretty(&claudeSettings).unwrap_or("无法序列化".to_string()));
     let db_lock = db.lock().await;
 
     // Switch in database
@@ -1239,12 +1258,18 @@ async fn switch_account_with_claude_settings(
         e.to_string()
     })?;
 
-    // 查找与 account.base_url 匹配的 BaseUrl，获取其 api_key
-    let api_key_name = base_urls
+    // 查找与 account.base_url 匹配的 BaseUrl，获取其 api_key 和默认环境变量
+    let (api_key_name, base_url_default_env_vars) = base_urls
         .iter()
         .find(|bu| bu.url == account.base_url)
-        .map(|bu| bu.api_key.clone())
-        .unwrap_or_else(|| "ANTHROPIC_API_KEY".to_string());
+        .map(|bu| {
+            let default_env_vars = bu.get_default_env_vars();
+            (bu.api_key.clone(), default_env_vars)
+        })
+        .unwrap_or_else(|| ("ANTHROPIC_API_KEY".to_string(), None));
+
+    // 获取账号的自定义环境变量
+    let account_custom_env_vars = account.get_custom_env_vars();
 
     drop(db_lock); // Release the lock before doing file operations
 
@@ -1252,14 +1277,16 @@ async fn switch_account_with_claude_settings(
     let account_token = account.token.clone();
     let account_base_url = account.base_url.clone();
 
-    // Update Claude configuration file with environment setup
+    // Update Claude configuration file with extended environment variables
     let config_manager = ClaudeConfigManager::new(directory.path.clone());
     config_manager
-        .update_env_config_with_options(
-            account.token,
-            account.base_url,
+        .update_env_config_with_extended_options(
+            account.token.clone(),
+            account.base_url.clone(),
             api_key_name.clone(),
-            isSandbox.unwrap_or(true)
+            isSandbox.unwrap_or(true),
+            base_url_default_env_vars.clone(),
+            account_custom_env_vars.clone(),
         )
         .map_err(|e| e.to_string())?;
 
@@ -1283,10 +1310,15 @@ async fn switch_account_with_claude_settings(
 
     let env_obj = settings_obj.get_mut("env").unwrap().as_object_mut().unwrap();
 
-    // Add account-specific environment variables - 根据 api_key_name 参数决定使用哪个环境变量名
+    // 只添加必需的系统环境变量，不覆盖用户自定义配置
+    // 这些变量对 Claude Code 正常运行是必需的
     env_obj.insert(api_key_name.clone(), serde_json::Value::String(account_token.clone()));
     env_obj.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(account_base_url));
     env_obj.insert("USER_NAME".to_string(), serde_json::Value::String(account.name.clone()));
+
+    // 注意：URL级别的默认环境变量和账号级别的自定义环境变量已在前端合并到 claudeSettings.env 中
+    // 这里不再重复处理，避免覆盖前端已经合并的配置
+    tracing::info!("最终写入settings.local.json的环境变量: {:?}", env_obj);
 
     // Add statusLine configuration
     settings_obj.insert("statusLine".to_string(), serde_json::json!({

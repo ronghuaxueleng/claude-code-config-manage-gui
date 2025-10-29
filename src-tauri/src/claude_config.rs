@@ -3,6 +3,7 @@ use std::fs;
 use std::path::Path;
 use serde_json::{json, Value};
 use anyhow::Result;
+use crate::models::parse_env_value;
 
 pub struct ClaudeConfigManager {
     directory_path: String,
@@ -99,12 +100,14 @@ impl ClaudeConfigManager {
         Ok(())
     }
 
-    pub fn update_env_config_with_options(
+    pub fn update_env_config_with_extended_options(
         &self,
         token: String,
         base_url: String,
         api_key_name: String,
-        is_sandbox: bool
+        is_sandbox: bool,
+        base_url_default_env_vars: Option<HashMap<String, String>>,
+        account_custom_env_vars: Option<HashMap<String, String>>,
     ) -> Result<bool> {
         let mut settings = self.read_settings()?;
 
@@ -112,14 +115,27 @@ impl ClaudeConfigManager {
             settings = json!({});
         }
 
-        let mut env_config = json!({
-            "ANTHROPIC_BASE_URL": base_url,
-        });
+        let mut env_config = json!({});
 
-        // 根据 api_key_name 参数决定使用哪个环境变量名
+        // 1. 设置基础必需的环境变量
+        env_config["ANTHROPIC_BASE_URL"] = json!(base_url);
         env_config[&api_key_name] = json!(token);
 
-        // 添加可选的环境变量
+        // 2. 添加 URL 级别的默认环境变量
+        if let Some(default_vars) = base_url_default_env_vars {
+            for (key, value) in default_vars {
+                env_config[&key] = parse_env_value(&value);
+            }
+        }
+
+        // 3. 添加账号级别的自定义环境变量（覆盖默认值）
+        if let Some(custom_vars) = account_custom_env_vars {
+            for (key, value) in custom_vars {
+                env_config[&key] = parse_env_value(&value);
+            }
+        }
+
+        // 4. 添加沙盒模式环境变量
         if is_sandbox {
             env_config["IS_SANDBOX"] = json!("1");
         }
@@ -133,6 +149,7 @@ impl ClaudeConfigManager {
 
         Ok(true)
     }
+
 
     pub fn get_env_config(&self) -> Result<HashMap<String, String>> {
         let settings = self.read_settings()?;
