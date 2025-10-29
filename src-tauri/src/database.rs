@@ -227,7 +227,6 @@ impl Database {
                                                             }
                                                         }
 
-                                                        migrated = true;
                                                         break; // 找到并迁移了一个，就停止
                                                     } else {
                                                         error!("迁移后文件大小不匹配！原:{} 新:{}", metadata.len(), new_metadata.len());
