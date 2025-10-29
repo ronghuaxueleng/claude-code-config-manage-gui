@@ -15,6 +15,7 @@ fn write_claude_settings(
     account_name: &str,
     api_key_name: &str,
     skip_permissions: bool,
+    use_proxy: bool,
 ) -> Result<()> {
     use serde_json::Value;
 
@@ -82,6 +83,14 @@ fn write_claude_settings(
             Value::String(account_model.to_string()),
         );
     }
+
+    // 处理代理配置
+    if !use_proxy {
+        // 如果未启用代理，删除代理环境变量
+        env_obj.remove("HTTP_PROXY");
+        env_obj.remove("HTTPS_PROXY");
+    }
+    // 如果启用代理，保留从数据库加载的代理配置（已经在 env 中）
 
     // 添加 statusLine 配置
     settings_obj.insert(
@@ -187,6 +196,12 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
         .default(true)
         .interact()?;
 
+    // 询问是否使用代理
+    let use_proxy = dialoguer::Confirm::new()
+        .with_prompt(t!("switch.prompt_use_proxy"))
+        .default(false)
+        .interact()?;
+
     // 沙盒模式默认开启
     let is_sandbox = true;
 
@@ -255,6 +270,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                         &account.name,
                         &api_key_name,
                         skip_permissions,
+                        use_proxy,
                     ) {
                         Ok(_) => {
                             println!("\n{}", t!("switch.success").green().bold());
@@ -270,6 +286,17 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                                         t!("switch.permission_skipped")
                                     } else {
                                         t!("switch.permission_required")
+                                    }
+                                )
+                            );
+                            println!(
+                                "{}",
+                                t!("switch.proxy").replace(
+                                    "{}",
+                                    if use_proxy {
+                                        t!("switch.proxy_enabled")
+                                    } else {
+                                        t!("switch.proxy_disabled")
                                     }
                                 )
                             );

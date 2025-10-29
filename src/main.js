@@ -1468,27 +1468,33 @@ async function quickSwitchFromList(accountId) {
         showError(window.i18n.t('error.select_directory_first'));
         return;
     }
-    
-    await performAccountSwitchInternal(accountId);
+
+    // 获取代理复选框的状态
+    const useProxy = document.getElementById('useProxyCheckbox').checked;
+
+    await performAccountSwitchInternal(accountId, true, useProxy);
 }
 
 // Perform account switch
 async function performAccountSwitch() {
     const accountId = document.getElementById('associationAccountSelect').value;
-    
+
     if (!accountId) {
         showError(window.i18n.t('error.select_account'));
         return;
     }
-    
+
+    // 获取代理复选框的状态
+    const useProxy = document.getElementById('useProxyCheckbox').checked;
+
     // 默认设置IS_SANDBOX为true
     const isSandbox = true;
-    
-    await performAccountSwitchInternal(accountId, isSandbox);
+
+    await performAccountSwitchInternal(accountId, isSandbox, useProxy);
 }
 
 // Internal account switch function
-async function performAccountSwitchInternal(accountId, isSandbox = true) {
+async function performAccountSwitchInternal(accountId, isSandbox = true, useProxy = false) {
     if (!currentDirectoryForAssociation) {
         showError(window.i18n.t('error.select_directory_first'));
         return;
@@ -1561,6 +1567,18 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
             }
         }
 
+        // 如果启用了代理，保留代理环境变量；否则删除它们
+        if (useProxy) {
+            // 代理配置已经在 claudeSettings.env 中了，不需要额外操作
+            // HTTP_PROXY 和 HTTPS_PROXY 已经从 Claude 配置页面加载
+        } else {
+            // 如果未启用代理，删除代理环境变量
+            if (claudeSettings.env) {
+                delete claudeSettings.env.HTTP_PROXY;
+                delete claudeSettings.env.HTTPS_PROXY;
+            }
+        }
+
         console.log('最终发送给后端的Claude配置:', claudeSettings);
 
         const result = await tauriSwitchAccountWithClaudeSettings(
@@ -1576,8 +1594,9 @@ async function performAccountSwitchInternal(accountId, isSandbox = true) {
         await loadAssociationAccounts();
         await onDirectorySelectionChange(currentDirectoryForAssociation);
 
-        // Reset selector
+        // Reset selector and proxy checkbox
         document.getElementById('associationAccountSelect').value = '';
+        document.getElementById('useProxyCheckbox').checked = false;
 
     } catch (error) {
         showError(window.i18n.t('error.switch_account') + ': ' + getErrorMessage(error));
@@ -2564,15 +2583,14 @@ async function loadCurrentClaudeSettings() {
         document.getElementById('disablePromptCaching').checked =
             claudeSettingsData.env.DISABLE_PROMPT_CACHING === 1 || claudeSettingsData.env.DISABLE_PROMPT_CACHING === '1';
 
-        // 更新文本型环境变量
-        document.getElementById('smallFastModel').value = claudeSettingsData.env.ANTHROPIC_SMALL_FAST_MODEL || '';
-
         // 更新数值型环境变量
         document.getElementById('maxOutputTokens').value = claudeSettingsData.env.CLAUDE_CODE_MAX_OUTPUT_TOKENS || '';
         document.getElementById('maxThinkingTokens').value = claudeSettingsData.env.MAX_THINKING_TOKENS || '';
         document.getElementById('maxMcpOutputTokens').value = claudeSettingsData.env.MAX_MCP_OUTPUT_TOKENS || '';
-        document.getElementById('bashTimeout').value = claudeSettingsData.env.BASH_DEFAULT_TIMEOUT_MS || '';
-        document.getElementById('mcpTimeout').value = claudeSettingsData.env.MCP_TIMEOUT || '';
+
+        // 更新代理配置
+        document.getElementById('httpProxy').value = claudeSettingsData.env.HTTP_PROXY || '';
+        document.getElementById('httpsProxy').value = claudeSettingsData.env.HTTPS_PROXY || '';
 
         return true; // 加载成功
 
@@ -2709,12 +2727,11 @@ function renderCustomEnvVars() {
         'IS_SANDBOX',
         'DISABLE_AUTOUPDATER',
         'DISABLE_PROMPT_CACHING',
-        'ANTHROPIC_SMALL_FAST_MODEL',
         'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
         'MAX_THINKING_TOKENS',
         'MAX_MCP_OUTPUT_TOKENS',
-        'BASH_DEFAULT_TIMEOUT_MS',
-        'MCP_TIMEOUT'
+        'HTTP_PROXY',
+        'HTTPS_PROXY'
     ];
 
     const customEnvVars = Object.entries(claudeSettingsData.env)
@@ -2796,17 +2813,6 @@ function setupClaudeSettingsEventListeners() {
         updatePreview();
     });
 
-    // 快速模型变更
-    document.getElementById('smallFastModel').addEventListener('input', function() {
-        const value = this.value.trim();
-        if (value) {
-            claudeSettingsData.env.ANTHROPIC_SMALL_FAST_MODEL = value;
-        } else {
-            delete claudeSettingsData.env.ANTHROPIC_SMALL_FAST_MODEL;
-        }
-        updatePreview();
-    });
-
     // 最大输出Token数变更
     document.getElementById('maxOutputTokens').addEventListener('input', function() {
         const value = this.value.trim();
@@ -2840,24 +2846,24 @@ function setupClaudeSettingsEventListeners() {
         updatePreview();
     });
 
-    // Bash超时时间变更
-    document.getElementById('bashTimeout').addEventListener('input', function() {
+    // HTTP代理变更
+    document.getElementById('httpProxy').addEventListener('input', function() {
         const value = this.value.trim();
         if (value) {
-            claudeSettingsData.env.BASH_DEFAULT_TIMEOUT_MS = parseInt(value);
+            claudeSettingsData.env.HTTP_PROXY = value;
         } else {
-            delete claudeSettingsData.env.BASH_DEFAULT_TIMEOUT_MS;
+            delete claudeSettingsData.env.HTTP_PROXY;
         }
         updatePreview();
     });
 
-    // MCP超时时间变更
-    document.getElementById('mcpTimeout').addEventListener('input', function() {
+    // HTTPS代理变更
+    document.getElementById('httpsProxy').addEventListener('input', function() {
         const value = this.value.trim();
         if (value) {
-            claudeSettingsData.env.MCP_TIMEOUT = parseInt(value);
+            claudeSettingsData.env.HTTPS_PROXY = value;
         } else {
-            delete claudeSettingsData.env.MCP_TIMEOUT;
+            delete claudeSettingsData.env.HTTPS_PROXY;
         }
         updatePreview();
     });
@@ -2913,12 +2919,11 @@ function addCustomEnvVar() {
         'IS_SANDBOX',
         'DISABLE_AUTOUPDATER',
         'DISABLE_PROMPT_CACHING',
-        'ANTHROPIC_SMALL_FAST_MODEL',
         'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
         'MAX_THINKING_TOKENS',
         'MAX_MCP_OUTPUT_TOKENS',
-        'BASH_DEFAULT_TIMEOUT_MS',
-        'MCP_TIMEOUT'
+        'HTTP_PROXY',
+        'HTTPS_PROXY'
     ];
 
     if (systemManagedEnvVars.includes(key)) {

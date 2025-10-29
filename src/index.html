@@ -236,6 +236,18 @@
                                     </select>
                                 </div>
 
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="useProxyCheckbox">
+                                        <label class="form-check-label" for="useProxyCheckbox" data-i18n="association.use_proxy">
+                                            使用代理
+                                        </label>
+                                    </div>
+                                    <div class="form-text" data-i18n="association.use_proxy_help">
+                                        启用后将通过代理服务器连接API
+                                    </div>
+                                </div>
+
                                 <button class="btn btn-success w-100" id="associationSwitchBtn" onclick="performAccountSwitch()" disabled data-i18n="association.switch_button">
                                     <i class="fas fa-sync-alt me-2"></i>切换到此账号
                                 </button>
@@ -424,10 +436,22 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label" data-i18n="claude.fast_model">快速模型</label>
-                                    <input type="text" class="form-control" id="smallFastModel" data-i18n-placeholder="claude.fast_model_placeholder">
-                                    <div class="form-text" data-i18n="claude.fast_model_help">
-                                        指定小型快速模型，用于简单任务 (ANTHROPIC_SMALL_FAST_MODEL)
+                                    <label class="form-label" data-i18n="claude.proxy_config_title">代理配置</label>
+
+                                    <div class="mb-2">
+                                        <label for="httpProxy" class="form-label small" data-i18n="claude.http_proxy">HTTP代理</label>
+                                        <input type="text" class="form-control" id="httpProxy" data-i18n-placeholder="claude.proxy_placeholder">
+                                        <div class="form-text" data-i18n="claude.http_proxy_help">
+                                            设置HTTP代理地址 (HTTP_PROXY)，例如: http://127.0.0.1:7890
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label for="httpsProxy" class="form-label small" data-i18n="claude.https_proxy">HTTPS代理</label>
+                                        <input type="text" class="form-control" id="httpsProxy" data-i18n-placeholder="claude.proxy_placeholder">
+                                        <div class="form-text" data-i18n="claude.https_proxy_help">
+                                            设置HTTPS代理地址 (HTTPS_PROXY)，例如: http://127.0.0.1:7890
+                                        </div>
                                     </div>
                                 </div>
 
@@ -452,22 +476,6 @@
                                     <input type="number" class="form-control" id="maxMcpOutputTokens" data-i18n-placeholder="claude.max_mcp_tokens_placeholder">
                                     <div class="form-text" data-i18n="claude.max_mcp_tokens_help">
                                         设置MCP工具输出的最大token数 (MAX_MCP_OUTPUT_TOKENS)
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label" data-i18n="claude.bash_timeout">Bash命令超时时间(毫秒)</label>
-                                    <input type="number" class="form-control" id="bashTimeout" data-i18n-placeholder="claude.bash_timeout_placeholder">
-                                    <div class="form-text" data-i18n="claude.bash_timeout_help">
-                                        设置Bash命令执行超时时间，单位毫秒 (BASH_DEFAULT_TIMEOUT_MS)
-                                    </div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label" data-i18n="claude.mcp_timeout">MCP超时时间(毫秒)</label>
-                                    <input type="number" class="form-control" id="mcpTimeout" data-i18n-placeholder="claude.mcp_timeout_placeholder">
-                                    <div class="form-text" data-i18n="claude.mcp_timeout_help">
-                                        设置MCP服务器超时时间，单位毫秒 (MCP_TIMEOUT)
                                     </div>
                                 </div>
 

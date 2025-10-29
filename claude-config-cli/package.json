@@ -1,0 +1,29 @@
+{
+  "name": "claude-config-cli",
+  "version": "1.5.0",
+  "description": "Claude Code Configuration Manager - CLI Build Scripts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node build.mjs",
+    "build:debug": "node build.mjs --debug",
+    "build:release": "node build.mjs",
+    "build:clean": "node build.mjs --clean",
+    "build:install": "node build.mjs --install",
+    "build:strip": "node build.mjs --strip",
+    "build:full": "node build.mjs --clean --strip --install",
+    "build:help": "node build.mjs --help",
+    "install:local": "cargo install --path .",
+    "clean": "cargo clean",
+    "test": "cargo test",
+    "run": "cargo run"
+  },
+  "keywords": [
+    "claude",
+    "cli",
+    "configuration",
+    "manager"
+  ],
+  "author": "ronghuaxueleng",
+  "license": "MIT"
+}

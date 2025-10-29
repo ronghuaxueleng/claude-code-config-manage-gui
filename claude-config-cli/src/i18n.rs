@@ -236,6 +236,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("switch.select_account", "选择账号");
     zh_cn.insert("switch.select_directory", "选择目录");
     zh_cn.insert("switch.prompt_skip_permissions", "跳过权限检查? (推荐选择 Yes)");
+    zh_cn.insert("switch.prompt_use_proxy", "使用代理? (从 Claude 配置中加载代理设置)");
     zh_cn.insert("switch.switching", "正在切换配置...");
     zh_cn.insert("switch.success", "✓ 配置切换成功!");
     zh_cn.insert("switch.success_env", "✓ 环境配置切换成功!");
@@ -246,6 +247,9 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("switch.permission", "  权限检查: {}");
     zh_cn.insert("switch.permission_skipped", "已跳过");
     zh_cn.insert("switch.permission_required", "需要确认");
+    zh_cn.insert("switch.proxy", "  代理: {}");
+    zh_cn.insert("switch.proxy_enabled", "已启用");
+    zh_cn.insert("switch.proxy_disabled", "未启用");
     zh_cn.insert(
         "switch.warn_claude_config",
         "警告: 获取Claude配置失败，使用默认配置: {}",
@@ -541,6 +545,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("switch.select_account", "Select Account");
     en_us.insert("switch.select_directory", "Select Directory");
     en_us.insert("switch.prompt_skip_permissions", "Skip permission check? (Recommended: Yes)");
+    en_us.insert("switch.prompt_use_proxy", "Use proxy? (Load proxy settings from Claude config)");
     en_us.insert("switch.switching", "Switching configuration...");
     en_us.insert("switch.success", "✓ Configuration switched successfully!");
     en_us.insert(
@@ -554,6 +559,9 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("switch.permission", "  Permission Check: {}");
     en_us.insert("switch.permission_skipped", "Skipped");
     en_us.insert("switch.permission_required", "Required");
+    en_us.insert("switch.proxy", "  Proxy: {}");
+    en_us.insert("switch.proxy_enabled", "Enabled");
+    en_us.insert("switch.proxy_disabled", "Disabled");
     en_us.insert(
         "switch.warn_claude_config",
         "Warning: Failed to get Claude config, using default: {}",
