@@ -6,7 +6,7 @@
  */
 
 import { spawn, execSync } from 'child_process';
-import { existsSync, mkdirSync, writeFileSync, copyFileSync, readdirSync, statSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 import { homedir, platform, arch } from 'os';
 import { fileURLToPath } from 'url';
@@ -116,7 +116,7 @@ function commandExists(command) {
 
 // 检查构建环境
 async function checkEnvironment() {
-  log.step(1, 7, '检查构建环境...');
+  log.step(1, 8, '检查构建环境...');
 
   // 检查 Rust/Cargo
   if (!commandExists('cargo')) {
@@ -164,7 +164,7 @@ function configureRustMirror() {
     return;
   }
 
-  log.step(2, 7, '配置 Rust 镜像源...');
+  log.step(2, 8, '配置 Rust 镜像源...');
 
   const cargoHome = process.env.CARGO_HOME || join(homedir(), '.cargo');
   const configPath = join(cargoHome, 'config.toml');
@@ -203,7 +203,7 @@ async function cleanBuild() {
     return;
   }
 
-  log.step(3, 7, '清理构建缓存...');
+  log.step(3, 8, '清理构建缓存...');
 
   try {
     await runCommand('cargo', ['clean'], { cwd: __dirname });
@@ -213,9 +213,55 @@ async function cleanBuild() {
   }
 }
 
+// 同步版本号：从 Cargo.toml 读取版本号并更新到 i18n.rs
+function syncVersionNumber() {
+  log.step(4, 8, '同步版本号...');
+
+  try {
+    // 读取 Cargo.toml 获取版本号
+    const cargoTomlPath = join(__dirname, 'Cargo.toml');
+    const cargoToml = readFileSync(cargoTomlPath, 'utf-8');
+    const versionMatch = cargoToml.match(/^version\s*=\s*"([^"]+)"/m);
+
+    if (!versionMatch) {
+      log.warning('无法从 Cargo.toml 读取版本号，跳过同步');
+      return;
+    }
+
+    const version = `v${versionMatch[1]}`;
+    log.info(`检测到版本号: ${version}`);
+
+    // 更新 i18n.rs 中的版本号
+    const i18nPath = join(__dirname, 'src', 'i18n.rs');
+    let i18nContent = readFileSync(i18nPath, 'utf-8');
+
+    // 替换中文版本号
+    const zhCnReplaced = i18nContent.replace(
+      /zh_cn\.insert\("app\.version",\s*"v[^"]+"\)/,
+      `zh_cn.insert("app.version", "${version}")`
+    );
+
+    // 替换英文版本号
+    const enUsReplaced = zhCnReplaced.replace(
+      /en_us\.insert\("app\.version",\s*"v[^"]+"\)/,
+      `en_us.insert("app.version", "${version}")`
+    );
+
+    if (enUsReplaced !== i18nContent) {
+      writeFileSync(i18nPath, enUsReplaced, 'utf-8');
+      log.success(`版本号已同步到 i18n.rs: ${version}`);
+    } else {
+      log.success('i18n.rs 版本号已是最新');
+    }
+  } catch (err) {
+    log.warning(`版本号同步失败: ${err.message}`);
+    log.warning('将继续构建，但版本号可能不一致');
+  }
+}
+
 // 检查并更新依赖
 async function updateDependencies() {
-  log.step(4, 7, '检查依赖...');
+  log.step(5, 8, '检查依赖...');
 
   if (existsSync(join(__dirname, 'Cargo.lock'))) {
     log.success('依赖已存在');
@@ -226,7 +272,7 @@ async function updateDependencies() {
 
 // 配置构建环境
 function setupBuildEnvironment() {
-  log.step(5, 7, '配置构建环境...');
+  log.step(6, 8, '配置构建环境...');
 
   const env = { ...process.env };
 
@@ -249,7 +295,7 @@ function setupBuildEnvironment() {
 
 // 执行构建
 async function build(env) {
-  log.step(6, 7, '开始构建...');
+  log.step(7, 8, '开始构建...');
   log.info('这可能需要几分钟时间，请耐心等待...\n');
 
   const buildArgs = ['build'];
@@ -317,7 +363,7 @@ async function installToSystem() {
     return;
   }
 
-  log.step(7, 7, '安装到系统...');
+  log.step(8, 8, '安装到系统...');
 
   const binaryPath = getBinaryPath();
 
@@ -407,13 +453,16 @@ async function main() {
     // 3. 清理构建缓存（如果需要）
     await cleanBuild();
 
-    // 4. 检查依赖
+    // 4. 同步版本号
+    syncVersionNumber();
+
+    // 5. 检查依赖
     await updateDependencies();
 
-    // 5. 配置构建环境
+    // 6. 配置构建环境
     const env = setupBuildEnvironment();
 
-    // 6. 执行构建
+    // 7. 执行构建
     const success = await build(env);
 
     if (!success) {
