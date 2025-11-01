@@ -17,11 +17,53 @@ use tokio::sync::Mutex;
 
 type DbState = Arc<Mutex<Database>>;
 
+// 更新 ~/.claude.json 文件，设置 hasCompletedOnboarding
+fn update_global_claude_config() -> Result<()> {
+    use serde_json::Value;
+    use std::fs;
+    use std::path::Path;
+
+    // 获取用户主目录
+    let home_dir = std::env::var("HOME")
+        .or_else(|_| std::env::var("USERPROFILE"))
+        .unwrap_or_else(|_| ".".to_string());
+
+    let config_path = Path::new(&home_dir).join(".claude.json");
+
+    // 读取现有配置或创建新配置
+    let mut config: Value = if config_path.exists() {
+        let content = fs::read_to_string(&config_path)?;
+        serde_json::from_str(&content).unwrap_or_else(|_| serde_json::json!({}))
+    } else {
+        serde_json::json!({})
+    };
+
+    // 确保是对象类型
+    if let Some(config_obj) = config.as_object_mut() {
+        // 添加或更新 hasCompletedOnboarding 字段
+        config_obj.insert(
+            "hasCompletedOnboarding".to_string(),
+            Value::Bool(true)
+        );
+
+        // 写回文件
+        let config_json = serde_json::to_string_pretty(&config)?;
+        fs::write(&config_path, config_json)?;
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // 初始化日志系统
     if let Err(e) = logger::Logger::init() {
         eprintln!("日志系统初始化失败: {}", e);
+    }
+
+    // 更新全局 Claude 配置
+    if let Err(e) = update_global_claude_config() {
+        eprintln!("警告: 无法更新 ~/.claude.json: {}", e);
     }
 
     // 清屏
