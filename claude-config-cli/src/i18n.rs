@@ -87,7 +87,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
 
     // 通用
     zh_cn.insert("app.name", "Claude Code 配置管理器");
-    zh_cn.insert("app.version", "v1.3.0");
+    zh_cn.insert("app.version", "v1.6.0");
     zh_cn.insert("app.cli_subtitle", "命令行版本");
     zh_cn.insert("app.exit_message", "感谢使用 Claude Code 配置管理器！");
 
@@ -363,7 +363,7 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
 
     // Common
     en_us.insert("app.name", "Claude Code Configuration Manager");
-    en_us.insert("app.version", "v1.3.0");
+    en_us.insert("app.version", "v1.6.0");
     en_us.insert("app.cli_subtitle", "CLI Version");
     en_us.insert(
         "app.exit_message",

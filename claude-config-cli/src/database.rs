@@ -460,6 +460,9 @@ impl Database {
     pub async fn migrate(&self) -> Result<(), SqlxError> {
         info!("开始数据库迁移检查");
 
+        // 先运行 initialize，确保所有表都存在（使用 IF NOT EXISTS，不会影响现有表）
+        self.initialize().await?;
+
         // 检查 accounts 表是否存在 model 字段
         let has_model_field: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'model'"
@@ -495,9 +498,6 @@ impl Database {
         } else {
             info!("base_urls 表已包含 api_key 字段，无需添加");
         }
-
-        // 重新运行所有表创建语句（使用 IF NOT EXISTS，不会影响现有表）
-        self.initialize().await?;
 
         info!("数据库迁移完成");
         Ok(())
