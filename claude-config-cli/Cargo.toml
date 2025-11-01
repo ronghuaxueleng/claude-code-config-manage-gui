@@ -1,6 +1,6 @@
 [package]
 name = "claude-config-cli"
-version = "1.5.0"
+version = "1.6.0"
 description = "Claude Code Configuration Manager - CLI Version (命令行版本)"
 authors = ["ronghuaxueleng"]
 edition = "2021"
