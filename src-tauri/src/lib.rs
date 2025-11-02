@@ -15,6 +15,22 @@ use claude_config::ClaudeConfigManager;
 type DbState = Arc<Mutex<Database>>;
 
 #[tauri::command]
+async fn save_json_file(file_path: String, content: String) -> Result<(), String> {
+    use std::fs;
+
+    tracing::info!("保存 JSON 文件到: {}", file_path);
+
+    fs::write(&file_path, content)
+        .map_err(|e| {
+            tracing::error!("保存文件失败: {}", e);
+            format!("保存文件失败: {}", e)
+        })?;
+
+    tracing::info!("文件保存成功");
+    Ok(())
+}
+
+#[tauri::command]
 async fn get_accounts(
     db: State<'_, DbState>,
     request: GetAccountsRequest,
@@ -1583,6 +1599,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            save_json_file,
             get_accounts,
             create_account,
             update_account,

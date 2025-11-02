@@ -1073,24 +1073,36 @@ async function confirmExportAccounts() {
         const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
         const defaultFilename = `accounts_export_${timestamp}.json`;
 
-        // 创建并下载文件（使用浏览器方式）
+        // 使用 Tauri dialog 选择保存位置
+        const { save } = window.__TAURI__.dialog;
+        const filePath = await save({
+            defaultPath: defaultFilename,
+            filters: [{
+                name: 'JSON',
+                extensions: ['json']
+            }]
+        });
+
+        if (!filePath) {
+            // 用户取消了保存
+            return;
+        }
+
+        // 使用后端命令保存文件
         const jsonStr = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = defaultFilename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        await invoke('save_json_file', {
+            filePath: filePath,
+            content: jsonStr
+        });
 
         // 关闭模态框
         const modal = bootstrap.Modal.getInstance(document.getElementById('exportSelectModal'));
         modal.hide();
 
+        // 显示成功消息，包含保存路径
         const message = window.i18n.t('accounts.export_success').replace('{count}', selectedAccounts.length);
-        showSuccess(message);
+        const pathMessage = window.i18n.t('accounts.export_saved_to').replace('{path}', filePath);
+        showSuccess(message + '\n' + pathMessage);
 
     } catch (error) {
         showError(window.i18n.t('accounts.export_error') + ': ' + getErrorMessage(error));

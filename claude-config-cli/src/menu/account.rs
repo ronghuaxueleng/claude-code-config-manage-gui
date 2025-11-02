@@ -178,6 +178,7 @@ async fn add_account(db: &DbState) -> Result<()> {
         token,
         base_url,
         model,
+        custom_env_vars: None,
     };
 
     match db_lock.create_account(request).await {
@@ -326,6 +327,7 @@ async fn edit_account(db: &DbState) -> Result<()> {
             token: Some(token),
             base_url: Some(base_url),
             model: Some(model),
+            custom_env_vars: None,
         };
 
         match db_lock.update_account(account.id, request).await {
@@ -561,6 +563,7 @@ async fn import_accounts(db: &DbState) -> Result<()> {
                 token: key.to_string(),
                 base_url: url.to_string(),
                 model: "".to_string(),
+                custom_env_vars: None,
             })
             .await
         {

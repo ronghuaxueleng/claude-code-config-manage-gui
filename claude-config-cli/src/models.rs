@@ -10,6 +10,7 @@ pub struct Account {
     pub base_url: String,
     pub model: String,
     pub is_active: bool,
+    pub custom_env_vars: String, // JSON 字符串存储自定义环境变量
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -20,6 +21,7 @@ pub struct CreateAccountRequest {
     pub token: String,
     pub base_url: String,
     pub model: String,
+    pub custom_env_vars: Option<serde_json::Value>, // 自定义环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -28,6 +30,7 @@ pub struct UpdateAccountRequest {
     pub token: Option<String>,
     pub base_url: Option<String>,
     pub model: Option<String>,
+    pub custom_env_vars: Option<serde_json::Value>, // 自定义环境变量
 }
 
 #[derive(Debug, Serialize, Deserialize, FromRow, Clone)]

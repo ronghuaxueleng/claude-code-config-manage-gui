@@ -425,6 +425,7 @@ async fn download_config(db: &DbState) -> Result<()> {
                                     token: token.to_string(),
                                     base_url: base_url.to_string(),
                                     model: model.to_string(),
+                                    custom_env_vars: None,
                                 };
 
                                 if let Ok(_) = db_lock.create_account(request).await {
