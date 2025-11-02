@@ -1073,32 +1073,24 @@ async function confirmExportAccounts() {
         const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
         const defaultFilename = `accounts_export_${timestamp}.json`;
 
-        // 使用 Tauri 的保存对话框
-        const { save } = window.__TAURI__.dialog;
-        const filePath = await save({
-            defaultPath: defaultFilename,
-            filters: [{
-                name: 'JSON',
-                extensions: ['json']
-            }]
-        });
-
-        if (!filePath) {
-            // 用户取消了保存
-            return;
-        }
-
-        // 写入文件
-        const { writeTextFile } = window.__TAURI__.fs;
+        // 创建并下载文件（使用浏览器方式）
         const jsonStr = JSON.stringify(exportData, null, 2);
-        await writeTextFile(filePath, jsonStr);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = defaultFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
         // 关闭模态框
         const modal = bootstrap.Modal.getInstance(document.getElementById('exportSelectModal'));
         modal.hide();
 
         const message = window.i18n.t('accounts.export_success').replace('{count}', selectedAccounts.length);
-        showSuccess(message + '\n' + window.i18n.t('accounts.export_saved_to').replace('{path}', filePath));
+        showSuccess(message);
 
     } catch (error) {
         showError(window.i18n.t('accounts.export_error') + ': ' + getErrorMessage(error));
