@@ -686,6 +686,16 @@
                         <span data-i18n="accounts.export_select_help">请选择要导出的账号，支持多选</span>
                     </div>
 
+                    <!-- URL 筛选 -->
+                    <div class="mb-3">
+                        <label for="exportUrlFilter" class="form-label">
+                            <i class="fas fa-filter me-1"></i><span data-i18n="accounts.filter_by_url">按 URL 筛选</span>
+                        </label>
+                        <select class="form-select" id="exportUrlFilter" onchange="filterExportAccountsByUrl()">
+                            <option value="" data-i18n="select.all_urls">所有URL</option>
+                        </select>
+                    </div>
+
                     <div class="mb-3">
                         <button class="btn btn-sm btn-outline-primary" onclick="selectAllExportAccounts()">
                             <i class="fas fa-check-square"></i> <span data-i18n="common.select_all">全选</span>
@@ -693,6 +703,9 @@
                         <button class="btn btn-sm btn-outline-secondary" onclick="deselectAllExportAccounts()">
                             <i class="fas fa-square"></i> <span data-i18n="common.deselect_all">取消全选</span>
                         </button>
+                        <span class="ms-3 text-muted small" id="exportSelectedCount">
+                            <span data-i18n="accounts.selected_count">已选择</span>: <strong>0</strong>
+                        </span>
                     </div>
 
                     <div id="exportAccountsList" class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">

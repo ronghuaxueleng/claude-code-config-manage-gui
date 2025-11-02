@@ -928,6 +928,7 @@ async function deleteAccount(accountId) {
 
 // 全局变量存储要导出的账号
 let exportAccountsData = [];
+let exportCurrentUrlFilter = ''; // 当前导出URL筛选
 
 // 批量导出账号
 async function exportAccounts() {
@@ -947,23 +948,17 @@ async function exportAccounts() {
 
         // 存储账号数据
         exportAccountsData = response.accounts;
+        exportCurrentUrlFilter = ''; // 重置筛选
+
+        // 填充 URL 筛选下拉框
+        const urlFilter = document.getElementById('exportUrlFilter');
+        const uniqueUrls = [...new Set(exportAccountsData.map(acc => acc.base_url))];
+
+        urlFilter.innerHTML = '<option value="">' + window.i18n.t('select.all_urls') + '</option>' +
+            uniqueUrls.map(url => `<option value="${url}">${url}</option>`).join('');
 
         // 渲染账号列表
-        const container = document.getElementById('exportAccountsList');
-        container.innerHTML = exportAccountsData.map((account, index) => `
-            <div class="form-check mb-2">
-                <input class="form-check-input export-account-checkbox" type="checkbox"
-                       value="${index}" id="exportAccount${index}" checked>
-                <label class="form-check-label" for="exportAccount${index}">
-                    <strong>${account.name}</strong>
-                    <br>
-                    <small class="text-muted">
-                        ${account.base_url} | ${account.token.substring(0, 20)}...
-                        ${account.model ? ` | <i class="fas fa-microchip"></i> ${account.model}` : ''}
-                    </small>
-                </label>
-            </div>
-        `).join('');
+        renderExportAccountsList();
 
         // 显示模态框
         const modal = new bootstrap.Modal(document.getElementById('exportSelectModal'));
@@ -974,11 +969,70 @@ async function exportAccounts() {
     }
 }
 
+// 渲染导出账号列表
+function renderExportAccountsList(filteredUrl = '') {
+    const container = document.getElementById('exportAccountsList');
+
+    // 根据 URL 筛选账号
+    const accountsToShow = filteredUrl
+        ? exportAccountsData.filter(acc => acc.base_url === filteredUrl)
+        : exportAccountsData;
+
+    if (accountsToShow.length === 0) {
+        container.innerHTML = '<div class="text-muted text-center py-3">' +
+            window.i18n.t('accounts.no_accounts_for_url') + '</div>';
+        updateExportSelectedCount();
+        return;
+    }
+
+    container.innerHTML = accountsToShow.map((account, index) => {
+        // 使用账号在原始数组中的索引
+        const originalIndex = exportAccountsData.indexOf(account);
+        return `
+            <div class="form-check mb-2">
+                <input class="form-check-input export-account-checkbox" type="checkbox"
+                       value="${originalIndex}" id="exportAccount${originalIndex}"
+                       onchange="updateExportSelectedCount()" checked>
+                <label class="form-check-label" for="exportAccount${originalIndex}">
+                    <strong>${account.name}</strong>
+                    <br>
+                    <small class="text-muted">
+                        ${account.base_url} | ${account.token.substring(0, 20)}...
+                        ${account.model ? ` | <i class="fas fa-microchip"></i> ${account.model}` : ''}
+                    </small>
+                </label>
+            </div>
+        `;
+    }).join('');
+
+    updateExportSelectedCount();
+}
+
+// 按 URL 筛选导出账号
+function filterExportAccountsByUrl() {
+    const urlFilter = document.getElementById('exportUrlFilter');
+    exportCurrentUrlFilter = urlFilter.value;
+    renderExportAccountsList(exportCurrentUrlFilter);
+}
+
+// 更新选中数量显示
+function updateExportSelectedCount() {
+    const selectedCount = document.querySelectorAll('.export-account-checkbox:checked').length;
+    const totalCount = document.querySelectorAll('.export-account-checkbox').length;
+
+    const countElement = document.getElementById('exportSelectedCount');
+    if (countElement) {
+        const countText = window.i18n.t('accounts.selected_count') || '已选择';
+        countElement.innerHTML = `${countText}: <strong>${selectedCount}</strong> / ${totalCount}`;
+    }
+}
+
 // 全选导出账号
 function selectAllExportAccounts() {
     document.querySelectorAll('.export-account-checkbox').forEach(checkbox => {
         checkbox.checked = true;
     });
+    updateExportSelectedCount();
 }
 
 // 取消全选导出账号
@@ -986,6 +1040,7 @@ function deselectAllExportAccounts() {
     document.querySelectorAll('.export-account-checkbox').forEach(checkbox => {
         checkbox.checked = false;
     });
+    updateExportSelectedCount();
 }
 
 // 确认导出账号
@@ -3377,6 +3432,8 @@ window.exportAccounts = exportAccounts;
 window.selectAllExportAccounts = selectAllExportAccounts;
 window.deselectAllExportAccounts = deselectAllExportAccounts;
 window.confirmExportAccounts = confirmExportAccounts;
+window.filterExportAccountsByUrl = filterExportAccountsByUrl;
+window.updateExportSelectedCount = updateExportSelectedCount;
 window.editDirectory = editDirectory;
 window.viewConfig = viewConfig;
 window.editBaseUrl = editBaseUrl;

@@ -70,6 +70,9 @@ const translations = {
         'accounts.export_no_selection': '请至少选择一个账号',
         'accounts.export_confirm': '导出选中的账号',
         'accounts.export_saved_to': '文件已保存到: {path}',
+        'accounts.filter_by_url': '按 URL 筛选',
+        'accounts.selected_count': '已选择',
+        'accounts.no_accounts_for_url': '该 URL 下没有账号',
         'accounts.import_file_invalid': '无效的导入文件格式',
 
         // 目录管理
@@ -577,6 +580,9 @@ const translations = {
         'accounts.export_no_selection': 'Please select at least one account',
         'accounts.export_confirm': 'Export Selected Accounts',
         'accounts.export_saved_to': 'File saved to: {path}',
+        'accounts.filter_by_url': 'Filter by URL',
+        'accounts.selected_count': 'Selected',
+        'accounts.no_accounts_for_url': 'No accounts for this URL',
         'accounts.import_file_invalid': 'Invalid import file format',
 
         // Directories
