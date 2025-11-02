@@ -140,6 +140,8 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("account.menu.add", "➕ 添加新账号");
     zh_cn.insert("account.menu.edit", "✏️  编辑账号");
     zh_cn.insert("account.menu.delete", "🗑️  删除账号");
+    zh_cn.insert("account.menu.import", "📥 批量导入");
+    zh_cn.insert("account.menu.export", "📤 批量导出");
     zh_cn.insert("account.list.no_records", "暂无账号记录");
     zh_cn.insert("account.list.header_id", "ID");
     zh_cn.insert("account.list.header_name", "账号名称");
@@ -165,6 +167,22 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("account.delete.confirm", "确定要删除账号 '{}' 吗?");
     zh_cn.insert("account.delete.success", "✓ 账号删除成功");
     zh_cn.insert("account.delete.error", "✗ 删除失败: {}");
+    zh_cn.insert("account.export.title", "批量导出账号");
+    zh_cn.insert("account.export.no_accounts", "暂无账号可导出");
+    zh_cn.insert("account.export.success", "✓ 成功导出 {} 个账号到文件: {file}");
+    zh_cn.insert("account.import.title", "批量导入账号");
+    zh_cn.insert("account.import.prompt_file", "请输入JSON文件路径");
+    zh_cn.insert("account.import.error_read", "✗ 读取文件失败: {}");
+    zh_cn.insert("account.import.error_parse", "✗ 解析JSON失败: {}");
+    zh_cn.insert("account.import.error_format", "✗ 文件格式无效，缺少 providers 数组");
+    zh_cn.insert("account.import.no_accounts", "文件中没有账号数据");
+    zh_cn.insert("account.import.processing", "正在处理导入...");
+    zh_cn.insert("account.import.skip_invalid", "跳过无效数据");
+    zh_cn.insert("account.import.skip_exists", "跳过已存在");
+    zh_cn.insert("account.import.imported", "已导入");
+    zh_cn.insert("account.import.failed", "导入失败");
+    zh_cn.insert("account.import.result_imported", "✓ 成功导入 {} 个账号");
+    zh_cn.insert("account.import.result_skipped", "⊖ 跳过 {} 个账号");
     zh_cn.insert("account.default_indicator", "(默认)");
 
     // 目录管理
@@ -425,6 +443,8 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("account.menu.add", "➕ Add New Account");
     en_us.insert("account.menu.edit", "✏️  Edit Account");
     en_us.insert("account.menu.delete", "🗑️  Delete Account");
+    en_us.insert("account.menu.import", "📥 Batch Import");
+    en_us.insert("account.menu.export", "📤 Batch Export");
     en_us.insert("account.list.no_records", "No account records");
     en_us.insert("account.list.header_id", "ID");
     en_us.insert("account.list.header_name", "Account Name");
@@ -456,6 +476,22 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     );
     en_us.insert("account.delete.success", "✓ Account deleted successfully");
     en_us.insert("account.delete.error", "✗ Deletion failed: {}");
+    en_us.insert("account.export.title", "Batch Export Accounts");
+    en_us.insert("account.export.no_accounts", "No accounts to export");
+    en_us.insert("account.export.success", "✓ Successfully exported {} account(s) to file: {file}");
+    en_us.insert("account.import.title", "Batch Import Accounts");
+    en_us.insert("account.import.prompt_file", "Enter JSON file path");
+    en_us.insert("account.import.error_read", "✗ Failed to read file: {}");
+    en_us.insert("account.import.error_parse", "✗ Failed to parse JSON: {}");
+    en_us.insert("account.import.error_format", "✗ Invalid file format, missing providers array");
+    en_us.insert("account.import.no_accounts", "No account data in file");
+    en_us.insert("account.import.processing", "Processing import...");
+    en_us.insert("account.import.skip_invalid", "Skip invalid data");
+    en_us.insert("account.import.skip_exists", "Skip existing");
+    en_us.insert("account.import.imported", "Imported");
+    en_us.insert("account.import.failed", "Import failed");
+    en_us.insert("account.import.result_imported", "✓ Successfully imported {} account(s)");
+    en_us.insert("account.import.result_skipped", "⊖ Skipped {} account(s)");
     en_us.insert("account.default_indicator", "(default)");
 
     // Directory Management

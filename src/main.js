@@ -926,6 +926,134 @@ async function deleteAccount(accountId) {
     }
 }
 
+// 批量导出账号
+async function exportAccounts() {
+    try {
+        // 获取所有账号（不分页）
+        const response = await tauriGetAccounts({
+            page: 1,
+            per_page: 10000,
+            search: null,
+            base_url: null
+        });
+
+        if (!response || !response.accounts || response.accounts.length === 0) {
+            showError(window.i18n.t('error.no_accounts_to_export') || '没有账号可导出');
+            return;
+        }
+
+        // 转换为导出格式（providers格式）
+        const exportData = {
+            providers: response.accounts.map(account => ({
+                name: account.name,
+                url: account.base_url,
+                key: account.token,
+                is_enabled: account.is_active || false,
+                weight: 100,
+                priority: 1
+            }))
+        };
+
+        // 生成文件名
+        const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
+        const filename = `accounts_export_${timestamp}.json`;
+
+        // 创建并下载文件
+        const jsonStr = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        const message = window.i18n.t('accounts.export_success').replace('{count}', response.accounts.length);
+        showSuccess(message);
+    } catch (error) {
+        showError(window.i18n.t('accounts.export_error') + ': ' + getErrorMessage(error));
+    }
+}
+
+// 批量导入账号
+async function importAccounts() {
+    // 创建文件输入元素
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            // 验证文件格式
+            if (!data.providers || !Array.isArray(data.providers)) {
+                showError(window.i18n.t('accounts.import_file_invalid'));
+                return;
+            }
+
+            let importedCount = 0;
+            let skippedCount = 0;
+
+            // 导入每个账号
+            for (const provider of data.providers) {
+                try {
+                    // 检查账号是否已存在（根据name或token）
+                    const existingAccounts = await tauriGetAccounts({
+                        page: 1,
+                        per_page: 10000,
+                        search: provider.name,
+                        base_url: null
+                    });
+
+                    // 检查是否存在同名或同token的账号
+                    const isDuplicate = existingAccounts.accounts.some(acc =>
+                        acc.name === provider.name || acc.token === provider.key
+                    );
+
+                    if (isDuplicate) {
+                        skippedCount++;
+                        continue; // 跳过已存在的账号
+                    }
+
+                    // 创建新账号
+                    await tauriCreateAccount({
+                        name: provider.name,
+                        token: provider.key,
+                        base_url: provider.url,
+                        model: '' // 默认为空
+                    });
+                    importedCount++;
+                } catch (error) {
+                    console.error(`导入账号 ${provider.name} 失败:`, error);
+                    // 继续导入下一个
+                }
+            }
+
+            // 重新加载账号列表
+            await loadAccounts(currentAccountPage);
+
+            // 显示导入结果
+            let message = window.i18n.t('accounts.import_success').replace('{count}', importedCount);
+            if (skippedCount > 0) {
+                message += '\n' + window.i18n.t('accounts.import_skipped').replace('{count}', skippedCount);
+            }
+            showSuccess(message);
+
+        } catch (error) {
+            showError(window.i18n.t('accounts.import_error') + ': ' + getErrorMessage(error));
+        }
+    };
+
+    input.click();
+}
+
 // Edit directory
 async function editDirectory(directoryId) {
     try {
@@ -3168,6 +3296,8 @@ window.saveDirectory = saveDirectory;
 window.saveBaseUrl = saveBaseUrl;
 window.editAccount = editAccount;
 window.promptDeleteAccount = promptDeleteAccount;
+window.importAccounts = importAccounts;
+window.exportAccounts = exportAccounts;
 window.editDirectory = editDirectory;
 window.viewConfig = viewConfig;
 window.editBaseUrl = editBaseUrl;

@@ -14,6 +14,8 @@ pub async fn account_menu(db: &DbState) -> Result<()> {
             t!("account.menu.add"),
             t!("account.menu.edit"),
             t!("account.menu.delete"),
+            t!("account.menu.import"),
+            t!("account.menu.export"),
         ];
 
         let selection = match Select::new()
@@ -33,6 +35,8 @@ pub async fn account_menu(db: &DbState) -> Result<()> {
             2 => add_account(db).await?,
             3 => edit_account(db).await?,
             4 => delete_account(db).await?,
+            5 => import_accounts(db).await?,
+            6 => export_accounts(db).await?,
             _ => unreachable!(),
         }
     }
@@ -397,6 +401,196 @@ async fn delete_account(db: &DbState) -> Result<()> {
             }
         }
     }
+
+    Ok(())
+}
+
+// 导出账号到JSON文件
+async fn export_accounts(db: &DbState) -> Result<()> {
+    use std::fs;
+
+    println!("\n{}", t!("account.export.title").cyan().bold());
+
+    // 获取所有账号
+    let db_lock = db.lock().await;
+    let request = GetAccountsRequest {
+        page: Some(1),
+        per_page: Some(10000),
+        search: None,
+        base_url: None,
+    };
+    let response = db_lock.get_accounts(request).await?;
+    drop(db_lock);
+
+    if response.accounts.is_empty() {
+        println!("\n{}", t!("account.export.no_accounts").yellow());
+        return Ok(());
+    }
+
+    // 构造导出数据（providers格式）
+    let export_data = serde_json::json!({
+        "providers": response.accounts.iter().map(|account| {
+            serde_json::json!({
+                "name": account.name,
+                "url": account.base_url,
+                "key": account.token,
+                "is_enabled": account.is_active,
+                "weight": 100,
+                "priority": 1
+            })
+        }).collect::<Vec<_>>()
+    });
+
+    // 生成文件名
+    let timestamp = chrono::Local::now().format("%Y-%m-%dT%H-%M-%S");
+    let filename = format!("accounts_export_{}.json", timestamp);
+
+    // 写入文件
+    let json_str = serde_json::to_string_pretty(&export_data)?;
+    fs::write(&filename, json_str)?;
+
+    println!(
+        "\n{}",
+        t!("account.export.success")
+            .replace("{}", &response.accounts.len().to_string())
+            .replace("{file}", &filename)
+            .green()
+    );
+
+    Ok(())
+}
+
+// 从JSON文件导入账号
+async fn import_accounts(db: &DbState) -> Result<()> {
+    use std::fs;
+
+    println!("\n{}", t!("account.import.title").cyan().bold());
+
+    // 输入文件路径
+    let file_path: String = Input::new()
+        .with_prompt(t!("account.import.prompt_file"))
+        .interact_text()?;
+
+    // 读取文件
+    let content = match fs::read_to_string(&file_path) {
+        Ok(c) => c,
+        Err(e) => {
+            println!(
+                "\n{}",
+                t!("account.import.error_read")
+                    .replace("{}", &e.to_string())
+                    .red()
+            );
+            return Ok(());
+        }
+    };
+
+    // 解析JSON
+    let data: serde_json::Value = match serde_json::from_str(&content) {
+        Ok(d) => d,
+        Err(e) => {
+            println!(
+                "\n{}",
+                t!("account.import.error_parse")
+                    .replace("{}", &e.to_string())
+                    .red()
+            );
+            return Ok(());
+        }
+    };
+
+    // 验证格式
+    let providers = match data.get("providers").and_then(|p| p.as_array()) {
+        Some(p) => p,
+        None => {
+            println!("\n{}", t!("account.import.error_format").red());
+            return Ok(());
+        }
+    };
+
+    if providers.is_empty() {
+        println!("\n{}", t!("account.import.no_accounts").yellow());
+        return Ok(());
+    }
+
+    // 导入账号
+    let mut imported_count = 0;
+    let mut skipped_count = 0;
+
+    println!("\n{}", t!("account.import.processing").cyan());
+
+    for provider in providers {
+        let name = provider.get("name").and_then(|n| n.as_str()).unwrap_or("");
+        let url = provider.get("url").and_then(|u| u.as_str()).unwrap_or("");
+        let key = provider.get("key").and_then(|k| k.as_str()).unwrap_or("");
+
+        if name.is_empty() || url.is_empty() || key.is_empty() {
+            println!("  {} {}", "⚠".yellow(), t!("account.import.skip_invalid"));
+            skipped_count += 1;
+            continue;
+        }
+
+        // 检查是否已存在
+        let db_lock = db.lock().await;
+        let existing = db_lock
+            .get_accounts(GetAccountsRequest {
+                page: Some(1),
+                per_page: Some(10000),
+                search: Some(name.to_string()),
+                base_url: None,
+            })
+            .await?;
+
+        let is_duplicate = existing.accounts.iter().any(|acc| {
+            acc.name == name || acc.token == key
+        });
+
+        if is_duplicate {
+            println!("  {} {}: {}", "⊖".yellow(), t!("account.import.skip_exists"), name);
+            skipped_count += 1;
+            drop(db_lock);
+            continue;
+        }
+
+        // 创建账号
+        match db_lock
+            .create_account(CreateAccountRequest {
+                name: name.to_string(),
+                token: key.to_string(),
+                base_url: url.to_string(),
+                model: "".to_string(),
+            })
+            .await
+        {
+            Ok(_) => {
+                println!("  {} {}: {}", "✓".green(), t!("account.import.imported"), name);
+                imported_count += 1;
+            }
+            Err(e) => {
+                println!("  {} {}: {} ({})", "✗".red(), t!("account.import.failed"), name, e);
+                skipped_count += 1;
+            }
+        }
+        drop(db_lock);
+    }
+
+    // 显示结果
+    println!("\n{}", "=".repeat(50).cyan());
+    println!(
+        "{}",
+        t!("account.import.result_imported")
+            .replace("{}", &imported_count.to_string())
+            .green()
+    );
+    if skipped_count > 0 {
+        println!(
+            "{}",
+            t!("account.import.result_skipped")
+                .replace("{}", &skipped_count.to_string())
+                .yellow()
+        );
+    }
+    println!("{}", "=".repeat(50).cyan());
 
     Ok(())
 }

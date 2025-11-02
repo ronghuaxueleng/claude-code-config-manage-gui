@@ -56,6 +56,14 @@ const translations = {
         'accounts.model': '模型',
         'accounts.model_placeholder': '例如: claude-sonnet-4-20250514',
         'accounts.model_help': '指定此账号使用的Claude模型，留空则使用默认模型',
+        'accounts.import': '批量导入',
+        'accounts.export': '批量导出',
+        'accounts.import_success': '成功导入 {count} 个账号',
+        'accounts.import_skipped': '跳过 {count} 个已存在的账号',
+        'accounts.import_error': '导入失败',
+        'accounts.export_success': '成功导出 {count} 个账号',
+        'accounts.export_error': '导出失败',
+        'accounts.import_file_invalid': '无效的导入文件格式',
 
         // 目录管理
         'directories.title': '目录管理',
@@ -548,6 +556,14 @@ const translations = {
         'accounts.model': 'Model',
         'accounts.model_placeholder': 'e.g., claude-sonnet-4-20250514',
         'accounts.model_help': 'Specify the Claude model for this account, leave empty to use default',
+        'accounts.import': 'Batch Import',
+        'accounts.export': 'Batch Export',
+        'accounts.import_success': 'Successfully imported {count} account(s)',
+        'accounts.import_skipped': 'Skipped {count} existing account(s)',
+        'accounts.import_error': 'Import failed',
+        'accounts.export_success': 'Successfully exported {count} account(s)',
+        'accounts.export_error': 'Export failed',
+        'accounts.import_file_invalid': 'Invalid import file format',
 
         // Directories
         'directories.title': 'Directory Management',
