@@ -1,0 +1,92 @@
+{
+  "providers": [
+    {
+      "name": "cadet-morass-edible",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-21hZi6garQsM5sszmmcq12fiER93xbzS3Yq2rRI9bEtSvThZ",
+      "is_enabled": false,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "plain-belittle-melee",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-3SpwpLSbLkwZfbxX7E7i4wYNrVtNBTfhcU9anmvzKMAgZQkr",
+      "is_enabled": false,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "lives-torr-act",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-inj0Do2fqRQTWtIY4MGc7uGLgLQYOimw1IRMmdYvAu2VgNVj",
+      "is_enabled": false,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "capriole-gens-peter",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-qHdZ8LP3UVZiiOuHi1TODob98XjLz4O1BKxLfRxKf4F8MuoY",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "boot-unquiet-luscious",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-2jHTbNmRrzPeuXuHW2VYmjueEPRQ3O4EVO2IycWye275p5MQ",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "jishuizaizi",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-lwUvoFrBeYW7oN0aFncq5JZT2WhCHfBqwoGaPoEZz6JlxQhV",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "xiangrikui-520",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-8FgcBxbR3koscqFVG5ZKhKBVEbxwPWsPxtBSVBt0HyDsfZ7o",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "ronghuahaha",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-zldL2LLUIAC9UJLDQgdMnTk28W1WIFzIukAMHa5OWwUmQNMD",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "xiaozaizi520",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-uFuVENR0jCWmOWsTvgKF6x39RNkonA5SsKmUVxuH0G0qbqM5",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "farina-shout-dumb",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-35qO9qtNWIruyF3LcMd7AecEfXfdWyuu0LJrLtQ7yhjZ4YR9",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    },
+    {
+      "name": "ronghuaxueleng",
+      "url": "https://q.quuvv.cn",
+      "key": "sk-nmfH4Q68XT6xXdI3WaueMDpBrSJvuqwhFm8oiyk65Gg3Y1ZE",
+      "is_enabled": true,
+      "weight": 100,
+      "priority": 1
+    }
+  ]
+}

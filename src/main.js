@@ -1024,12 +1024,12 @@ async function importAccounts() {
                     }
 
                     // 创建新账号
-                    await tauriCreateAccount({
-                        name: provider.name,
-                        token: provider.key,
-                        base_url: provider.url,
-                        model: '' // 默认为空
-                    });
+                    await tauriCreateAccount(
+                        provider.name,
+                        provider.key,
+                        provider.url,
+                        '' // 默认为空
+                    );
                     console.log(`成功导入账号: ${provider.name}`);
                     importedCount++;
                 } catch (error) {
