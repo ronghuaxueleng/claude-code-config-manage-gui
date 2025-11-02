@@ -926,6 +926,9 @@ async function deleteAccount(accountId) {
     }
 }
 
+// 全局变量存储要导出的账号
+let exportAccountsData = [];
+
 // 批量导出账号
 async function exportAccounts() {
     try {
@@ -942,9 +945,66 @@ async function exportAccounts() {
             return;
         }
 
+        // 存储账号数据
+        exportAccountsData = response.accounts;
+
+        // 渲染账号列表
+        const container = document.getElementById('exportAccountsList');
+        container.innerHTML = exportAccountsData.map((account, index) => `
+            <div class="form-check mb-2">
+                <input class="form-check-input export-account-checkbox" type="checkbox"
+                       value="${index}" id="exportAccount${index}" checked>
+                <label class="form-check-label" for="exportAccount${index}">
+                    <strong>${account.name}</strong>
+                    <br>
+                    <small class="text-muted">
+                        ${account.base_url} | ${account.token.substring(0, 20)}...
+                        ${account.model ? ` | <i class="fas fa-microchip"></i> ${account.model}` : ''}
+                    </small>
+                </label>
+            </div>
+        `).join('');
+
+        // 显示模态框
+        const modal = new bootstrap.Modal(document.getElementById('exportSelectModal'));
+        modal.show();
+
+    } catch (error) {
+        showError(window.i18n.t('accounts.export_error') + ': ' + getErrorMessage(error));
+    }
+}
+
+// 全选导出账号
+function selectAllExportAccounts() {
+    document.querySelectorAll('.export-account-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+// 取消全选导出账号
+function deselectAllExportAccounts() {
+    document.querySelectorAll('.export-account-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+
+// 确认导出账号
+async function confirmExportAccounts() {
+    try {
+        // 获取选中的账号
+        const selectedIndexes = Array.from(document.querySelectorAll('.export-account-checkbox:checked'))
+            .map(checkbox => parseInt(checkbox.value));
+
+        if (selectedIndexes.length === 0) {
+            showError(window.i18n.t('accounts.export_no_selection') || '请至少选择一个账号');
+            return;
+        }
+
+        const selectedAccounts = selectedIndexes.map(index => exportAccountsData[index]);
+
         // 转换为导出格式（providers格式）
         const exportData = {
-            providers: response.accounts.map(account => ({
+            providers: selectedAccounts.map(account => ({
                 name: account.name,
                 url: account.base_url,
                 key: account.token,
@@ -954,24 +1014,37 @@ async function exportAccounts() {
             }))
         };
 
-        // 生成文件名
+        // 生成默认文件名
         const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-        const filename = `accounts_export_${timestamp}.json`;
+        const defaultFilename = `accounts_export_${timestamp}.json`;
 
-        // 创建并下载文件
+        // 使用 Tauri 的保存对话框
+        const { save } = window.__TAURI__.dialog;
+        const filePath = await save({
+            defaultPath: defaultFilename,
+            filters: [{
+                name: 'JSON',
+                extensions: ['json']
+            }]
+        });
+
+        if (!filePath) {
+            // 用户取消了保存
+            return;
+        }
+
+        // 写入文件
+        const { writeTextFile } = window.__TAURI__.fs;
         const jsonStr = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        await writeTextFile(filePath, jsonStr);
 
-        const message = window.i18n.t('accounts.export_success').replace('{count}', response.accounts.length);
-        showSuccess(message);
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('exportSelectModal'));
+        modal.hide();
+
+        const message = window.i18n.t('accounts.export_success').replace('{count}', selectedAccounts.length);
+        showSuccess(message + '\n' + window.i18n.t('accounts.export_saved_to').replace('{path}', filePath));
+
     } catch (error) {
         showError(window.i18n.t('accounts.export_error') + ': ' + getErrorMessage(error));
     }
@@ -3301,6 +3374,9 @@ window.editAccount = editAccount;
 window.promptDeleteAccount = promptDeleteAccount;
 window.importAccounts = importAccounts;
 window.exportAccounts = exportAccounts;
+window.selectAllExportAccounts = selectAllExportAccounts;
+window.deselectAllExportAccounts = deselectAllExportAccounts;
+window.confirmExportAccounts = confirmExportAccounts;
 window.editDirectory = editDirectory;
 window.viewConfig = viewConfig;
 window.editBaseUrl = editBaseUrl;

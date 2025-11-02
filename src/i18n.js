@@ -25,6 +25,8 @@ const translations = {
         'common.prev': '上一步',
         'common.all': '全部',
         'common.none': '无',
+        'common.select_all': '全选',
+        'common.deselect_all': '取消全选',
 
         // 导航标签
         'nav.accounts': '账号管理',
@@ -63,6 +65,11 @@ const translations = {
         'accounts.import_error': '导入失败',
         'accounts.export_success': '成功导出 {count} 个账号',
         'accounts.export_error': '导出失败',
+        'accounts.export_select_title': '选择要导出的账号',
+        'accounts.export_select_help': '请选择要导出的账号，支持多选',
+        'accounts.export_no_selection': '请至少选择一个账号',
+        'accounts.export_confirm': '导出选中的账号',
+        'accounts.export_saved_to': '文件已保存到: {path}',
         'accounts.import_file_invalid': '无效的导入文件格式',
 
         // 目录管理
@@ -525,6 +532,8 @@ const translations = {
         'common.prev': 'Previous',
         'common.all': 'All',
         'common.none': 'None',
+        'common.select_all': 'Select All',
+        'common.deselect_all': 'Deselect All',
 
         // Navigation
         'nav.accounts': 'Accounts',
@@ -563,6 +572,11 @@ const translations = {
         'accounts.import_error': 'Import failed',
         'accounts.export_success': 'Successfully exported {count} account(s)',
         'accounts.export_error': 'Export failed',
+        'accounts.export_select_title': 'Select Accounts to Export',
+        'accounts.export_select_help': 'Please select accounts to export (multi-select supported)',
+        'accounts.export_no_selection': 'Please select at least one account',
+        'accounts.export_confirm': 'Export Selected Accounts',
+        'accounts.export_saved_to': 'File saved to: {path}',
         'accounts.import_file_invalid': 'Invalid import file format',
 
         // Directories
