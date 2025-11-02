@@ -519,6 +519,18 @@ async fn import_accounts(db: &DbState) -> Result<()> {
 
     println!("\n{}", t!("account.import.processing").cyan());
 
+    // 先获取所有现有账号，避免每次都查询
+    let db_lock = db.lock().await;
+    let existing_accounts = db_lock
+        .get_accounts(GetAccountsRequest {
+            page: Some(1),
+            per_page: Some(10000),
+            search: None, // 不使用搜索，获取所有账号
+            base_url: None,
+        })
+        .await?;
+    drop(db_lock);
+
     for provider in providers {
         let name = provider.get("name").and_then(|n| n.as_str()).unwrap_or("");
         let url = provider.get("url").and_then(|u| u.as_str()).unwrap_or("");
@@ -530,29 +542,19 @@ async fn import_accounts(db: &DbState) -> Result<()> {
             continue;
         }
 
-        // 检查是否已存在
-        let db_lock = db.lock().await;
-        let existing = db_lock
-            .get_accounts(GetAccountsRequest {
-                page: Some(1),
-                per_page: Some(10000),
-                search: Some(name.to_string()),
-                base_url: None,
-            })
-            .await?;
-
-        let is_duplicate = existing.accounts.iter().any(|acc| {
+        // 检查是否已存在（精确匹配）
+        let is_duplicate = existing_accounts.accounts.iter().any(|acc| {
             acc.name == name || acc.token == key
         });
 
         if is_duplicate {
             println!("  {} {}: {}", "⊖".yellow(), t!("account.import.skip_exists"), name);
             skipped_count += 1;
-            drop(db_lock);
             continue;
         }
 
         // 创建账号
+        let db_lock = db.lock().await;
         match db_lock
             .create_account(CreateAccountRequest {
                 name: name.to_string(),

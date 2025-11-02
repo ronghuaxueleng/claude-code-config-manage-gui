@@ -1001,23 +1001,24 @@ async function importAccounts() {
             let importedCount = 0;
             let skippedCount = 0;
 
+            // 先获取所有现有账号，避免每次都查询
+            const existingAccountsResponse = await tauriGetAccounts({
+                page: 1,
+                per_page: 10000,
+                search: null,
+                base_url: null
+            });
+
             // 导入每个账号
             for (const provider of data.providers) {
                 try {
-                    // 检查账号是否已存在（根据name或token）
-                    const existingAccounts = await tauriGetAccounts({
-                        page: 1,
-                        per_page: 10000,
-                        search: provider.name,
-                        base_url: null
-                    });
-
-                    // 检查是否存在同名或同token的账号
-                    const isDuplicate = existingAccounts.accounts.some(acc =>
+                    // 检查是否存在同名或同token的账号（精确匹配）
+                    const isDuplicate = existingAccountsResponse.accounts.some(acc =>
                         acc.name === provider.name || acc.token === provider.key
                     );
 
                     if (isDuplicate) {
+                        console.log(`跳过重复账号: ${provider.name}`);
                         skippedCount++;
                         continue; // 跳过已存在的账号
                     }
@@ -1029,9 +1030,11 @@ async function importAccounts() {
                         base_url: provider.url,
                         model: '' // 默认为空
                     });
+                    console.log(`成功导入账号: ${provider.name}`);
                     importedCount++;
                 } catch (error) {
                     console.error(`导入账号 ${provider.name} 失败:`, error);
+                    skippedCount++; // 失败的也算跳过
                     // 继续导入下一个
                 }
             }
