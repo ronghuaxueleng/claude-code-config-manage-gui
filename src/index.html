@@ -256,6 +256,18 @@
                                     </div>
                                 </div>
 
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="useHostIpCheckbox">
+                                        <label class="form-check-label" for="useHostIpCheckbox" data-i18n="association.use_host_ip">
+                                            使用宿主机IP
+                                        </label>
+                                    </div>
+                                    <div class="form-text" data-i18n="association.use_host_ip_help">
+                                        启用后将 ANTHROPIC_BASE_URL 中的 IP 地址替换为宿主机 IP（仅支持 IP:端口 格式）
+                                    </div>
+                                </div>
+
                                 <button class="btn btn-success w-100" id="associationSwitchBtn" onclick="performAccountSwitch()" disabled data-i18n="association.switch_button">
                                     <i class="fas fa-sync-alt me-2"></i>切换到此账号
                                 </button>

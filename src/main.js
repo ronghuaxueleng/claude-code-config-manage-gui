@@ -1073,36 +1073,24 @@ async function confirmExportAccounts() {
         const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
         const defaultFilename = `accounts_export_${timestamp}.json`;
 
-        // 使用 Tauri dialog 选择保存位置
-        const { save } = window.__TAURI__.dialog;
-        const filePath = await save({
-            defaultPath: defaultFilename,
-            filters: [{
-                name: 'JSON',
-                extensions: ['json']
-            }]
-        });
-
-        if (!filePath) {
-            // 用户取消了保存
-            return;
-        }
-
-        // 使用后端命令保存文件
+        // 创建并下载文件（使用浏览器方式）
         const jsonStr = JSON.stringify(exportData, null, 2);
-        await invoke('save_json_file', {
-            filePath: filePath,
-            content: jsonStr
-        });
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = defaultFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
 
         // 关闭模态框
         const modal = bootstrap.Modal.getInstance(document.getElementById('exportSelectModal'));
         modal.hide();
 
-        // 显示成功消息，包含保存路径
         const message = window.i18n.t('accounts.export_success').replace('{count}', selectedAccounts.length);
-        const pathMessage = window.i18n.t('accounts.export_saved_to').replace('{path}', filePath);
-        showSuccess(message + '\n' + pathMessage);
+        showSuccess(message);
 
     } catch (error) {
         showError(window.i18n.t('accounts.export_error') + ': ' + getErrorMessage(error));
@@ -1828,6 +1816,59 @@ async function performAccountSwitchInternal(accountId, isSandbox = true, useProx
             } else {
                 console.log('账号没有自定义环境变量');
             }
+
+            // 如果自定义环境变量中没有 ANTHROPIC_BASE_URL，但账号有 base_url，则使用 base_url
+            if (!claudeSettings.env.ANTHROPIC_BASE_URL && account.base_url) {
+                claudeSettings.env.ANTHROPIC_BASE_URL = account.base_url;
+                console.log('使用账号的 base_url 作为 ANTHROPIC_BASE_URL:', account.base_url);
+            }
+        }
+
+        // 如果启用了使用宿主机IP，替换 ANTHROPIC_BASE_URL 中的 IP
+        const useHostIp = document.getElementById('useHostIpCheckbox').checked;
+        let replacedUrl = null; // 记录替换信息
+
+        if (useHostIp) {
+            try {
+                // 获取宿主机 IP
+                const hostIp = await invoke('get_host_ip');
+                console.log('✓ 获取到宿主机 IP:', hostIp);
+
+                // 检查是否有 ANTHROPIC_BASE_URL
+                if (claudeSettings.env && claudeSettings.env.ANTHROPIC_BASE_URL) {
+                    const baseUrl = claudeSettings.env.ANTHROPIC_BASE_URL;
+                    console.log('原始 ANTHROPIC_BASE_URL:', baseUrl);
+
+                    // 匹配 http://IP:端口 或 https://IP:端口 格式
+                    const ipPortRegex = /^(https?:\/\/)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(:\d+)(.*)$/;
+                    const match = baseUrl.match(ipPortRegex);
+
+                    if (match) {
+                        // 替换 IP 部分，保留协议、端口和路径
+                        const newBaseUrl = `${match[1]}${hostIp}${match[3]}${match[4]}`;
+                        claudeSettings.env.ANTHROPIC_BASE_URL = newBaseUrl;
+                        console.log('✓ 替换后的 ANTHROPIC_BASE_URL:', newBaseUrl);
+
+                        // 记录替换信息，稍后显示
+                        replacedUrl = {
+                            hostIp,
+                            oldUrl: baseUrl,
+                            newUrl: newBaseUrl
+                        };
+                    } else {
+                        console.warn('ANTHROPIC_BASE_URL 不是 IP:端口 格式，跳过替换:', baseUrl);
+                        showError(`ANTHROPIC_BASE_URL 格式不正确，必须是 http://IP:端口 格式\n当前值: ${baseUrl}`);
+                        return;
+                    }
+                } else {
+                    showError('未配置 ANTHROPIC_BASE_URL，无法替换IP。\n请在账号的自定义环境变量中添加 ANTHROPIC_BASE_URL');
+                    return;
+                }
+            } catch (error) {
+                console.error('获取宿主机 IP 失败:', error);
+                showError('获取宿主机 IP 失败: ' + getErrorMessage(error));
+                return;
+            }
         }
 
         // 如果启用了代理，保留代理环境变量；否则删除它们
@@ -1851,7 +1892,12 @@ async function performAccountSwitchInternal(accountId, isSandbox = true, useProx
             claudeSettings
         );
 
-        showSuccess(result);
+        // 显示成功消息，如果有 IP 替换信息则一并显示
+        let successMessage = result;
+        if (replacedUrl) {
+            successMessage += `\n\n✓ 宿主机 IP: ${replacedUrl.hostIp}\n✓ 已替换: ${replacedUrl.oldUrl}\n  → ${replacedUrl.newUrl}`;
+        }
+        showSuccess(successMessage);
 
         // Reload data
         await loadAssociationAccounts();
@@ -1860,6 +1906,7 @@ async function performAccountSwitchInternal(accountId, isSandbox = true, useProx
         // Reset selector and proxy checkbox
         document.getElementById('associationAccountSelect').value = '';
         document.getElementById('useProxyCheckbox').checked = false;
+        document.getElementById('useHostIpCheckbox').checked = false;
 
     } catch (error) {
         showError(window.i18n.t('error.switch_account') + ': ' + getErrorMessage(error));

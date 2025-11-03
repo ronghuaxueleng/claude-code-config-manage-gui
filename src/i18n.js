@@ -102,6 +102,8 @@ const translations = {
         'association.account_placeholder': '请选择账号',
         'association.use_proxy': '使用代理',
         'association.use_proxy_help': '启用后将通过代理服务器连接API',
+        'association.use_host_ip': '使用宿主机IP',
+        'association.use_host_ip_help': '启用后将 ANTHROPIC_BASE_URL 中的 IP 地址替换为宿主机 IP（仅支持 IP:端口 格式）',
         'association.switch_button': '切换到此账号',
         'association.accounts_title': '可用账号列表',
 
@@ -612,6 +614,8 @@ const translations = {
         'association.account_placeholder': 'Please select an account',
         'association.use_proxy': 'Use Proxy',
         'association.use_proxy_help': 'Connect to API through proxy server when enabled',
+        'association.use_host_ip': 'Use Host IP',
+        'association.use_host_ip_help': 'Replace IP address in ANTHROPIC_BASE_URL with host machine IP (supports IP:port format only)',
         'association.switch_button': 'Switch to this Account',
         'association.accounts_title': 'Available Accounts',
 

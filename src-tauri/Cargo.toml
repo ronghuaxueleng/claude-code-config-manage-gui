@@ -37,6 +37,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "chron
 tracing-appender = "0.2"
 reqwest_dav = "0.2"
 reqwest = { version = "0.12", features = ["json"] }
+network-interface = "2.0"
 
 # Remove problematic dependencies to simplify build
 # schemars = "0.8.21"

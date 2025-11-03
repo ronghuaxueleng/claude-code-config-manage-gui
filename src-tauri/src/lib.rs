@@ -15,19 +15,62 @@ use claude_config::ClaudeConfigManager;
 type DbState = Arc<Mutex<Database>>;
 
 #[tauri::command]
-async fn save_json_file(file_path: String, content: String) -> Result<(), String> {
-    use std::fs;
+fn get_host_ip() -> Result<String, String> {
+    use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 
-    tracing::info!("保存 JSON 文件到: {}", file_path);
+    tracing::info!("开始获取宿主机 IP 地址");
 
-    fs::write(&file_path, content)
-        .map_err(|e| {
-            tracing::error!("保存文件失败: {}", e);
-            format!("保存文件失败: {}", e)
-        })?;
+    // 获取所有网络接口
+    let network_interfaces = NetworkInterface::show()
+        .map_err(|e| format!("获取网络接口失败: {}", e))?;
 
-    tracing::info!("文件保存成功");
-    Ok(())
+    tracing::info!("找到 {} 个网络接口", network_interfaces.len());
+
+    // 查找包含 WSL 或 vEthernet 的接口
+    for iface in network_interfaces {
+        let name = &iface.name;
+
+        // 打印接口名称用于调试
+        tracing::info!("检查接口: {}", name);
+
+        // 查找 WSL 相关的接口
+        if name.contains("WSL") || name.contains("vEthernet") {
+            tracing::info!("找到 WSL 相关接口: {}", name);
+
+            // 遍历该接口的所有 IP 地址
+            for addr in iface.addr {
+                let ip = addr.ip();
+                // 只返回 IPv4 地址
+                if ip.is_ipv4() && !ip.is_loopback() {
+                    let ip_str = ip.to_string();
+                    tracing::info!("找到宿主机 IP: {} (接口: {})", ip_str, name);
+                    return Ok(ip_str);
+                }
+            }
+        }
+    }
+
+    // Linux/WSL 环境：从 /etc/resolv.conf 读取宿主机 IP
+    #[cfg(target_os = "linux")]
+    {
+        use std::fs;
+        tracing::info!("尝试从 /etc/resolv.conf 获取宿主机 IP");
+
+        if let Ok(content) = fs::read_to_string("/etc/resolv.conf") {
+            for line in content.lines() {
+                if line.trim().starts_with("nameserver") {
+                    if let Some(ip) = line.split_whitespace().nth(1) {
+                        tracing::info!("从 /etc/resolv.conf 获取宿主机 IP: {}", ip);
+                        return Ok(ip.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    // 如果找不到，返回错误
+    tracing::error!("未找到 WSL 相关的网络接口");
+    Err("无法获取宿主机 IP，未找到 WSL 网络接口".to_string())
 }
 
 #[tauri::command]
@@ -1329,7 +1372,16 @@ async fn switch_account_with_claude_settings(
     // 只添加必需的系统环境变量，不覆盖用户自定义配置
     // 这些变量对 Claude Code 正常运行是必需的
     env_obj.insert(api_key_name.clone(), serde_json::Value::String(account_token.clone()));
-    env_obj.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(account_base_url));
+
+    // 如果前端没有传递 ANTHROPIC_BASE_URL，则使用数据库中的值
+    // 如果前端已经传递（例如替换了宿主机IP），则保留前端的值
+    if !env_obj.contains_key("ANTHROPIC_BASE_URL") {
+        env_obj.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(account_base_url.clone()));
+        tracing::info!("使用数据库中的 ANTHROPIC_BASE_URL: {}", account_base_url);
+    } else {
+        tracing::info!("保留前端传递的 ANTHROPIC_BASE_URL: {:?}", env_obj.get("ANTHROPIC_BASE_URL"));
+    }
+
     env_obj.insert("USER_NAME".to_string(), serde_json::Value::String(account.name.clone()));
 
     // 注意：URL级别的默认环境变量和账号级别的自定义环境变量已在前端合并到 claudeSettings.env 中
@@ -1599,7 +1651,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            save_json_file,
+            get_host_ip,
             get_accounts,
             create_account,
             update_account,
