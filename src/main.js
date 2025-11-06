@@ -1,5 +1,5 @@
 const { invoke } = window.__TAURI__.core;
-const { open, ask } = window.__TAURI__.dialog;
+const { open, ask, save } = window.__TAURI__.dialog;
 
 // 全局变量跟踪测试状态
 let lastTestedConnection = null;
@@ -929,6 +929,7 @@ async function deleteAccount(accountId) {
 // 全局变量存储要导出的账号
 let exportAccountsData = [];
 let exportCurrentUrlFilter = ''; // 当前导出URL筛选
+let exportBaseUrlsMap = {}; // URL地址到名称的映射
 
 // 批量导出账号
 async function exportAccounts() {
@@ -946,6 +947,15 @@ async function exportAccounts() {
             return;
         }
 
+        // 获取所有 base_urls 用于显示名称
+        const baseUrls = await tauriGetBaseUrls();
+
+        // 创建 URL 地址到名称的映射
+        exportBaseUrlsMap = {};
+        baseUrls.forEach(bu => {
+            exportBaseUrlsMap[bu.url] = bu.name;
+        });
+
         // 存储账号数据
         exportAccountsData = response.accounts;
         exportCurrentUrlFilter = ''; // 重置筛选
@@ -955,7 +965,10 @@ async function exportAccounts() {
         const uniqueUrls = [...new Set(exportAccountsData.map(acc => acc.base_url))];
 
         urlFilter.innerHTML = '<option value="">' + window.i18n.t('select.all_urls') + '</option>' +
-            uniqueUrls.map(url => `<option value="${url}">${url}</option>`).join('');
+            uniqueUrls.map(url => {
+                const urlName = exportBaseUrlsMap[url] || url;
+                return `<option value="${url}">${urlName}</option>`;
+            }).join('');
 
         // 渲染账号列表
         renderExportAccountsList();
@@ -988,6 +1001,7 @@ function renderExportAccountsList(filteredUrl = '') {
     container.innerHTML = accountsToShow.map((account, index) => {
         // 使用账号在原始数组中的索引
         const originalIndex = exportAccountsData.indexOf(account);
+        const urlName = exportBaseUrlsMap[account.base_url] || account.base_url;
         return `
             <div class="form-check mb-2">
                 <input class="form-check-input export-account-checkbox" type="checkbox"
@@ -997,7 +1011,7 @@ function renderExportAccountsList(filteredUrl = '') {
                     <strong>${account.name}</strong>
                     <br>
                     <small class="text-muted">
-                        ${account.base_url} | ${account.token.substring(0, 20)}...
+                        ${urlName} | ${account.token.substring(0, 20)}...
                         ${account.model ? ` | <i class="fas fa-microchip"></i> ${account.model}` : ''}
                     </small>
                 </label>
@@ -1073,17 +1087,26 @@ async function confirmExportAccounts() {
         const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
         const defaultFilename = `accounts_export_${timestamp}.json`;
 
-        // 创建并下载文件（使用浏览器方式）
+        // 使用 Tauri 的保存对话框
+        const filePath = await save({
+            defaultPath: defaultFilename,
+            filters: [{
+                name: 'JSON',
+                extensions: ['json']
+            }]
+        });
+
+        // 如果用户取消了保存
+        if (!filePath) {
+            return;
+        }
+
+        // 保存文件
         const jsonStr = JSON.stringify(exportData, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = defaultFilename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        await invoke('save_file', {
+            path: filePath,
+            contents: jsonStr
+        });
 
         // 关闭模态框
         const modal = bootstrap.Modal.getInstance(document.getElementById('exportSelectModal'));

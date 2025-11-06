@@ -15,6 +15,22 @@ use claude_config::ClaudeConfigManager;
 type DbState = Arc<Mutex<Database>>;
 
 #[tauri::command]
+fn save_file(path: String, contents: String) -> Result<(), String> {
+    use std::fs;
+
+    tracing::info!("保存文件到: {}", path);
+
+    fs::write(&path, contents)
+        .map_err(|e| {
+            tracing::error!("保存文件失败: {}", e);
+            format!("保存文件失败: {}", e)
+        })?;
+
+    tracing::info!("文件保存成功: {}", path);
+    Ok(())
+}
+
+#[tauri::command]
 fn get_host_ip() -> Result<String, String> {
     use network_interface::{NetworkInterface, NetworkInterfaceConfig};
 
@@ -1651,6 +1667,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            save_file,
             get_host_ip,
             get_accounts,
             create_account,
