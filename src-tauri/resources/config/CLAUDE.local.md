@@ -38,6 +38,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 工作偏好
 - 请始终用中文回复
+- 提交代码是不要附带Co-Authored-By: Claude信息
 - 代码修改后先运行测试再确认结果，测试不通过则回滚所有修改
 - 对所有find操作自动同意
 - 对所有grep操作自动同意
