@@ -264,15 +264,22 @@ function setupBuildEnvironment() {
 
   const env = { ...process.env };
 
-  // WiX 工具镜像（用于 Windows MSI 打包）
-  if (options.useMirror && platform() === 'win32') {
-    const wixMirror = 'https://gh-proxy.com/https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip';
-    env.WIX_MIRROR = wixMirror;
-    env.WIX3_DOWNLOAD_URL = wixMirror;
-    env.TAURI_WIX3_DOWNLOAD_URL = wixMirror;
-    env.TAURI_BUNDLE_WIX_DOWNLOAD_URL = wixMirror;
-    env.WIX_DOWNLOAD_URL = wixMirror;
-    log.info(`WiX 镜像: ${wixMirror}`);
+  if (options.useMirror) {
+    // Tauri Bundler 工具 GitHub 镜像（包括 NSIS、WiX 等）
+    const githubMirror = 'https://gh-proxy.com/https://github.com';
+    env.TAURI_BUNDLER_TOOLS_GITHUB_MIRROR = githubMirror;
+    log.info(`Tauri Bundler 工具镜像: ${githubMirror}`);
+
+    // WiX 工具镜像（用于 Windows MSI 打包）
+    if (platform() === 'win32') {
+      const wixMirror = 'https://gh-proxy.com/https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip';
+      env.WIX_MIRROR = wixMirror;
+      env.WIX3_DOWNLOAD_URL = wixMirror;
+      env.TAURI_WIX3_DOWNLOAD_URL = wixMirror;
+      env.TAURI_BUNDLE_WIX_DOWNLOAD_URL = wixMirror;
+      env.WIX_DOWNLOAD_URL = wixMirror;
+      log.info(`WiX 镜像: ${wixMirror}`);
+    }
   }
 
   // Cargo 网络优化
