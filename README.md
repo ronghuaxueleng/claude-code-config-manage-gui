@@ -120,9 +120,82 @@ claude-code-config-manage-gui/
 
 | 组件 | 版本要求 | 安装说明 |
 |------|---------|----------|
-| 🦀 **Rust** | 1.70+ | [官方安装脚本](https://rustup.rs/) |
+| 🦀 **Rust** | 1.70+ | [官方安装脚本](https://rustup.rs/) 或 [国内镜像一键安装](#-rust-国内镜像安装) |
 | 📦 **Node.js** | 18+ | [NVM 管理工具](https://github.com/nvm-sh/nvm) |
 | 🔧 **Tauri CLI** | 2.x | `cargo install tauri-cli` |
+
+#### 🚀 Rust 国内镜像安装
+
+为了加速 Rust 安装和依赖下载，我们提供了国内镜像一键安装脚本：
+
+**使用自动化安装脚本（推荐）：**
+
+```bash
+# 使用 Node.js 运行安装脚本
+node scripts/install-rust.mjs
+```
+
+脚本特性：
+- ✅ **多镜像源支持**: 中科大、清华、上交、字节跳动等镜像源可选
+- ✅ **跨平台**: 支持 Windows / Linux / macOS
+- ✅ **自动配置**: 自动配置 Cargo 镜像和环境变量
+- ✅ **交互式**: 友好的命令行交互界面
+- ✅ **智能检测**: 自动检测已安装的 Rust 版本
+
+**手动配置（可选）：**
+
+如果你更喜欢手动配置，可以按照以下步骤操作：
+
+<details>
+<summary>点击展开手动配置步骤</summary>
+
+1. **配置 rustup 镜像（安装前设置）**
+
+   ```bash
+   # Linux/macOS
+   export RUSTUP_DIST_SERVER="https://mirrors.ustc.edu.cn/rust-static"
+   export RUSTUP_UPDATE_ROOT="https://mirrors.ustc.edu.cn/rust-static/rustup"
+
+   # Windows (PowerShell)
+   $env:RUSTUP_DIST_SERVER="https://mirrors.ustc.edu.cn/rust-static"
+   $env:RUSTUP_UPDATE_ROOT="https://mirrors.ustc.edu.cn/rust-static/rustup"
+   ```
+
+2. **配置 Cargo 镜像（下载依赖加速）**
+
+   创建或编辑 `~/.cargo/config.toml`（Windows: `%USERPROFILE%\.cargo\config.toml`）：
+
+   ```toml
+   [source.crates-io]
+   replace-with = 'ustc'
+
+   [source.ustc]
+   registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
+
+   [net]
+   git-fetch-with-cli = true
+   ```
+
+3. **运行 Rust 安装脚本**
+
+   ```bash
+   # Linux/macOS
+   curl --proto '=https' --tlsv1.2 -sSf https://mirrors.ustc.edu.cn/rust-static/rustup-init.sh | sh
+
+   # Windows
+   # 下载并运行: https://mirrors.ustc.edu.cn/rust-static/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe
+   ```
+
+**其他可用镜像源：**
+
+| 镜像源 | rustup 地址 | cargo 地址 |
+|--------|------------|-----------|
+| 🎓 **中科大** | `https://mirrors.ustc.edu.cn/rust-static` | `sparse+https://mirrors.ustc.edu.cn/crates.io-index/` |
+| 🎓 **清华大学** | `https://mirrors.tuna.tsinghua.edu.cn/rustup` | `sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/` |
+| 🎓 **上海交大** | `https://mirrors.sjtug.sjtu.edu.cn/rust-static` | `sparse+https://mirrors.sjtug.sjtu.edu.cn/crates.io-index/` |
+| 🚀 **字节跳动** | `https://rsproxy.cn` | `sparse+https://rsproxy.cn/index/` |
+
+</details>
 
 #### 🐧 Linux 系统依赖
 
