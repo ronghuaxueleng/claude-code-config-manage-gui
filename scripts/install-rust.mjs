@@ -109,15 +109,24 @@ function configureCargoMirror(mirror) {
     log(`创建目录: ${cargoDir}`, 'info')
   }
 
-  const mirrorName = Object.keys(MIRRORS).find(key => MIRRORS[key] === mirror)
+  const mirrorKey = Object.keys(MIRRORS).find(key => MIRRORS[key] === mirror)
+
+  // 使用特定的源名称，与项目配置保持一致
+  const sourceNames = {
+    'rsproxy': 'rsproxy-sparse',
+    'ustc': 'ustc',
+    'tuna': 'tuna',
+    'sjtu': 'sjtu',
+  }
+  const sourceName = sourceNames[mirrorKey] || mirrorKey
 
   const configContent = `# Cargo 镜像配置 - 由 install-rust.mjs 生成
 # 镜像源: ${mirror.name}
 
 [source.crates-io]
-replace-with = '${mirrorName}'
+replace-with = '${sourceName}'
 
-[source.${mirrorName}]
+[source.${sourceName}]
 registry = "${mirror.cargo_registry}"
 
 [net]
