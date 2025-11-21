@@ -38,6 +38,7 @@ tracing-appender = "0.2"
 reqwest_dav = "0.2"
 reqwest = { version = "0.12", features = ["json"] }
 network-interface = "2.0"
+include_dir = "0.7"
 
 # Remove problematic dependencies to simplify build
 # schemars = "0.8.21"

@@ -2,6 +2,10 @@ use anyhow::Result;
 use serde_json::{json, Value};
 use std::fs;
 use std::path::Path;
+use include_dir::{include_dir, Dir};
+
+// 在编译时嵌入整个 commands 目录
+static COMMANDS_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/resources/config/commands");
 
 pub struct ClaudeConfigManager {
     directory_path: String,
@@ -130,6 +134,9 @@ impl ClaudeConfigManager {
         // 复制 CLAUDE.local.md 文件
         self.copy_claude_local_md()?;
 
+        // 复制 commands 目录下的文件
+        self.copy_commands()?;
+
         Ok(true)
     }
 
@@ -164,6 +171,32 @@ impl ClaudeConfigManager {
         fs::write(&target_file, CLAUDE_LOCAL_MD_CONTENT)?;
 
         tracing::info!("成功写入 CLAUDE.local.md 到 {}", target_file.display());
+
+        Ok(())
+    }
+
+    fn copy_commands(&self) -> Result<()> {
+        // 确保 .claude/commands 目录存在
+        let commands_dir = Path::new(&self.directory_path).join(".claude/commands");
+        if !commands_dir.exists() {
+            fs::create_dir_all(&commands_dir)?;
+        }
+
+        // 遍历并复制所有嵌入的文件
+        for file in COMMANDS_DIR.files() {
+            let file_path = commands_dir.join(file.path());
+
+            // 确保父目录存在（如果有子目录）
+            if let Some(parent) = file_path.parent() {
+                if !parent.exists() {
+                    fs::create_dir_all(parent)?;
+                }
+            }
+
+            // 写入文件内容
+            fs::write(&file_path, file.contents())?;
+            tracing::info!("成功写入 {} 到 {}", file.path().display(), file_path.display());
+        }
 
         Ok(())
     }

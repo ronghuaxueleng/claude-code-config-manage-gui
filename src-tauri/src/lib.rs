@@ -11,6 +11,10 @@ use tokio::sync::Mutex;
 use models::*;
 use database::Database;
 use claude_config::ClaudeConfigManager;
+use include_dir::{include_dir, Dir};
+
+// 在编译时嵌入整个 commands 目录
+static COMMANDS_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/resources/config/commands");
 
 type DbState = Arc<Mutex<Database>>;
 
@@ -531,6 +535,34 @@ async fn switch_account(
             }
             Err(e) => {
                 tracing::warn!("复制 show-status.mjs 失败: {}，但不影响主要功能", e);
+            }
+        }
+
+        // Copy commands directory files to .claude/commands
+        let commands_dir = claude_dir.join("commands");
+        if let Err(e) = std::fs::create_dir_all(&commands_dir) {
+            tracing::warn!("创建 .claude/commands 目录失败: {}", e);
+        } else {
+            // 遍历并复制所有嵌入的文件
+            for file in COMMANDS_DIR.files() {
+                let file_path = commands_dir.join(file.path());
+
+                // 确保父目录存在（如果有子目录）
+                if let Some(parent) = file_path.parent() {
+                    if !parent.exists() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+                }
+
+                // 写入文件内容
+                match std::fs::write(&file_path, file.contents()) {
+                    Ok(_) => {
+                        tracing::info!("{} 已复制到: {}", file.path().display(), file_path.display());
+                    }
+                    Err(e) => {
+                        tracing::warn!("复制 {} 失败: {}，但不影响主要功能", file.path().display(), e);
+                    }
+                }
             }
         }
     }
@@ -1535,6 +1567,34 @@ async fn switch_account_with_claude_settings(
         }
         Err(e) => {
             tracing::warn!("复制 show-status.mjs 失败: {}，但不影响主要功能", e);
+        }
+    }
+
+    // Copy commands directory files to .claude/commands
+    let commands_dir = claude_dir.join("commands");
+    if let Err(e) = std::fs::create_dir_all(&commands_dir) {
+        tracing::warn!("创建 .claude/commands 目录失败: {}", e);
+    } else {
+        // 遍历并复制所有嵌入的文件
+        for file in COMMANDS_DIR.files() {
+            let file_path = commands_dir.join(file.path());
+
+            // 确保父目录存在（如果有子目录）
+            if let Some(parent) = file_path.parent() {
+                if !parent.exists() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+            }
+
+            // 写入文件内容
+            match std::fs::write(&file_path, file.contents()) {
+                Ok(_) => {
+                    tracing::info!("{} 已复制到: {}", file.path().display(), file_path.display());
+                }
+                Err(e) => {
+                    tracing::warn!("复制 {} 失败: {}，但不影响主要功能", file.path().display(), e);
+                }
+            }
         }
     }
 
