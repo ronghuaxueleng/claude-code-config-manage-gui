@@ -127,6 +127,9 @@ impl ClaudeConfigManager {
             env_config["IS_SANDBOX"] = json!("1");
         }
 
+        // 添加禁用非必要流量的环境变量
+        env_config["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = json!(1);
+
         settings["env"] = env_config;
 
         self.write_settings(&settings)?;
