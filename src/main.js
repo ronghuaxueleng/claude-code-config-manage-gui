@@ -1622,7 +1622,12 @@ async function onDirectorySelectionChange(directoryId) {
             // 尝试根据token匹配找到对应的账号
             let matchedAccount = null;
             if (hasToken && associationAccounts.length > 0) {
-                matchedAccount = associationAccounts.find(account => account.token === hasToken);
+                // 对token进行trim处理后再比较
+                const trimmedToken = hasToken.toString().trim();
+                matchedAccount = associationAccounts.find(account => {
+                    const accountToken = account.token ? account.token.toString().trim() : '';
+                    return accountToken === trimmedToken;
+                });
             }
 
             statusHtml = `
