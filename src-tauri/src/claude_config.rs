@@ -199,7 +199,7 @@ impl ClaudeConfigManager {
         self.write_settings(&settings)?;
         Ok(true)
     }
-    
+
     fn copy_claude_local_md(&self) -> Result<()> {
         use crate::config_manager::ConfigManager;
 
@@ -211,6 +211,15 @@ impl ClaudeConfigManager {
 
         // 目标文件路径
         let target_file = Path::new(&self.directory_path).join("CLAUDE.local.md");
+
+        // 如果目标文件已存在，先备份
+        if target_file.exists() {
+            let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
+            let backup_file = Path::new(&self.directory_path)
+                .join(format!("CLAUDE.local.md.backup_{}", timestamp));
+            fs::copy(&target_file, &backup_file)?;
+            tracing::info!("已备份 CLAUDE.local.md 到 {}", backup_file.display());
+        }
 
         // 复制文件
         fs::copy(&source_file, &target_file)?;
