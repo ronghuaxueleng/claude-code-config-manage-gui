@@ -102,12 +102,29 @@ impl ClaudeConfigManager {
         Ok(())
     }
 
+    /// 检查目标目录是否存在 CLAUDE.local.md 文件
+    pub fn has_claude_local_md(&self) -> bool {
+        let target_file = Path::new(&self.directory_path).join("CLAUDE.local.md");
+        target_file.exists()
+    }
+
     pub fn update_env_config_with_options(
         &self,
         token: String,
         base_url: String,
         api_key_name: String,
         is_sandbox: bool,
+    ) -> Result<bool> {
+        self.update_env_config_with_options_ex(token, base_url, api_key_name, is_sandbox, false)
+    }
+
+    pub fn update_env_config_with_options_ex(
+        &self,
+        token: String,
+        base_url: String,
+        api_key_name: String,
+        is_sandbox: bool,
+        keep_claude_local_md: bool,
     ) -> Result<bool> {
         let mut settings = self.read_settings()?;
 
@@ -134,8 +151,10 @@ impl ClaudeConfigManager {
 
         self.write_settings(&settings)?;
 
-        // 复制 CLAUDE.local.md 文件
-        self.copy_claude_local_md()?;
+        // 复制 CLAUDE.local.md 文件（如果不保留现有的）
+        if !keep_claude_local_md {
+            self.copy_claude_local_md()?;
+        }
 
         // 复制 commands 目录下的文件
         self.copy_commands()?;

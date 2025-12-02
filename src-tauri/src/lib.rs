@@ -422,13 +422,23 @@ async fn delete_base_url(db: State<'_, DbState>, id: i64) -> Result<String, Stri
 
 #[tauri::command]
 #[allow(non_snake_case)]
+async fn check_claude_local_md_exists(
+    directoryPath: String,
+) -> Result<bool, String> {
+    let config_manager = ClaudeConfigManager::new(directoryPath);
+    Ok(config_manager.has_claude_local_md())
+}
+
+#[tauri::command]
+#[allow(non_snake_case)]
 async fn switch_account(
     db: State<'_, DbState>,
     accountId: i64,
     directoryId: i64,
     isSandbox: Option<bool>,
+    keepClaudeLocalMd: Option<bool>,
 ) -> Result<String, String> {
-    tracing::info!("切换账号: accountId={}, directoryId={}, isSandbox={:?}", accountId, directoryId, isSandbox);
+    tracing::info!("切换账号: accountId={}, directoryId={}, isSandbox={:?}, keepClaudeLocalMd={:?}", accountId, directoryId, isSandbox, keepClaudeLocalMd);
     let db_lock = db.lock().await;
     
     // Switch in database
@@ -488,6 +498,7 @@ async fn switch_account(
             isSandbox.unwrap_or(true),
             base_url_default_env_vars,
             account_custom_env_vars,
+            keepClaudeLocalMd.unwrap_or(false),
         )
         .map_err(|e| e.to_string())?;
 
@@ -1328,8 +1339,9 @@ async fn switch_account_with_claude_settings(
     directoryId: i64,
     isSandbox: Option<bool>,
     claudeSettings: serde_json::Value,
+    keepClaudeLocalMd: Option<bool>,
 ) -> Result<String, String> {
-    tracing::info!("切换账号并写入Claude设置: accountId={}, directoryId={}, isSandbox={:?}", accountId, directoryId, isSandbox);
+    tracing::info!("切换账号并写入Claude设置: accountId={}, directoryId={}, isSandbox={:?}, keepClaudeLocalMd={:?}", accountId, directoryId, isSandbox, keepClaudeLocalMd);
     tracing::info!("接收到的Claude配置: {}", serde_json::to_string_pretty(&claudeSettings).unwrap_or("无法序列化".to_string()));
     let db_lock = db.lock().await;
 
@@ -1394,6 +1406,7 @@ async fn switch_account_with_claude_settings(
             isSandbox.unwrap_or(true),
             base_url_default_env_vars.clone(),
             account_custom_env_vars.clone(),
+            keepClaudeLocalMd.unwrap_or(false),
         )
         .map_err(|e| e.to_string())?;
 
@@ -1742,6 +1755,7 @@ pub fn run() {
             update_directory,
             delete_directory,
             check_directory_exists,
+            check_claude_local_md_exists,
             get_base_urls,
             create_base_url,
             update_base_url,

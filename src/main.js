@@ -159,21 +159,29 @@ async function tauriDeleteBaseUrl(id) {
     return await invoke('delete_base_url', { id });
 }
 
-async function tauriSwitchAccount(account_id, directory_id, is_sandbox = false, skip_permissions = false) {
-    return await invoke('switch_account', { 
-        accountId: parseInt(account_id), 
-        directoryId: parseInt(directory_id),
-        isSandbox: is_sandbox,
-        skipPermissions: skip_permissions
+async function tauriCheckClaudeLocalMdExists(directory_path) {
+    return await invoke('check_claude_local_md_exists', {
+        directoryPath: directory_path
     });
 }
 
-async function tauriSwitchAccountWithClaudeSettings(account_id, directory_id, is_sandbox, claude_settings) {
-    return await invoke('switch_account_with_claude_settings', { 
-        accountId: parseInt(account_id), 
+async function tauriSwitchAccount(account_id, directory_id, is_sandbox = false, skip_permissions = false, keep_claude_local_md = false) {
+    return await invoke('switch_account', {
+        accountId: parseInt(account_id),
         directoryId: parseInt(directory_id),
         isSandbox: is_sandbox,
-        claudeSettings: claude_settings
+        skipPermissions: skip_permissions,
+        keepClaudeLocalMd: keep_claude_local_md
+    });
+}
+
+async function tauriSwitchAccountWithClaudeSettings(account_id, directory_id, is_sandbox, claude_settings, keep_claude_local_md = false) {
+    return await invoke('switch_account_with_claude_settings', {
+        accountId: parseInt(account_id),
+        directoryId: parseInt(directory_id),
+        isSandbox: is_sandbox,
+        claudeSettings: claude_settings,
+        keepClaudeLocalMd: keep_claude_local_md
     });
 }
 
@@ -1801,6 +1809,25 @@ async function performAccountSwitchInternal(accountId, isSandbox = true, useProx
         // 继续执行，不阻止操作
     }
 
+    // 检查目标目录是否存在 CLAUDE.local.md 文件
+    let keepClaudeLocalMd = false;
+    try {
+        const directory = associationDirectories.find(dir => dir.id == currentDirectoryForAssociation);
+        if (directory) {
+            const hasClaudeLocalMd = await tauriCheckClaudeLocalMdExists(directory.path);
+            if (hasClaudeLocalMd) {
+                keepClaudeLocalMd = await customConfirm(
+                    window.i18n.t('confirm.keep_claude_local_md')
+                        .replace('{path}', directory.path),
+                    window.i18n.t('confirm.claude_local_md_exists_title')
+                );
+            }
+        }
+    } catch (error) {
+        console.warn('检查 CLAUDE.local.md 失败:', error);
+        // 继续执行，默认不保留
+    }
+
     try {
         // 获取Claude配置
         const claudeSettings = await getClaudeSettingsForSwitch();
@@ -1912,12 +1939,14 @@ async function performAccountSwitchInternal(accountId, isSandbox = true, useProx
         }
 
         console.log('最终发送给后端的Claude配置:', claudeSettings);
+        console.log('是否保留现有 CLAUDE.local.md:', keepClaudeLocalMd);
 
         const result = await tauriSwitchAccountWithClaudeSettings(
             parseInt(accountId),
             parseInt(currentDirectoryForAssociation),
             isSandbox,
-            claudeSettings
+            claudeSettings,
+            keepClaudeLocalMd
         );
 
         // 显示成功消息，如果有 IP 替换信息则一并显示

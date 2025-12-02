@@ -275,6 +275,14 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("switch.warn_write_fail", "警告: Claude配置写入失败: {}");
     zh_cn.insert("switch.error_update", "✗ 配置文件更新失败: {}");
     zh_cn.insert("switch.error", "✗ 切换失败: {}");
+    zh_cn.insert(
+        "switch.claude_local_md_found",
+        "⚠️  目标目录中已存在 CLAUDE.local.md 文件",
+    );
+    zh_cn.insert(
+        "switch.keep_claude_local_md",
+        "是否保留现有的 CLAUDE.local.md 文件? (选择 No 将覆盖)",
+    );
 
     // WebDAV 同步
     zh_cn.insert("webdav.menu.title", "WebDAV 同步管理");
@@ -611,6 +619,14 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
         "✗ Configuration file update failed: {}",
     );
     en_us.insert("switch.error", "✗ Switch failed: {}");
+    en_us.insert(
+        "switch.claude_local_md_found",
+        "⚠️  CLAUDE.local.md file already exists in the target directory",
+    );
+    en_us.insert(
+        "switch.keep_claude_local_md",
+        "Keep existing CLAUDE.local.md file? (Select No to overwrite)",
+    );
 
     // WebDAV Sync
     en_us.insert("webdav.menu.title", "WebDAV Sync");

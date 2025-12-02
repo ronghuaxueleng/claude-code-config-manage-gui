@@ -332,6 +332,8 @@ const translations = {
         'confirm.path_not_exist_title': '路径不存在',
         'confirm.directory_not_exist_switch': '目录 "{name}" ({path}) 在文件系统中不存在。\n\n确定要继续切换账号吗？\n\n注意：这可能会导致配置写入失败。',
         'confirm.directory_not_exist_title': '目录不存在',
+        'confirm.keep_claude_local_md': '目标目录中已存在 CLAUDE.local.md 文件：\n{path}\n\n是否保留现有文件？\n\n选择"确定"保留现有文件，选择"取消"将覆盖为默认配置。',
+        'confirm.claude_local_md_exists_title': '发现现有配置文件',
 
         // 验证消息
         'validation.required_fields': '请填写所有必需字段',
@@ -844,6 +846,8 @@ const translations = {
         'confirm.path_not_exist_title': 'Path Does Not Exist',
         'confirm.directory_not_exist_switch': 'Directory "{name}" ({path}) does not exist on the file system.\n\nAre you sure you want to continue switching accounts?\n\nNote: This may cause configuration write failures.',
         'confirm.directory_not_exist_title': 'Directory Does Not Exist',
+        'confirm.keep_claude_local_md': 'CLAUDE.local.md file already exists in the target directory:\n{path}\n\nDo you want to keep the existing file?\n\nClick "OK" to keep existing file, click "Cancel" to overwrite with default configuration.',
+        'confirm.claude_local_md_exists_title': 'Existing Configuration Found',
 
         // Validation messages
         'validation.required_fields': 'Please fill in all required fields',

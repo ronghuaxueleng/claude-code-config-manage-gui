@@ -190,6 +190,18 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
 
     let directory = &directories[directory_selection.unwrap() - 1];
 
+    // 检查目标目录是否存在 CLAUDE.local.md ��件
+    let config_manager = ClaudeConfigManager::new(directory.path.clone());
+    let keep_claude_local_md = if config_manager.has_claude_local_md() {
+        println!("\n{}", t!("switch.claude_local_md_found").yellow());
+        dialoguer::Confirm::new()
+            .with_prompt(t!("switch.keep_claude_local_md"))
+            .default(true)
+            .interact()?
+    } else {
+        false
+    };
+
     // 询问权限配置
     let skip_permissions = dialoguer::Confirm::new()
         .with_prompt(t!("switch.prompt_skip_permissions"))
@@ -253,11 +265,12 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
 
             // 更新环境配置文件
             let config_manager = ClaudeConfigManager::new(directory.path.clone());
-            match config_manager.update_env_config_with_options(
+            match config_manager.update_env_config_with_options_ex(
                 account.token.clone(),
                 account.base_url.clone(),
                 api_key_name.clone(),
                 is_sandbox,
+                keep_claude_local_md,
             ) {
                 Ok(_) => {
                     // 写入 Claude 配置到 .claude/settings.local.json
