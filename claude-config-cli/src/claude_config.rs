@@ -108,16 +108,6 @@ impl ClaudeConfigManager {
         target_file.exists()
     }
 
-    pub fn update_env_config_with_options(
-        &self,
-        token: String,
-        base_url: String,
-        api_key_name: String,
-        is_sandbox: bool,
-    ) -> Result<bool> {
-        self.update_env_config_with_options_ex(token, base_url, api_key_name, is_sandbox, false)
-    }
-
     pub fn update_env_config_with_options_ex(
         &self,
         token: String,
