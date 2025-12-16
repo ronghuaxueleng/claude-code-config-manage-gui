@@ -84,6 +84,12 @@ fn write_claude_settings(
         );
     }
 
+    // 添加禁用非必要流量的环境变量
+    env_obj.insert(
+        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC".to_string(),
+        Value::Number(1.into()),
+    );
+
     // 处理代理配置
     if !use_proxy {
         // 如果未启用代理，删除代理环境变量
