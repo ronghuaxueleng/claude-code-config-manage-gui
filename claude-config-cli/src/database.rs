@@ -294,6 +294,7 @@ impl Database {
                 base_url TEXT NOT NULL,
                 model TEXT NOT NULL DEFAULT '',
                 is_active BOOLEAN NOT NULL DEFAULT FALSE,
+                custom_env_vars TEXT NOT NULL DEFAULT '{}',
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
@@ -499,6 +500,24 @@ impl Database {
             info!("base_urls 表已包含 api_key 字段，无需添加");
         }
 
+        // 检查 accounts 表是否存在 custom_env_vars 字段
+        let has_custom_env_vars_field: i64 = sqlx::query_scalar(
+            "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'custom_env_vars'"
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        if has_custom_env_vars_field == 0 {
+            // 添加 custom_env_vars 字段
+            info!("检测到 accounts 表缺少 custom_env_vars 字段，开始添加...");
+            sqlx::query("ALTER TABLE accounts ADD COLUMN custom_env_vars TEXT NOT NULL DEFAULT '{}'")
+                .execute(&self.pool)
+                .await?;
+            info!("已成功添加 custom_env_vars 字段到 accounts 表");
+        } else {
+            info!("accounts 表已包含 custom_env_vars 字段，无需添加");
+        }
+
         info!("数据库迁移完成");
         Ok(())
     }
@@ -578,14 +597,19 @@ impl Database {
         request: CreateAccountRequest,
     ) -> Result<Account, SqlxError> {
         let now = Utc::now();
+        let custom_env_vars = request
+            .custom_env_vars
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "{}".to_string());
         let result = sqlx::query(
-            "INSERT INTO accounts (name, token, base_url, model, created_at, updated_at) 
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO accounts (name, token, base_url, model, custom_env_vars, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
         )
         .bind(&request.name)
         .bind(&request.token)
         .bind(&request.base_url)
         .bind(&request.model)
+        .bind(&custom_env_vars)
         .bind(now)
         .bind(now)
         .execute(&self.pool)
@@ -619,6 +643,9 @@ impl Database {
         if let Some(_model) = &request.model {
             updates.push("model = ?");
         }
+        if let Some(_custom_env_vars) = &request.custom_env_vars {
+            updates.push("custom_env_vars = ?");
+        }
 
         if updates.is_empty() {
             return self.get_account(id).await;
@@ -640,6 +667,9 @@ impl Database {
         }
         if let Some(model) = &request.model {
             q = q.bind(model);
+        }
+        if let Some(custom_env_vars) = &request.custom_env_vars {
+            q = q.bind(custom_env_vars.to_string());
         }
 
         q = q.bind(now).bind(id);
