@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 基本原则
 - 无论我使用什么语言，请始终使用「简体中文」回答我的问题, 包括 Todo 和思考内容。
 - 开始输出代码前最好联网搜索一下其最佳实践 (Best Practices)。
+- 联网搜索的时候切忌采用 csdn.net、阿里云/腾讯云/华为云社区等内容农场 (Content Farm) 的信息，这些信息往往过时且质量低劣。
 
 
 
@@ -22,6 +23,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - 编写构建脚本时尽量使用mjs编写带菜单的脚本
 - 尽量使用python连接数据库
+- 访问githup时，如果网络不同，那么就使用镜像
 
 
 
