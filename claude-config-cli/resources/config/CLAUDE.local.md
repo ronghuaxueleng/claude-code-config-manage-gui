@@ -16,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 无论我使用什么语言，请始终使用「简体中文」回答我的问题, 包括 Todo 和思考内容。
 - 开始输出代码前最好联网搜索一下其最佳实践 (Best Practices)。
 - 联网搜索的时候切忌采用 csdn.net、阿里云/腾讯云/华为云社区等内容农场 (Content Farm) 的信息，这些信息往往过时且质量低劣。
+- 在做代码分析时，有源码的时候一定要看源码，不要妄自猜测。如：加解密、反编译、解析http响应等。
 
 
 
