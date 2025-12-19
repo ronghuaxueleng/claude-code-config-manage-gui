@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2025-12-19
+
+### ✨ Added
+- **账号批量导入导出**: 支持账号数据的批量导入和导出
+  - 添加选择性导出功能，可选择特定账号导出
+  - 批量导出时支持 URL 筛选功能
+  - 支持自定义保存位置选择
+  - 完善账号导入时的重复检测逻辑
+
+- **宿主机 IP 功能**: 账号切换时支持使用宿主机 IP
+  - GUI 版本添加宿主机 IP 切换选项
+  - 优化 URL 显示效果
+
+- **CLAUDE.local.md 文件保护**:
+  - 切换账号时检测并询问是否保留现有 CLAUDE.local.md 文件
+  - 覆盖前自动备份现有文件
+
+- **环境变量增强**:
+  - 创建配置文件时自动添加 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+  - 拆分为独立环境变量：DISABLE_BUG_COMMAND、DISABLE_ERROR_REPORTING、DISABLE_TELEMETRY
+  - 不再禁用自动更新功能
+
+- **Commands 目录支持**: 自动打包和释放 commands 目录下的所有文件
+
+- **Rust 安装脚本**: 添加国内镜像一键安装脚本，支持多镜像源选择
+
+- **CLI 增强**:
+  - 启动时自动设置 hasCompletedOnboarding
+  - 构建脚本自动同步版本号
+  - 配置切换时添加 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC
+
+### 🐛 Fixed
+- 修复批量导入账号时参数传递错误导致创建失败的问题
+- 修复导出文件时的 Tauri API 错误
+- 修复批量导出账号功能并优化 URL 显示
+- 修复 token 匹配时因空格导致的匹配失败问题
+- 修复账号切换时未添加 CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC 配置的问题
+- 修复 Cargo 源名称冲突问题
+- 添加 Tauri Bundler 工具 GitHub 镜像配置解决 NSIS 下载超时
+- CLI: 修复数据库迁移顺序和版本号显示
+- CLI: 修复 base_urls 表 api_key 字段数据库迁移问题
+- CLI: 添加 accounts 表 custom_env_vars 字段支持
+
+### 🔧 Changed
+- 将 Cargo 镜像源切换为官方源
+- 移除未使用的 update_env_config_with_options 方法
+- 提交代码时不再附带 Co-Authored-By: Claude 信息
+
+---
+
 ## [1.6.0] - 2025-10-30
 
 ### ✨ Added
@@ -144,6 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.7.0]: https://github.com/ronghuaxueleng/claude-code-config-manage-gui/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/ronghuaxueleng/claude-code-config-manage-gui/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/ronghuaxueleng/claude-code-config-manage-gui/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/ronghuaxueleng/claude-code-config-manage-gui/compare/v1.3.0...v1.4.0

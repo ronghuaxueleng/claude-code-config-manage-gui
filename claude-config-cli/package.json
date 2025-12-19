@@ -1,6 +1,6 @@
 {
   "name": "claude-config-cli",
-  "version": "1.5.0",
+  "version": "1.7.0",
   "description": "Claude Code Configuration Manager - CLI Build Scripts",
   "type": "module",
   "private": true,
