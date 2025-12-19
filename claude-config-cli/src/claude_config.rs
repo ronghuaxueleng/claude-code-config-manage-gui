@@ -1,8 +1,8 @@
 use anyhow::Result;
+use include_dir::{include_dir, Dir};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::Path;
-use include_dir::{include_dir, Dir};
 
 // 在编译时嵌入整个 commands 目录
 static COMMANDS_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/resources/config/commands");
@@ -134,8 +134,10 @@ impl ClaudeConfigManager {
             env_config["IS_SANDBOX"] = json!("1");
         }
 
-        // 添加禁用非必要流量的环境变量
-        env_config["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = json!(1);
+        // 添加禁用非必要流量的环境变量（不禁用自动更新）
+        env_config["DISABLE_BUG_COMMAND"] = json!(1);
+        env_config["DISABLE_ERROR_REPORTING"] = json!(1);
+        env_config["DISABLE_TELEMETRY"] = json!(1);
 
         settings["env"] = env_config;
 
@@ -216,7 +218,11 @@ impl ClaudeConfigManager {
 
             // 写入文件内容
             fs::write(&file_path, file.contents())?;
-            tracing::info!("成功写入 {} 到 {}", file.path().display(), file_path.display());
+            tracing::info!(
+                "成功写入 {} 到 {}",
+                file.path().display(),
+                file_path.display()
+            );
         }
 
         Ok(())

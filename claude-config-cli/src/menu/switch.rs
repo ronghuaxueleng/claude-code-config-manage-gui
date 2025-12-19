@@ -84,11 +84,13 @@ fn write_claude_settings(
         );
     }
 
-    // 添加禁用非必要流量的环境变量
+    // 添加禁用非必要流量的环境变量（不禁用自动更新）
+    env_obj.insert("DISABLE_BUG_COMMAND".to_string(), Value::Number(1.into()));
     env_obj.insert(
-        "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC".to_string(),
+        "DISABLE_ERROR_REPORTING".to_string(),
         Value::Number(1.into()),
     );
+    env_obj.insert("DISABLE_TELEMETRY".to_string(), Value::Number(1.into()));
 
     // 处理代理配置
     if !use_proxy {
@@ -250,7 +252,9 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                 Err(e) => {
                     println!(
                         "\n{}",
-                        t!("switch.warn_claude_config").replace("{}", &e.to_string()).yellow()
+                        t!("switch.warn_claude_config")
+                            .replace("{}", &e.to_string())
+                            .yellow()
                     );
                     // 使用默认配置
                     serde_json::to_string(&serde_json::json!({
@@ -326,17 +330,30 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                             println!("{}", t!("switch.directory").replace("{}", &directory.name));
                             println!("{}", t!("switch.path").replace("{}", &directory.path));
                             println!("{}", t!("switch.sandbox"));
-                            println!("\n{}", t!("switch.warn_write_fail").replace("{}", &e.to_string()).yellow());
+                            println!(
+                                "\n{}",
+                                t!("switch.warn_write_fail")
+                                    .replace("{}", &e.to_string())
+                                    .yellow()
+                            );
                         }
                     }
                 }
                 Err(e) => {
-                    println!("\n{}", t!("switch.error_update").replace("{}", &e.to_string()).red());
+                    println!(
+                        "\n{}",
+                        t!("switch.error_update")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    );
                 }
             }
         }
         Err(e) => {
-            println!("\n{}", t!("switch.error").replace("{}", &e.to_string()).red());
+            println!(
+                "\n{}",
+                t!("switch.error").replace("{}", &e.to_string()).red()
+            );
         }
     }
 

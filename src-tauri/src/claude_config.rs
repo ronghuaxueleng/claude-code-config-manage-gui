@@ -147,8 +147,10 @@ impl ClaudeConfigManager {
             env_config["IS_SANDBOX"] = json!("1");
         }
 
-        // 5. 添加禁用非必要流量的环境变量
-        env_config["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = json!(1);
+        // 5. 添加禁用非必要流量的环境变量（不禁用自动更新）
+        env_config["DISABLE_BUG_COMMAND"] = json!(1);
+        env_config["DISABLE_ERROR_REPORTING"] = json!(1);
+        env_config["DISABLE_TELEMETRY"] = json!(1);
 
         settings["env"] = env_config;
 
