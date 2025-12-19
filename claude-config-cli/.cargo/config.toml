@@ -1,8 +1,9 @@
-[source.crates-io]
-replace-with = 'ustc-sparse'
+# 直接使用官方源
+# [source.crates-io]
+# replace-with = 'rsproxy'
 
-[source.ustc-sparse]
-registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
+# [source.rsproxy]
+# registry = "https://rsproxy.cn/crates.io-index"
 
 # 网络设置
 [net]
