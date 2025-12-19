@@ -466,7 +466,7 @@ impl Database {
 
         // 检查 accounts 表是否存在 model 字段
         let has_model_field: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'model'"
+            "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'model'",
         )
         .fetch_one(&self.pool)
         .await?;
@@ -484,7 +484,7 @@ impl Database {
 
         // 检查 base_urls 表是否存在 api_key 字段
         let has_api_key_field: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM pragma_table_info('base_urls') WHERE name = 'api_key'"
+            "SELECT COUNT(*) FROM pragma_table_info('base_urls') WHERE name = 'api_key'",
         )
         .fetch_one(&self.pool)
         .await?;
@@ -502,7 +502,7 @@ impl Database {
 
         // 检查 accounts 表是否存在 custom_env_vars 字段
         let has_custom_env_vars_field: i64 = sqlx::query_scalar(
-            "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'custom_env_vars'"
+            "SELECT COUNT(*) FROM pragma_table_info('accounts') WHERE name = 'custom_env_vars'",
         )
         .fetch_one(&self.pool)
         .await?;
@@ -510,9 +510,11 @@ impl Database {
         if has_custom_env_vars_field == 0 {
             // 添加 custom_env_vars 字段
             info!("检测到 accounts 表缺少 custom_env_vars 字段，开始添加...");
-            sqlx::query("ALTER TABLE accounts ADD COLUMN custom_env_vars TEXT NOT NULL DEFAULT '{}'")
-                .execute(&self.pool)
-                .await?;
+            sqlx::query(
+                "ALTER TABLE accounts ADD COLUMN custom_env_vars TEXT NOT NULL DEFAULT '{}'",
+            )
+            .execute(&self.pool)
+            .await?;
             info!("已成功添加 custom_env_vars 字段到 accounts 表");
         } else {
             info!("accounts 表已包含 custom_env_vars 字段，无需添加");

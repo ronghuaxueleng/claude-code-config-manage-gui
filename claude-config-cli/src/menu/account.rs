@@ -19,13 +19,18 @@ pub async fn account_menu(db: &DbState) -> Result<()> {
         ];
 
         let selection = match Select::new()
-            .with_prompt(format!("\n{} (ESC {})", t!("account.menu.title"), t!("common.to_back")))
+            .with_prompt(format!(
+                "\n{} (ESC {})",
+                t!("account.menu.title"),
+                t!("common.to_back")
+            ))
             .items(&items)
             .default(last_selection)
-            .interact_opt()? {
-                Some(sel) => sel,
-                None => break, // 用户按了ESC，返回上一级
-            };
+            .interact_opt()?
+        {
+            Some(sel) => sel,
+            None => break, // 用户按了ESC，返回上一级
+        };
 
         last_selection = selection;
 
@@ -545,12 +550,18 @@ async fn import_accounts(db: &DbState) -> Result<()> {
         }
 
         // 检查是否已存在（精确匹配）
-        let is_duplicate = existing_accounts.accounts.iter().any(|acc| {
-            acc.name == name || acc.token == key
-        });
+        let is_duplicate = existing_accounts
+            .accounts
+            .iter()
+            .any(|acc| acc.name == name || acc.token == key);
 
         if is_duplicate {
-            println!("  {} {}: {}", "⊖".yellow(), t!("account.import.skip_exists"), name);
+            println!(
+                "  {} {}: {}",
+                "⊖".yellow(),
+                t!("account.import.skip_exists"),
+                name
+            );
             skipped_count += 1;
             continue;
         }
@@ -568,11 +579,22 @@ async fn import_accounts(db: &DbState) -> Result<()> {
             .await
         {
             Ok(_) => {
-                println!("  {} {}: {}", "✓".green(), t!("account.import.imported"), name);
+                println!(
+                    "  {} {}: {}",
+                    "✓".green(),
+                    t!("account.import.imported"),
+                    name
+                );
                 imported_count += 1;
             }
             Err(e) => {
-                println!("  {} {}: {} ({})", "✗".red(), t!("account.import.failed"), name, e);
+                println!(
+                    "  {} {}: {} ({})",
+                    "✗".red(),
+                    t!("account.import.failed"),
+                    name,
+                    e
+                );
                 skipped_count += 1;
             }
         }

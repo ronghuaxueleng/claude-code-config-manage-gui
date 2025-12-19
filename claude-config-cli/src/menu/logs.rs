@@ -15,13 +15,18 @@ pub async fn logs_menu() -> Result<()> {
         ];
 
         let selection = match Select::new()
-            .with_prompt(format!("\n{} (ESC {})", t!("logs.menu.title"), t!("common.to_back")))
+            .with_prompt(format!(
+                "\n{} (ESC {})",
+                t!("logs.menu.title"),
+                t!("common.to_back")
+            ))
             .items(&items)
             .default(last_selection)
-            .interact_opt()? {
-                Some(sel) => sel,
-                None => break, // 用户按了ESC，返回上一级
-            };
+            .interact_opt()?
+        {
+            Some(sel) => sel,
+            None => break, // 用户按了ESC，返回上一级
+        };
 
         last_selection = selection;
 
@@ -55,7 +60,10 @@ async fn view_recent_logs() -> Result<()> {
             }
         }
         Err(e) => {
-            println!("{}", t!("logs.read.error").replace("{}", &e.to_string()).red());
+            println!(
+                "{}",
+                t!("logs.read.error").replace("{}", &e.to_string()).red()
+            );
         }
     }
 
@@ -82,7 +90,10 @@ async fn show_log_info() -> Result<()> {
             }
         }
         Err(e) => {
-            println!("{}", t!("logs.info.error").replace("{}", &e.to_string()).red());
+            println!(
+                "{}",
+                t!("logs.info.error").replace("{}", &e.to_string()).red()
+            );
         }
     }
 
@@ -97,14 +108,22 @@ async fn show_log_info() -> Result<()> {
 async fn open_log_directory() -> Result<()> {
     match Logger::get_log_directory() {
         Ok(log_dir) => {
-            println!("{}", t!("logs.directory").replace("{}", &log_dir.display().to_string()));
+            println!(
+                "{}",
+                t!("logs.directory").replace("{}", &log_dir.display().to_string())
+            );
 
             // 在不同平台上打开目录
             #[cfg(target_os = "linux")]
             {
                 match std::process::Command::new("xdg-open").arg(&log_dir).spawn() {
                     Ok(_) => println!("{}", t!("logs.directory_opened").green()),
-                    Err(e) => println!("{}", t!("logs.open_dir.error").replace("{}", &e.to_string()).red()),
+                    Err(e) => println!(
+                        "{}",
+                        t!("logs.open_dir.error")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    ),
                 }
             }
 
@@ -112,7 +131,12 @@ async fn open_log_directory() -> Result<()> {
             {
                 match std::process::Command::new("explorer").arg(&log_dir).spawn() {
                     Ok(_) => println!("{}", t!("logs.directory_opened").green()),
-                    Err(e) => println!("{}", t!("logs.open_dir.error").replace("{}", &e.to_string()).red()),
+                    Err(e) => println!(
+                        "{}",
+                        t!("logs.open_dir.error")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    ),
                 }
             }
 
@@ -120,12 +144,22 @@ async fn open_log_directory() -> Result<()> {
             {
                 match std::process::Command::new("open").arg(&log_dir).spawn() {
                     Ok(_) => println!("{}", t!("logs.directory_opened").green()),
-                    Err(e) => println!("{}", t!("logs.open_dir.error").replace("{}", &e.to_string()).red()),
+                    Err(e) => println!(
+                        "{}",
+                        t!("logs.open_dir.error")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    ),
                 }
             }
         }
         Err(e) => {
-            println!("{}", t!("logs.directory.error").replace("{}", &e.to_string()).red());
+            println!(
+                "{}",
+                t!("logs.directory.error")
+                    .replace("{}", &e.to_string())
+                    .red()
+            );
         }
     }
 

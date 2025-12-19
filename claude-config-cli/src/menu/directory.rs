@@ -17,13 +17,18 @@ pub async fn directory_menu(db: &DbState) -> Result<()> {
         ];
 
         let selection = match Select::new()
-            .with_prompt(format!("\n{} (ESC {})", t!("directory.menu.title"), t!("common.to_back")))
+            .with_prompt(format!(
+                "\n{} (ESC {})",
+                t!("directory.menu.title"),
+                t!("common.to_back")
+            ))
             .items(&items)
             .default(last_selection)
-            .interact_opt()? {
-                Some(sel) => sel,
-                None => break, // 用户按了ESC，返回上一级
-            };
+            .interact_opt()?
+        {
+            Some(sel) => sel,
+            None => break, // 用户按了ESC，返回上一级
+        };
 
         last_selection = selection;
 
@@ -91,7 +96,10 @@ async fn list_directories(db: &DbState) -> Result<()> {
     }
 
     println!("\n{}", table);
-    println!("{}", t!("directory.list.total").replace("{}", &directories.len().to_string()));
+    println!(
+        "{}",
+        t!("directory.list.total").replace("{}", &directories.len().to_string())
+    );
 
     let _ = Input::<String>::new()
         .with_prompt(t!("common.continue"))
@@ -145,10 +153,18 @@ async fn add_directory(db: &DbState) -> Result<()> {
 
     match db_lock.create_directory(request).await {
         Ok(_) => {
-            println!("\n{}", t!("directory.add.success").replace("{}", &name).green());
+            println!(
+                "\n{}",
+                t!("directory.add.success").replace("{}", &name).green()
+            );
         }
         Err(e) => {
-            println!("\n{}", t!("directory.add.error").replace("{}", &e.to_string()).red());
+            println!(
+                "\n{}",
+                t!("directory.add.error")
+                    .replace("{}", &e.to_string())
+                    .red()
+            );
         }
     }
 
@@ -221,7 +237,12 @@ async fn edit_directory(db: &DbState) -> Result<()> {
                 println!("\n{}", t!("directory.edit.success").green());
             }
             Err(e) => {
-                println!("\n{}", t!("directory.edit.error").replace("{}", &e.to_string()).red());
+                println!(
+                    "\n{}",
+                    t!("directory.edit.error")
+                        .replace("{}", &e.to_string())
+                        .red()
+                );
             }
         }
     }
@@ -273,7 +294,12 @@ async fn delete_directory(db: &DbState) -> Result<()> {
                     println!("\n{}", t!("directory.delete.success").green());
                 }
                 Err(e) => {
-                    println!("\n{}", t!("directory.delete.error").replace("{}", &e.to_string()).red());
+                    println!(
+                        "\n{}",
+                        t!("directory.delete.error")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    );
                 }
             }
         }

@@ -20,13 +20,18 @@ pub async fn webdav_menu(db: &DbState) -> Result<()> {
         ];
 
         let selection = match Select::new()
-            .with_prompt(format!("\n{} (ESC {})", t!("webdav.menu.title"), t!("common.to_back")))
+            .with_prompt(format!(
+                "\n{} (ESC {})",
+                t!("webdav.menu.title"),
+                t!("common.to_back")
+            ))
             .items(&items)
             .default(last_selection)
-            .interact_opt()? {
-                Some(sel) => sel,
-                None => break, // 用户按了ESC，返回上一级
-            };
+            .interact_opt()?
+        {
+            Some(sel) => sel,
+            None => break, // 用户按了ESC，返回上一级
+        };
 
         last_selection = selection;
 
@@ -83,7 +88,11 @@ async fn list_configs(db: &DbState) -> Result<()> {
     ]);
 
     for config in &configs {
-        let auto_sync = if config.auto_sync { t!("webdav.list.auto_sync_yes") } else { t!("webdav.list.auto_sync_no") };
+        let auto_sync = if config.auto_sync {
+            t!("webdav.list.auto_sync_yes")
+        } else {
+            t!("webdav.list.auto_sync_no")
+        };
         let status = if config.is_active {
             t!("webdav.list.status_active")
         } else {
@@ -102,7 +111,10 @@ async fn list_configs(db: &DbState) -> Result<()> {
     }
 
     println!("\n{}", table);
-    println!("{}", t!("webdav.list.total").replace("{}", &configs.len().to_string()));
+    println!(
+        "{}",
+        t!("webdav.list.total").replace("{}", &configs.len().to_string())
+    );
 
     let _ = Input::<String>::new()
         .with_prompt(t!("common.continue"))
@@ -177,10 +189,16 @@ async fn add_config(db: &DbState) -> Result<()> {
     .await
     {
         Ok(_) => {
-            println!("\n{}", t!("webdav.add.success").replace("{}", &name).green());
+            println!(
+                "\n{}",
+                t!("webdav.add.success").replace("{}", &name).green()
+            );
         }
         Err(e) => {
-            println!("\n{}", t!("webdav.add.error").replace("{}", &e.to_string()).red());
+            println!(
+                "\n{}",
+                t!("webdav.add.error").replace("{}", &e.to_string()).red()
+            );
         }
     }
 
@@ -222,7 +240,10 @@ async fn test_connection(db: &DbState) -> Result<()> {
                 println!("{}", t!("webdav.test.success").green());
             }
             Err(e) => {
-                println!("{}", t!("webdav.test.error").replace("{}", &e.to_string()).red());
+                println!(
+                    "{}",
+                    t!("webdav.test.error").replace("{}", &e.to_string()).red()
+                );
             }
         }
 
@@ -315,7 +336,11 @@ async fn upload_config(db: &DbState) -> Result<()> {
                         webdav_config_id: config.id,
                         sync_type: "upload".to_string(),
                         status: "success".to_string(),
-                        message: Some(t!("webdav.upload.success_log").replace("{}", &filename).to_string()),
+                        message: Some(
+                            t!("webdav.upload.success_log")
+                                .replace("{}", &filename)
+                                .to_string(),
+                        ),
                     },
                 )
                 .await;
@@ -323,7 +348,12 @@ async fn upload_config(db: &DbState) -> Result<()> {
                 let _ = webdav::update_last_sync_time(pool, config.id).await;
             }
             Err(e) => {
-                println!("{}", t!("webdav.upload.error").replace("{}", &e.to_string()).red());
+                println!(
+                    "{}",
+                    t!("webdav.upload.error")
+                        .replace("{}", &e.to_string())
+                        .red()
+                );
             }
         }
 
@@ -434,7 +464,12 @@ async fn download_config(db: &DbState) -> Result<()> {
                             }
                         }
 
-                        println!("{}", t!("webdav.upload.imported_accounts").replace("{}", &success_count.to_string()).green());
+                        println!(
+                            "{}",
+                            t!("webdav.upload.imported_accounts")
+                                .replace("{}", &success_count.to_string())
+                                .green()
+                        );
                     }
 
                     // 解析 Base URLs 数据
@@ -475,7 +510,9 @@ async fn download_config(db: &DbState) -> Result<()> {
 
                         println!(
                             "{}",
-                            t!("webdav.upload.imported_urls").replace("{}", &success_count.to_string()).green()
+                            t!("webdav.upload.imported_urls")
+                                .replace("{}", &success_count.to_string())
+                                .green()
                         );
                     }
 
@@ -487,7 +524,9 @@ async fn download_config(db: &DbState) -> Result<()> {
 
                     println!(
                         "{}",
-                        t!("webdav.download.success").replace("{}", filename).green()
+                        t!("webdav.download.success")
+                            .replace("{}", filename)
+                            .green()
                     );
 
                     // 记录同步日志
@@ -498,7 +537,11 @@ async fn download_config(db: &DbState) -> Result<()> {
                             webdav_config_id: config.id,
                             sync_type: "download".to_string(),
                             status: "success".to_string(),
-                            message: Some(t!("webdav.download.success_log").replace("{}", filename).to_string()),
+                            message: Some(
+                                t!("webdav.download.success_log")
+                                    .replace("{}", filename)
+                                    .to_string(),
+                            ),
                         },
                     )
                     .await;
@@ -506,7 +549,12 @@ async fn download_config(db: &DbState) -> Result<()> {
                     let _ = webdav::update_last_sync_time(pool, config.id).await;
                 }
                 Err(e) => {
-                    println!("{}", t!("webdav.download.error").replace("{}", &e.to_string()).red());
+                    println!(
+                        "{}",
+                        t!("webdav.download.error")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    );
                 }
             }
 
@@ -562,7 +610,10 @@ async fn list_remote_files(db: &DbState) -> Result<()> {
                 }
             }
             Err(e) => {
-                println!("{}", t!("webdav.list.error").replace("{}", &e.to_string()).red());
+                println!(
+                    "{}",
+                    t!("webdav.list.error").replace("{}", &e.to_string()).red()
+                );
             }
         }
 
@@ -614,7 +665,12 @@ async fn delete_config(db: &DbState) -> Result<()> {
                     println!("\n{}", t!("webdav.delete.success").green());
                 }
                 Err(e) => {
-                    println!("\n{}", t!("webdav.delete.error").replace("{}", &e.to_string()).red());
+                    println!(
+                        "\n{}",
+                        t!("webdav.delete.error")
+                            .replace("{}", &e.to_string())
+                            .red()
+                    );
                 }
             }
         }

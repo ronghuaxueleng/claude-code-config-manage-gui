@@ -124,7 +124,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("common.select_operation", "请选择操作");
     zh_cn.insert("common.to_exit", "按ESC退出");
     zh_cn.insert("common.to_back", "按ESC返回");
-    zh_cn.insert("common.input_cancel_hint", "提示: 直接按Enter（不输入任何内容）可取消");
+    zh_cn.insert(
+        "common.input_cancel_hint",
+        "提示: 直接按Enter（不输入任何内容）可取消",
+    );
 
     // 数据库
     zh_cn.insert("db.init", "正在初始化数据库...");
@@ -169,12 +172,18 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("account.delete.error", "✗ 删除失败: {}");
     zh_cn.insert("account.export.title", "批量导出账号");
     zh_cn.insert("account.export.no_accounts", "暂无账号可导出");
-    zh_cn.insert("account.export.success", "✓ 成功导出 {} 个账号到文件: {file}");
+    zh_cn.insert(
+        "account.export.success",
+        "✓ 成功导出 {} 个账号到文件: {file}",
+    );
     zh_cn.insert("account.import.title", "批量导入账号");
     zh_cn.insert("account.import.prompt_file", "请输入JSON文件路径");
     zh_cn.insert("account.import.error_read", "✗ 读取文件失败: {}");
     zh_cn.insert("account.import.error_parse", "✗ 解析JSON失败: {}");
-    zh_cn.insert("account.import.error_format", "✗ 文件格式无效，缺少 providers 数组");
+    zh_cn.insert(
+        "account.import.error_format",
+        "✗ 文件格式无效，缺少 providers 数组",
+    );
     zh_cn.insert("account.import.no_accounts", "文件中没有账号数据");
     zh_cn.insert("account.import.processing", "正在处理导入...");
     zh_cn.insert("account.import.skip_invalid", "跳过无效数据");
@@ -202,7 +211,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("directory.add.title", "添加新目录");
     zh_cn.insert("directory.add.prompt_name", "目录名称");
     zh_cn.insert("directory.add.prompt_path", "路径");
-    zh_cn.insert("directory.add.warn_path_not_exists", "⚠️  警告: 该路径不存在");
+    zh_cn.insert(
+        "directory.add.warn_path_not_exists",
+        "⚠️  警告: 该路径不存在",
+    );
     zh_cn.insert("directory.add.success", "✓ 目录 '{}' 添加成功");
     zh_cn.insert("directory.add.error", "✗ 添加失败: {}");
     zh_cn.insert("directory.edit.prompt", "选择要编辑的目录");
@@ -210,7 +222,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("directory.edit.error", "✗ 更新失败: {}");
     zh_cn.insert("directory.delete.prompt", "选择要删除的目录");
     zh_cn.insert("directory.delete.confirm", "确定要删除目录 '{}' 吗?");
-    zh_cn.insert("directory.delete.warning", "(仅删除数据库记录，不删除实际文件)");
+    zh_cn.insert(
+        "directory.delete.warning",
+        "(仅删除数据库记录，不删除实际文件)",
+    );
     zh_cn.insert("directory.delete.success", "✓ 目录删除成功");
     zh_cn.insert("directory.delete.error", "✗ 删除失败: {}");
 
@@ -234,7 +249,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("url.add.prompt_name", "名称");
     zh_cn.insert("url.add.prompt_url", "URL");
     zh_cn.insert("url.add.prompt_description", "描述（可选）");
-    zh_cn.insert("url.add.prompt_api_key", "API Key 环境变量名（默认: ANTHROPIC_API_KEY）");
+    zh_cn.insert(
+        "url.add.prompt_api_key",
+        "API Key 环境变量名（默认: ANTHROPIC_API_KEY）",
+    );
     zh_cn.insert("url.add.prompt_default", "设为默认?");
     zh_cn.insert("url.add.success", "✓ URL '{}' 创建成功");
     zh_cn.insert("url.add.error", "✗ 创建失败: {}");
@@ -253,8 +271,14 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("switch.no_directories", "暂无目录记录，请先添加目录");
     zh_cn.insert("switch.select_account", "选择账号");
     zh_cn.insert("switch.select_directory", "选择目录");
-    zh_cn.insert("switch.prompt_skip_permissions", "跳过权限检查? (推荐选择 Yes)");
-    zh_cn.insert("switch.prompt_use_proxy", "使用代理? (从 Claude 配置中加载代理设置)");
+    zh_cn.insert(
+        "switch.prompt_skip_permissions",
+        "跳过权限检查? (推荐选择 Yes)",
+    );
+    zh_cn.insert(
+        "switch.prompt_use_proxy",
+        "使用代理? (从 Claude 配置中加载代理设置)",
+    );
     zh_cn.insert("switch.switching", "正在切换配置...");
     zh_cn.insert("switch.success", "✓ 配置切换成功!");
     zh_cn.insert("switch.success_env", "✓ 环境配置切换成功!");
@@ -371,7 +395,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     zh_cn.insert("remove_root.title", "删除 Claude Code Root Check");
     zh_cn.insert("remove_root.steps_intro", "此操作将执行以下步骤:");
     zh_cn.insert("remove_root.step1", "  1. 查找 claude 命令位置");
-    zh_cn.insert("remove_root.step2", "  2. 创建包装脚本自动删除 root check 限制");
+    zh_cn.insert(
+        "remove_root.step2",
+        "  2. 创建包装脚本自动删除 root check 限制",
+    );
     zh_cn.insert("remove_root.step3", "  3. 备份原始 claude 命令");
     zh_cn.insert("remove_root.step4", "  4. 替换 claude 命令为包装脚本");
     zh_cn.insert("remove_root.confirm", "是否继续执行删除限制代码操作?");
@@ -429,7 +456,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("common.select_operation", "Please select an operation");
     en_us.insert("common.to_exit", "press ESC to exit");
     en_us.insert("common.to_back", "press ESC to go back");
-    en_us.insert("common.input_cancel_hint", "Hint: Press Enter without typing anything to cancel");
+    en_us.insert(
+        "common.input_cancel_hint",
+        "Hint: Press Enter without typing anything to cancel",
+    );
 
     // Database
     en_us.insert("db.init", "Initializing database...");
@@ -486,19 +516,28 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("account.delete.error", "✗ Deletion failed: {}");
     en_us.insert("account.export.title", "Batch Export Accounts");
     en_us.insert("account.export.no_accounts", "No accounts to export");
-    en_us.insert("account.export.success", "✓ Successfully exported {} account(s) to file: {file}");
+    en_us.insert(
+        "account.export.success",
+        "✓ Successfully exported {} account(s) to file: {file}",
+    );
     en_us.insert("account.import.title", "Batch Import Accounts");
     en_us.insert("account.import.prompt_file", "Enter JSON file path");
     en_us.insert("account.import.error_read", "✗ Failed to read file: {}");
     en_us.insert("account.import.error_parse", "✗ Failed to parse JSON: {}");
-    en_us.insert("account.import.error_format", "✗ Invalid file format, missing providers array");
+    en_us.insert(
+        "account.import.error_format",
+        "✗ Invalid file format, missing providers array",
+    );
     en_us.insert("account.import.no_accounts", "No account data in file");
     en_us.insert("account.import.processing", "Processing import...");
     en_us.insert("account.import.skip_invalid", "Skip invalid data");
     en_us.insert("account.import.skip_exists", "Skip existing");
     en_us.insert("account.import.imported", "Imported");
     en_us.insert("account.import.failed", "Import failed");
-    en_us.insert("account.import.result_imported", "✓ Successfully imported {} account(s)");
+    en_us.insert(
+        "account.import.result_imported",
+        "✓ Successfully imported {} account(s)",
+    );
     en_us.insert("account.import.result_skipped", "⊖ Skipped {} account(s)");
     en_us.insert("account.default_indicator", "(default)");
 
@@ -519,7 +558,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("directory.add.title", "Add New Directory");
     en_us.insert("directory.add.prompt_name", "Directory Name");
     en_us.insert("directory.add.prompt_path", "Path");
-    en_us.insert("directory.add.warn_path_not_exists", "⚠️  Warning: Path does not exist");
+    en_us.insert(
+        "directory.add.warn_path_not_exists",
+        "⚠️  Warning: Path does not exist",
+    );
     en_us.insert(
         "directory.add.success",
         "✓ Directory '{}' added successfully",
@@ -533,7 +575,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
         "directory.delete.confirm",
         "Are you sure you want to delete directory '{}'?",
     );
-    en_us.insert("directory.delete.warning", "(Only deletes database record, not actual files)");
+    en_us.insert(
+        "directory.delete.warning",
+        "(Only deletes database record, not actual files)",
+    );
     en_us.insert(
         "directory.delete.success",
         "✓ Directory deleted successfully",
@@ -560,7 +605,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     en_us.insert("url.add.prompt_name", "Name");
     en_us.insert("url.add.prompt_url", "URL");
     en_us.insert("url.add.prompt_description", "Description (Optional)");
-    en_us.insert("url.add.prompt_api_key", "API Key Environment Variable (Default: ANTHROPIC_API_KEY)");
+    en_us.insert(
+        "url.add.prompt_api_key",
+        "API Key Environment Variable (Default: ANTHROPIC_API_KEY)",
+    );
     en_us.insert("url.add.prompt_default", "Set as default?");
     en_us.insert("url.add.success", "✓ URL '{}' created successfully");
     en_us.insert("url.add.error", "✗ Creation failed: {}");
@@ -572,7 +620,10 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
         "url.delete.confirm",
         "Are you sure you want to delete URL '{}'?",
     );
-    en_us.insert("url.delete.warning", "(Accounts using this URL will also be deleted)");
+    en_us.insert(
+        "url.delete.warning",
+        "(Accounts using this URL will also be deleted)",
+    );
     en_us.insert("url.delete.success", "✓ URL deleted successfully");
     en_us.insert("url.delete.error", "✗ Deletion failed: {}");
 
@@ -588,8 +639,14 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
     );
     en_us.insert("switch.select_account", "Select Account");
     en_us.insert("switch.select_directory", "Select Directory");
-    en_us.insert("switch.prompt_skip_permissions", "Skip permission check? (Recommended: Yes)");
-    en_us.insert("switch.prompt_use_proxy", "Use proxy? (Load proxy settings from Claude config)");
+    en_us.insert(
+        "switch.prompt_skip_permissions",
+        "Skip permission check? (Recommended: Yes)",
+    );
+    en_us.insert(
+        "switch.prompt_use_proxy",
+        "Use proxy? (Load proxy settings from Claude config)",
+    );
     en_us.insert("switch.switching", "Switching configuration...");
     en_us.insert("switch.success", "✓ Configuration switched successfully!");
     en_us.insert(
@@ -704,11 +761,20 @@ static TRANSLATIONS: Lazy<HashMap<Language, HashMap<TransKey, &'static str>>> = 
 
     // Remove Root Check
     en_us.insert("remove_root.title", "Remove Claude Code Root Check");
-    en_us.insert("remove_root.steps_intro", "This operation will perform the following steps:");
+    en_us.insert(
+        "remove_root.steps_intro",
+        "This operation will perform the following steps:",
+    );
     en_us.insert("remove_root.step1", "  1. Locate claude command");
-    en_us.insert("remove_root.step2", "  2. Create wrapper script to remove root check");
+    en_us.insert(
+        "remove_root.step2",
+        "  2. Create wrapper script to remove root check",
+    );
     en_us.insert("remove_root.step3", "  3. Backup original claude command");
-    en_us.insert("remove_root.step4", "  4. Replace claude command with wrapper script");
+    en_us.insert(
+        "remove_root.step4",
+        "  4. Replace claude command with wrapper script",
+    );
     en_us.insert("remove_root.confirm", "Continue with root check removal?");
     en_us.insert(
         "remove_root.executing",

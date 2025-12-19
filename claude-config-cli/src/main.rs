@@ -41,10 +41,7 @@ fn update_global_claude_config() -> Result<()> {
     // 确保是对象类型
     if let Some(config_obj) = config.as_object_mut() {
         // 添加或更新 hasCompletedOnboarding 字段
-        config_obj.insert(
-            "hasCompletedOnboarding".to_string(),
-            Value::Bool(true)
-        );
+        config_obj.insert("hasCompletedOnboarding".to_string(), Value::Bool(true));
 
         // 写回文件
         let config_json = serde_json::to_string_pretty(&config)?;
@@ -213,7 +210,11 @@ fn show_main_menu() -> Result<Option<usize>> {
     ];
 
     let selection = Select::new()
-        .with_prompt(format!("\n{} (ESC {})", i18n::translate("menu.main.title"), i18n::translate("common.to_exit")))
+        .with_prompt(format!(
+            "\n{} (ESC {})",
+            i18n::translate("menu.main.title"),
+            i18n::translate("common.to_exit")
+        ))
         .items(&items)
         .default(0)
         .interact_opt()?;
@@ -306,7 +307,10 @@ fn remove_root_check() -> Result<()> {
             }
 
             if output.status.success() {
-                println!("\n{}", i18n::translate("remove_root.success").green().bold());
+                println!(
+                    "\n{}",
+                    i18n::translate("remove_root.success").green().bold()
+                );
             } else {
                 println!(
                     "\n{}",

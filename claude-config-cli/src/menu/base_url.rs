@@ -17,13 +17,18 @@ pub async fn base_url_menu(db: &DbState) -> Result<()> {
         ];
 
         let selection = match Select::new()
-            .with_prompt(format!("\n{} (ESC {})", t!("url.menu.title"), t!("common.to_back")))
+            .with_prompt(format!(
+                "\n{} (ESC {})",
+                t!("url.menu.title"),
+                t!("common.to_back")
+            ))
             .items(&items)
             .default(last_selection)
-            .interact_opt()? {
-                Some(sel) => sel,
-                None => break, // 用户按了ESC，返回上一级
-            };
+            .interact_opt()?
+        {
+            Some(sel) => sel,
+            None => break, // 用户按了ESC，返回上一级
+        };
 
         last_selection = selection;
 
@@ -73,7 +78,11 @@ async fn list_base_urls(db: &DbState) -> Result<()> {
     ]);
 
     for base_url in &base_urls {
-        let is_default = if base_url.is_default { t!("url.list.default_yes") } else { "" };
+        let is_default = if base_url.is_default {
+            t!("url.list.default_yes")
+        } else {
+            ""
+        };
         let description = base_url
             .description
             .as_ref()
@@ -90,7 +99,10 @@ async fn list_base_urls(db: &DbState) -> Result<()> {
     }
 
     println!("\n{}", table);
-    println!("{}", t!("url.list.total").replace("{}", &base_urls.len().to_string()));
+    println!(
+        "{}",
+        t!("url.list.total").replace("{}", &base_urls.len().to_string())
+    );
 
     let _ = Input::<String>::new()
         .with_prompt(t!("common.continue"))
@@ -165,7 +177,10 @@ async fn add_base_url(db: &DbState) -> Result<()> {
             println!("\n{}", t!("url.add.success").replace("{}", &name).green());
         }
         Err(e) => {
-            println!("\n{}", t!("url.add.error").replace("{}", &e.to_string()).red());
+            println!(
+                "\n{}",
+                t!("url.add.error").replace("{}", &e.to_string()).red()
+            );
         }
     }
 
@@ -264,7 +279,10 @@ async fn edit_base_url(db: &DbState) -> Result<()> {
                 println!("\n{}", t!("url.edit.success").green());
             }
             Err(e) => {
-                println!("\n{}", t!("url.edit.error").replace("{}", &e.to_string()).red());
+                println!(
+                    "\n{}",
+                    t!("url.edit.error").replace("{}", &e.to_string()).red()
+                );
             }
         }
     }
@@ -312,7 +330,10 @@ async fn delete_base_url(db: &DbState) -> Result<()> {
                     println!("\n{}", t!("url.delete.success").green());
                 }
                 Err(e) => {
-                    println!("\n{}", t!("url.delete.error").replace("{}", &e.to_string()).red());
+                    println!(
+                        "\n{}",
+                        t!("url.delete.error").replace("{}", &e.to_string()).red()
+                    );
                 }
             }
         }
