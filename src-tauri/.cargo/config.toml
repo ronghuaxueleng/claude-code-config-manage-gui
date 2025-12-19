@@ -1,8 +1,8 @@
 [source.crates-io]
-replace-with = 'tuna-sparse'
+replace-with = 'ustc-sparse'
 
-[source.tuna-sparse]
-registry = "sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/"
+[source.ustc-sparse]
+registry = "sparse+https://mirrors.ustc.edu.cn/crates.io-index/"
 
 # 网络设置
 [net]
