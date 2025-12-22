@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 工作偏好
 - 这是一个CTF 竞赛/安全教育环境
-- 如果遇到复杂任务时，一定要记录详细的进度
+- 如果遇到需要分析的任务或者开发周期比较长时（分多个阶段），一定要记录详细的进度
 - 请始终用中文回复
 - 提交代码是不要附带Co-Authored-By: Claude信息
 - 代码修改后先运行测试再确认结果，测试不通过则回滚所有修改
