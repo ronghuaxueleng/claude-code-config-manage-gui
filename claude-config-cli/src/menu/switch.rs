@@ -264,6 +264,7 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                         },
                         "env": {
                             "IS_SANDBOX": "1",
+                            "CLAUDE_CODE_BUBBLEWRAP": "1",
                             "DISABLE_AUTOUPDATER": 1
                         }
                     }))

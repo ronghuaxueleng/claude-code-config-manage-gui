@@ -2843,6 +2843,7 @@ let claudeSettingsData = {
     },
     env: {
         IS_SANDBOX: '1',
+        CLAUDE_CODE_BUBBLEWRAP: '1',
         DISABLE_AUTOUPDATER: 1
     }
 };
@@ -2927,6 +2928,7 @@ async function loadCurrentClaudeSettings() {
         if (!settings.env) {
             settings.env = {
                 IS_SANDBOX: '1',
+                CLAUDE_CODE_BUBBLEWRAP: '1',
                 DISABLE_AUTOUPDATER: 1
             };
         }
@@ -2976,6 +2978,7 @@ async function loadCurrentClaudeSettings() {
             },
             env: {
                 IS_SANDBOX: '1',
+                CLAUDE_CODE_BUBBLEWRAP: '1',
                 DISABLE_AUTOUPDATER: 1
             }
         };
@@ -3085,6 +3088,7 @@ function renderCustomEnvVars() {
         console.warn('Claude配置的env数据不完整，初始化为默认值');
         claudeSettingsData.env = {
             IS_SANDBOX: '1',
+            CLAUDE_CODE_BUBBLEWRAP: '1',
             DISABLE_AUTOUPDATER: 1
         };
     }
@@ -3411,6 +3415,7 @@ async function getClaudeSettingsForSwitch() {
             },
             env: {
                 IS_SANDBOX: '1',
+                CLAUDE_CODE_BUBBLEWRAP: '1',
                 DISABLE_AUTOUPDATER: 1
             }
         };
