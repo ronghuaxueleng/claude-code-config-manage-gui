@@ -92,6 +92,12 @@ fn write_claude_settings(
     );
     env_obj.insert("DISABLE_TELEMETRY".to_string(), Value::Number(1.into()));
 
+    // 禁用 Attribution Header（Co-Authored-By 信息）
+    env_obj.insert(
+        "CLAUDE_CODE_ATTRIBUTION_HEADER".to_string(),
+        Value::String("0".to_string()),
+    );
+
     // 处理代理配置
     if !use_proxy {
         // 如果未启用代理，删除代理环境变量

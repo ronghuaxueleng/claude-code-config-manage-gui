@@ -1450,6 +1450,9 @@ async fn switch_account_with_claude_settings(
     env_obj.insert("DISABLE_ERROR_REPORTING".to_string(), serde_json::Value::Number(serde_json::Number::from(1)));
     env_obj.insert("DISABLE_TELEMETRY".to_string(), serde_json::Value::Number(serde_json::Number::from(1)));
 
+    // 禁用 Attribution Header（Co-Authored-By 信息）
+    env_obj.insert("CLAUDE_CODE_ATTRIBUTION_HEADER".to_string(), serde_json::Value::String("0".to_string()));
+
     // 注意：URL级别的默认环境变量和账号级别的自定义环境变量已在前端合并到 claudeSettings.env 中
     // 这里不再重复处理，避免覆盖前端已经合并的配置
     tracing::info!("最终写入settings.local.json的环境变量: {:?}", env_obj);
