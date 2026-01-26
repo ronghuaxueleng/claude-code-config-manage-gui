@@ -101,7 +101,6 @@ CLAUDE_VERSION=$(node "$CLAUDE_REAL_PATH" --version 2>/dev/null | head -1 || ech
 # 新版本 (2.1.x+) 直接使用环境变量绕过 root check
 # 设置 IS_SANDBOX=1 或 CLAUDE_CODE_BUBBLEWRAP=1 即可
 export IS_SANDBOX=1
-export CLAUDE_CODE_BUBBLEWRAP=1
 
 # 执行原始 claude 命令，传递所有参数
 exec node "$CLAUDE_REAL_PATH" "$@"
