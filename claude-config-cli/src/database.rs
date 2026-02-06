@@ -1130,7 +1130,6 @@ impl Database {
                         "deny": []
                     },
                     "env": {
-                        "IS_SANDBOX": "1",
                         "CLAUDE_CODE_BUBBLEWRAP": "1",
                         "DISABLE_AUTOUPDATER": 1
                     }

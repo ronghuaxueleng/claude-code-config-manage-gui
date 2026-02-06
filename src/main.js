@@ -1774,7 +1774,7 @@ async function performAccountSwitch() {
     // 获取代理复选框的状态
     const useProxy = document.getElementById('useProxyCheckbox').checked;
 
-    // 默认设置IS_SANDBOX为true
+    // 默认启用沙盒模式
     const isSandbox = true;
 
     await performAccountSwitchInternal(accountId, isSandbox, useProxy);
@@ -2842,7 +2842,6 @@ let claudeSettingsData = {
         deny: []
     },
     env: {
-        IS_SANDBOX: '1',
         CLAUDE_CODE_BUBBLEWRAP: '1',
         DISABLE_AUTOUPDATER: 1
     }
@@ -2927,7 +2926,6 @@ async function loadCurrentClaudeSettings() {
         // 确保 env 对象存在
         if (!settings.env) {
             settings.env = {
-                IS_SANDBOX: '1',
                 CLAUDE_CODE_BUBBLEWRAP: '1',
                 DISABLE_AUTOUPDATER: 1
             };
@@ -2945,8 +2943,6 @@ async function loadCurrentClaudeSettings() {
         updateToolsSelection();
 
         // 更新环境变量开关
-        document.getElementById('sandboxMode').checked =
-            claudeSettingsData.env.IS_SANDBOX === '1' || claudeSettingsData.env.IS_SANDBOX === 1;
         document.getElementById('disableAutoUpdater').checked =
             claudeSettingsData.env.DISABLE_AUTOUPDATER === 1 || claudeSettingsData.env.DISABLE_AUTOUPDATER === '1';
         document.getElementById('disablePromptCaching').checked =
@@ -2977,7 +2973,6 @@ async function loadCurrentClaudeSettings() {
                 deny: []
             },
             env: {
-                IS_SANDBOX: '1',
                 CLAUDE_CODE_BUBBLEWRAP: '1',
                 DISABLE_AUTOUPDATER: 1
             }
@@ -2986,7 +2981,6 @@ async function loadCurrentClaudeSettings() {
         // 更新UI为默认值
         document.getElementById('defaultPermissionMode').value = 'bypassPermissions';
         updateToolsSelection();
-        document.getElementById('sandboxMode').checked = true;
         document.getElementById('disableAutoUpdater').checked = true;
 
         // 返回错误信息以便显示
@@ -3087,7 +3081,6 @@ function renderCustomEnvVars() {
     if (!claudeSettingsData.env || typeof claudeSettingsData.env !== 'object') {
         console.warn('Claude配置的env数据不完整，初始化为默认值');
         claudeSettingsData.env = {
-            IS_SANDBOX: '1',
             CLAUDE_CODE_BUBBLEWRAP: '1',
             DISABLE_AUTOUPDATER: 1
         };
@@ -3095,7 +3088,6 @@ function renderCustomEnvVars() {
 
     // 过滤掉系统管理的环境变量
     const systemManagedEnvVars = [
-        'IS_SANDBOX',
         'DISABLE_AUTOUPDATER',
         'DISABLE_PROMPT_CACHING',
         'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
@@ -3164,12 +3156,6 @@ function setupClaudeSettingsEventListeners() {
             }
             updatePreview();
         }
-    });
-
-    // 沙盒模式变更
-    document.getElementById('sandboxMode').addEventListener('change', function() {
-        claudeSettingsData.env.IS_SANDBOX = this.checked ? '1' : '0';
-        updatePreview();
     });
 
     // 自动更新变更
@@ -3287,7 +3273,7 @@ function addCustomEnvVar() {
     
     // 检查是否是系统管理的环境变量
     const systemManagedEnvVars = [
-        'IS_SANDBOX',
+        'CLAUDE_CODE_BUBBLEWRAP',
         'DISABLE_AUTOUPDATER',
         'DISABLE_PROMPT_CACHING',
         'CLAUDE_CODE_MAX_OUTPUT_TOKENS',
@@ -3334,7 +3320,7 @@ function updatePreview() {
     Object.entries(claudeSettingsData.env).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
             // 对于开关类型的环境变量，如果值为 '0' 或 0，则不添加到配置中
-            const switchEnvVars = ['IS_SANDBOX', 'DISABLE_AUTOUPDATER', 'DISABLE_PROMPT_CACHING'];
+            const switchEnvVars = ['DISABLE_AUTOUPDATER', 'DISABLE_PROMPT_CACHING'];
             if (switchEnvVars.includes(key) && (value === '0' || value === 0)) {
                 return;
             }
@@ -3414,7 +3400,6 @@ async function getClaudeSettingsForSwitch() {
                 deny: []
             },
             env: {
-                IS_SANDBOX: '1',
                 CLAUDE_CODE_BUBBLEWRAP: '1',
                 DISABLE_AUTOUPDATER: 1
             }
@@ -3486,19 +3471,8 @@ async function loadClaudeConfigStatusInAssociation() {
                 permissionElement.className = 'badge bg-success';
                 break;
         }
-        
+
         // 更新沙盒模式状态
-        const sandboxMode = settings.env?.IS_SANDBOX;
-        const sandboxElement = document.getElementById('claudeSandboxMode');
-        
-        if (sandboxMode === '1' || sandboxMode === 1) {
-            sandboxElement.textContent = window.i18n.t('status.enabled');
-            sandboxElement.className = 'badge bg-success';
-        } else {
-            sandboxElement.textContent = window.i18n.t('status.disabled');
-            sandboxElement.className = 'badge bg-secondary';
-        }
-        
         // 更新自动更新状态
         const autoUpdater = settings.env?.DISABLE_AUTOUPDATER;
         const autoUpdaterElement = document.getElementById('claudeAutoUpdater');

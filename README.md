@@ -423,9 +423,9 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
   },
   "env": {
     "ANTHROPIC_API_KEY": "sk-ant-xxx...",
-    "ANTHROPIC_AUTH_TOKEN": "sk-ant-xxx...", 
+    "ANTHROPIC_AUTH_TOKEN": "sk-ant-xxx...",
     "ANTHROPIC_BASE_URL": "https://api.anthropic.com",
-    "IS_SANDBOX": "1",
+    "CLAUDE_CODE_BUBBLEWRAP": "1",
     "DISABLE_AUTOUPDATER": 1
   }
 }
@@ -439,7 +439,7 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
 | `CLAUDE_API_KEY` | Claude API 密钥（自定义名称） | `sk-ant-xxx...` |
 | `ANTHROPIC_AUTH_TOKEN` | 认证令牌 (同 API 密钥) | `sk-ant-xxx...` |
 | `ANTHROPIC_BASE_URL` | API 基础地址 | `https://api.anthropic.com` |
-| `IS_SANDBOX` | 沙盒模式 | `"1"` (启用) / `"0"` (禁用) |
+| `CLAUDE_CODE_BUBBLEWRAP` | 沙盒模式 | `"1"` (启用) / `"0"` (禁用) |
 | `DISABLE_AUTOUPDATER` | 禁用自动更新 | `1` (禁用) / `0` (启用) |
 
 > **💡 提示**: v1.5.0 开始支持为不同的 Base URL 配置不同的 API Key 环境变量名。例如，官方 API 使用 `ANTHROPIC_API_KEY`，第三方 API 可使用 `CLAUDE_API_KEY` 等自定义名称。

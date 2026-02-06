@@ -47,7 +47,6 @@ cat > "$WRAPPER_PATH" << 'EOF'
 # 此脚本会在每次执行 claude 前绕过 root 用户限制
 #
 # 新版本 (2.1.x+) 支持通过环境变量绕过检查：
-# - IS_SANDBOX=1
 # - CLAUDE_CODE_BUBBLEWRAP=1
 #
 # 旧版本需要修改 cli.js 文件删除检查代码
@@ -99,8 +98,8 @@ fi
 CLAUDE_VERSION=$(node "$CLAUDE_REAL_PATH" --version 2>/dev/null | head -1 || echo "unknown")
 
 # 新版本 (2.1.x+) 直接使用环境变量绕过 root check
-# 设置 IS_SANDBOX=1 或 CLAUDE_CODE_BUBBLEWRAP=1 即可
-export IS_SANDBOX=1
+# 设置 CLAUDE_CODE_BUBBLEWRAP=1 即可
+export CLAUDE_CODE_BUBBLEWRAP=1
 
 # 执行原始 claude 命令，传递所有参数
 exec node "$CLAUDE_REAL_PATH" "$@"
