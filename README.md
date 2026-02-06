@@ -371,8 +371,8 @@ cargo build --release --manifest-path src-tauri/Cargo.toml
 
 | 命令 | 功能描述 | 参数 | 返回值 |
 |------|----------|------|---------|
-| `switch_account` | 切换账号配置 | `accountId`, `directoryId`, `isSandbox`, `skipPermissions` | 切换结果 |
-| `switch_account_with_claude_settings` | 带 Claude 设置的切换 | `accountId`, `directoryId`, `isSandbox`, `claudeSettings` | 切换结果 |
+| `switch_account` | 切换账号配置 | `accountId`, `directoryId`, `skipPermissions` | 切换结果 |
+| `switch_account_with_claude_settings` | 带 Claude 设置的切换 | `accountId`, `directoryId`, `claudeSettings` | 切换结果 |
 | `get_current_config` | 获取目录当前配置 | `directoryId` | 配置信息 |
 | `get_associations` | 获取关联关系 | - | 关联列表 |
 

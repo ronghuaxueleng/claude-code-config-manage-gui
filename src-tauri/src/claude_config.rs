@@ -111,7 +111,6 @@ impl ClaudeConfigManager {
         token: String,
         base_url: String,
         api_key_name: String,
-        is_sandbox: bool,
         base_url_default_env_vars: Option<HashMap<String, String>>,
         account_custom_env_vars: Option<HashMap<String, String>>,
         keep_claude_local_md: bool,
@@ -142,10 +141,8 @@ impl ClaudeConfigManager {
             }
         }
 
-        // 4. 添加沙盒模式环境变量
-        if is_sandbox {
-            env_config["CLAUDE_CODE_BUBBLEWRAP"] = json!("1");
-        }
+        // 4. 添加 CLAUDE_CODE_BUBBLEWRAP 环境变量
+        env_config["CLAUDE_CODE_BUBBLEWRAP"] = json!("1");
 
         // 5. 添加禁用非必要流量的环境变量（不禁用自动更新）
         env_config["DISABLE_BUG_COMMAND"] = json!(1);

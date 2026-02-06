@@ -228,9 +228,6 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
         .default(false)
         .interact()?;
 
-    // 沙盒模式默认开启
-    let is_sandbox = true;
-
     // 执行切换
     println!("\n{}", t!("switch.switching").cyan());
 
@@ -285,7 +282,6 @@ pub async fn switch_menu(db: &DbState) -> Result<()> {
                 account.token.clone(),
                 account.base_url.clone(),
                 api_key_name.clone(),
-                is_sandbox,
                 keep_claude_local_md,
             ) {
                 Ok(_) => {

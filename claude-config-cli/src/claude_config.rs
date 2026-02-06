@@ -113,7 +113,6 @@ impl ClaudeConfigManager {
         token: String,
         base_url: String,
         api_key_name: String,
-        is_sandbox: bool,
         keep_claude_local_md: bool,
     ) -> Result<bool> {
         let mut settings = self.read_settings()?;
@@ -129,10 +128,8 @@ impl ClaudeConfigManager {
         // 根据 api_key_name 参数决定使用哪个环境变量名
         env_config[&api_key_name] = json!(token);
 
-        // 添加可选的环境变量
-        if is_sandbox {
-            env_config["CLAUDE_CODE_BUBBLEWRAP"] = json!("1");
-        }
+        // 添加 CLAUDE_CODE_BUBBLEWRAP 环境变量
+        env_config["CLAUDE_CODE_BUBBLEWRAP"] = json!("1");
 
         // 添加禁用非必要流量的环境变量（不禁用自动更新）
         env_config["DISABLE_BUG_COMMAND"] = json!(1);

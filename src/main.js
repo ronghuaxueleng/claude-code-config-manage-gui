@@ -165,21 +165,19 @@ async function tauriCheckClaudeLocalMdExists(directory_path) {
     });
 }
 
-async function tauriSwitchAccount(account_id, directory_id, is_sandbox = false, skip_permissions = false, keep_claude_local_md = false) {
+async function tauriSwitchAccount(account_id, directory_id, skip_permissions = false, keep_claude_local_md = false) {
     return await invoke('switch_account', {
         accountId: parseInt(account_id),
         directoryId: parseInt(directory_id),
-        isSandbox: is_sandbox,
         skipPermissions: skip_permissions,
         keepClaudeLocalMd: keep_claude_local_md
     });
 }
 
-async function tauriSwitchAccountWithClaudeSettings(account_id, directory_id, is_sandbox, claude_settings, keep_claude_local_md = false) {
+async function tauriSwitchAccountWithClaudeSettings(account_id, directory_id, claude_settings, keep_claude_local_md = false) {
     return await invoke('switch_account_with_claude_settings', {
         accountId: parseInt(account_id),
         directoryId: parseInt(directory_id),
-        isSandbox: is_sandbox,
         claudeSettings: claude_settings,
         keepClaudeLocalMd: keep_claude_local_md
     });
@@ -1774,14 +1772,11 @@ async function performAccountSwitch() {
     // 获取代理复选框的状态
     const useProxy = document.getElementById('useProxyCheckbox').checked;
 
-    // 默认启用沙盒模式
-    const isSandbox = true;
-
-    await performAccountSwitchInternal(accountId, isSandbox, useProxy);
+    await performAccountSwitchInternal(accountId, useProxy);
 }
 
 // Internal account switch function
-async function performAccountSwitchInternal(accountId, isSandbox = true, useProxy = false) {
+async function performAccountSwitchInternal(accountId, useProxy = false) {
     if (!currentDirectoryForAssociation) {
         showError(window.i18n.t('error.select_directory_first'));
         return;
@@ -1944,7 +1939,6 @@ async function performAccountSwitchInternal(accountId, isSandbox = true, useProx
         const result = await tauriSwitchAccountWithClaudeSettings(
             parseInt(accountId),
             parseInt(currentDirectoryForAssociation),
-            isSandbox,
             claudeSettings,
             keepClaudeLocalMd
         );

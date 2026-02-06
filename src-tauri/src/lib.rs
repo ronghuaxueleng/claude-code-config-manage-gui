@@ -435,10 +435,9 @@ async fn switch_account(
     db: State<'_, DbState>,
     accountId: i64,
     directoryId: i64,
-    isSandbox: Option<bool>,
     keepClaudeLocalMd: Option<bool>,
 ) -> Result<String, String> {
-    tracing::info!("切换账号: accountId={}, directoryId={}, isSandbox={:?}, keepClaudeLocalMd={:?}", accountId, directoryId, isSandbox, keepClaudeLocalMd);
+    tracing::info!("切换账号: accountId={}, directoryId={}, keepClaudeLocalMd={:?}", accountId, directoryId, keepClaudeLocalMd);
     let db_lock = db.lock().await;
     
     // Switch in database
@@ -495,7 +494,6 @@ async fn switch_account(
             account.token,
             account.base_url,
             api_key_name,
-            isSandbox.unwrap_or(true),
             base_url_default_env_vars,
             account_custom_env_vars,
             keepClaudeLocalMd.unwrap_or(false),
@@ -1337,11 +1335,10 @@ async fn switch_account_with_claude_settings(
     db: State<'_, DbState>,
     accountId: i64,
     directoryId: i64,
-    isSandbox: Option<bool>,
     claudeSettings: serde_json::Value,
     keepClaudeLocalMd: Option<bool>,
 ) -> Result<String, String> {
-    tracing::info!("切换账号并写入Claude设置: accountId={}, directoryId={}, isSandbox={:?}, keepClaudeLocalMd={:?}", accountId, directoryId, isSandbox, keepClaudeLocalMd);
+    tracing::info!("切换账号并写入Claude设置: accountId={}, directoryId={}, keepClaudeLocalMd={:?}", accountId, directoryId, keepClaudeLocalMd);
     tracing::info!("接收到的Claude配置: {}", serde_json::to_string_pretty(&claudeSettings).unwrap_or("无法序列化".to_string()));
     let db_lock = db.lock().await;
 
@@ -1403,7 +1400,6 @@ async fn switch_account_with_claude_settings(
             account.token.clone(),
             account.base_url.clone(),
             api_key_name.clone(),
-            isSandbox.unwrap_or(true),
             base_url_default_env_vars.clone(),
             account_custom_env_vars.clone(),
             keepClaudeLocalMd.unwrap_or(false),
