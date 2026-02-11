@@ -389,7 +389,7 @@ public Object foo(Req req, Request request, Response response, Function<String, 
 | 2 | 长任务必须记录详细进度 |
 | 3 | 联网搜索时**禁止**使用 csdn.net、阿里云/腾讯云/华为云社区等内容农场 |
 | 4 | 编写构建脚本时尽量使用 mjs 编写带菜单的脚本 |
-| 5 | 尽量使用 Python 连接数据库 |
+| 5 | **优先使用 Python 查询数据库数据** |
 
 ---
 
